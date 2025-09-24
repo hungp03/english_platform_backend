@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Email xác thực đăng ký</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 30px auto 0 auto;
+            background-color: #ffffff;
+            padding: 30px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #1877f2;
+            text-align: center;
+            margin-top: 0;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333333;
+            margin-bottom: 15px;
+        }
+
+        .button {
+            display: block;
+            background-color: #1877f2;
+            color: #ffffff !important;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            margin: 20px auto;
+            width: auto;
+        }
+
+        .button:hover {
+            background-color: #145db1;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 14px;
+            color: #888888;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>English Pro</h2>
+    <p>Xin chào! Chúng tôi nhận được yêu cầu đăng ký tài khoản với địa chỉ email:
+        <strong th:text="${email}">email</strong>.
+    </p>
+    <p>Để hoàn tất việc đăng ký, vui lòng nhấp vào liên kết dưới đây để xác thực tài khoản của bạn:</p>
+    <p>
+        <a th:href="${verificationLink}" class="button" target="_blank">Xác thực tài khoản</a>
+    </p>
+    <p>Link này sẽ hết hạn trong 30 phút kể từ lúc bạn nhận được email này.</p>
+    <p>Trân trọng</p>
+</div>
+<footer>
+    <p>&copy; English Pro</p>
+</footer>
+</body>
+</html>

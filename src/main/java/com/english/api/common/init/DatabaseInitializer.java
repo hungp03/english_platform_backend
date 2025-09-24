@@ -1,4 +1,4 @@
-package com.english.api.common.config;
+package com.english.api.common.init;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -61,9 +61,10 @@ public class DatabaseInitializer implements CommandLineRunner {
             User adminUser = User.builder()
                     .id(UuidCreator.getTimeOrderedEpoch())
                     .email("admin@gmail.com")
-                    .passwordHash(encoder.encode("123456"))
+                    .passwordHash(encoder.encode("123456789"))
                     .fullName("Admin User")
                     .provider("local")
+                    .emailVerified(true)
                     .providerUid("admin@gmail.com")
                     .isActive(true)
                     .createdAt(Instant.now())
@@ -74,8 +75,9 @@ public class DatabaseInitializer implements CommandLineRunner {
             User normalUser = User.builder()
                     .id(UuidCreator.getTimeOrderedEpoch())
                     .email("user@gmail.com")
-                    .passwordHash(encoder.encode("123456"))
+                    .passwordHash(encoder.encode("123456789"))
                     .fullName("Normal User")
+                    .emailVerified(true)
                     .provider("local")
                     .providerUid("user@gmail.com")
                     .isActive(true)

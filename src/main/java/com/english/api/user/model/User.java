@@ -42,11 +42,13 @@ public class User {
     @Column(nullable = false)
     private String provider; // "local", "google", ...
 
-    @Column(nullable = false)
     private String providerUid;
 
     @Builder.Default
     private boolean isActive = true;
+
+    @Builder.Default
+    private boolean emailVerified = false;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
