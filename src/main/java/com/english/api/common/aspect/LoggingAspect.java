@@ -9,8 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -64,7 +62,6 @@ public class LoggingAspect {
                 method, clientIp, ex.getMessage());
 
         log.error(logMessage);
-        saveLogToFile(logMessage);
     }
 
     // ===== Helper methods =====
@@ -96,13 +93,5 @@ public class LoggingAspect {
             return request.getRemoteAddr();
         }
         return "UNKNOWN";
-    }
-
-    private void saveLogToFile(String message) {
-        try (FileWriter writer = new FileWriter("logs/app.log", true)) {
-            writer.write(message + "\n");
-        } catch (IOException e) {
-            log.error("Could not write log to file", e);
-        }
     }
 }

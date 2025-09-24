@@ -14,10 +14,6 @@ public record RegisterRequest(
         @Pattern(regexp = ValidationPatterns.FULL_NAME_PATTERN, message = "Full name cannot contain numbers or special characters")
         String fullName,
 
-        @NotNull(message = "Username cannot be null")
-        @Pattern(regexp = ValidationPatterns.USERNAME_PATTERN, message = "Username cannot contain special characters or spaces, only -, _, ., and + are allowed")
-        String username,
-
         @NotNull(message = "Email cannot be null")
         @Email(message = "Invalid email format")
         @Pattern(regexp = ValidationPatterns.EMAIL_PATTERN, message = "Email cannot contain special characters or spaces, only -, _, ., and + are allowed")

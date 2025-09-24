@@ -33,6 +33,19 @@ spring:
 #        format_sql: true
   main:
     banner-mode: off
+  mail:
+    username: ${MAIL_USERNAME}
+    port: ${MAIL_PORT}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            required: true
+            enable: true
+    host: ${MAIL_HOST}
+    password: ${MAIL_PASSWORD}
+    protocol: smtp
   servlet:
     multipart:
       max-file-size: 100MB
@@ -54,7 +67,8 @@ springdoc:
   swagger-ui:
     enabled: false
     url: /v3/api-docs
-
+app:
+  register-verification-link: "http://localhost:8080/api/auth/verify-register?token="
 client:
   url:${CLIENT_URL}
 

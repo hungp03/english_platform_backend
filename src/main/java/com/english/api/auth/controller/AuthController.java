@@ -1,7 +1,8 @@
 package com.english.api.auth.controller;
 
-import com.english.api.auth.dto.request.AuthRequest;
+import com.english.api.auth.dto.request.*;
 import com.english.api.auth.dto.response.AuthResponse;
+import com.english.api.auth.dto.response.OtpVerificationResponse;
 import com.english.api.auth.dto.response.UserLoginResponse;
 import com.english.api.auth.service.AuthService;
 import com.english.api.auth.util.CookieUtil;
@@ -26,6 +27,17 @@ public class AuthController {
 
     @Value("${jwt.expiration.refresh-token}")
     private long refreshTokenExpiration;  // second
+
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(authService.register(request));
+    }
+
+    @GetMapping("/verify-register")
+    public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
+        authService.verifyAccount(token);
+        return ResponseEntity.ok("Account verified successfully.");
+    }
 
     @PostMapping("login")
     public ResponseEntity<UserLoginResponse> login(@Valid @RequestBody AuthRequest authRequest) {
@@ -52,5 +64,56 @@ public class AuthController {
                 .header("Set-Cookie", accessTokenCookie.toString())
                 .header("Set-Cookie", refreshTokenCookie.toString())
                 .body(authResponse.user());
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @CookieValue(name = "access_token", defaultValue = "none") String accessToken,
+            @CookieValue(name = "refresh_token", defaultValue = "none") String refreshToken) {
+
+        authService.logout(accessToken, refreshToken);
+
+        // Clear cookie (set maxAge=0)
+        ResponseCookie clearAccessToken = CookieUtil.buildCookie("access_token", "", 0);
+        ResponseCookie clearRefreshToken = CookieUtil.buildCookie("refresh_token", "", 0);
+
+        return ResponseEntity.ok()
+                .header("Set-Cookie", clearAccessToken.toString())
+                .header("Set-Cookie", clearRefreshToken.toString())
+                .build();
+    }
+
+    @PostMapping("/logout-all")
+    public ResponseEntity<Void> logoutAll(
+            @CookieValue(name = "access_token", defaultValue = "none") String accessToken) {
+
+        authService.logoutAll(accessToken);
+
+        // Clear cookie (set maxAge=0)
+        ResponseCookie clearAccessToken = CookieUtil.buildCookie("access_token", "", 0);
+        ResponseCookie clearRefreshToken = CookieUtil.buildCookie("refresh_token", "", 0);
+
+        return ResponseEntity.ok()
+                .header("Set-Cookie", clearAccessToken.toString())
+                .header("Set-Cookie", clearRefreshToken.toString())
+                .build();
+    }
+
+    @PostMapping("forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
+        this.authService.forgotPassword(forgotPasswordRequest.email());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<OtpVerificationResponse> verifyOtp(@Valid @RequestBody OTPResetRequest request) {
+        return ResponseEntity.ok(this.authService.verifyOtp(request.email(), request.otp()));
+    }
+
+    @PostMapping("reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        this.authService.resetPassword(request);
+        return ResponseEntity.ok().build();
     }
 }
