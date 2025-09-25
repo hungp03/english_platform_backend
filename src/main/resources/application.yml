@@ -14,9 +14,6 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
-  devtools:
-    restart:
-      enabled: false
   jpa:
     hibernate:
       ddl-auto: update
@@ -46,13 +43,27 @@ spring:
     host: ${MAIL_HOST}
     password: ${MAIL_PASSWORD}
     protocol: smtp
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+              - openid
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
   servlet:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
-#  jackson:
-#    deserialization:
-#      fail-on-unknown-properties: true
 jwt:
   secret-key: ${JWT_SECRET_KEY}
   expiration:
@@ -68,7 +79,6 @@ springdoc:
     enabled: false
     url: /v3/api-docs
 app:
-  register-verification-link: "http://localhost:8080/api/auth/verify-register?token="
-client:
-  url:${CLIENT_URL}
+  register-verification-link: ${REGISTRATION_VERIFY_URL}
+  client-url: ${CLIENT_URL}
 
