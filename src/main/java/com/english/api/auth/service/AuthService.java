@@ -7,8 +7,6 @@ import com.english.api.auth.dto.response.AuthResponse;
 import com.english.api.auth.dto.response.OtpVerificationResponse;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 /**
  * Created by hungpham on 9/23/2025
  */

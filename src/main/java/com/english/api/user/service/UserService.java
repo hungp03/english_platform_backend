@@ -2,10 +2,6 @@ package com.english.api.user.service;
 
 import com.english.api.user.dto.response.UserResponse;
 import com.english.api.user.model.User;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 import java.util.Optional;
 import java.util.UUID;
