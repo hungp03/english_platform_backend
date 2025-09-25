@@ -6,6 +6,7 @@ import com.english.api.auth.security.CookieBearerTokenResolver;
 import com.english.api.user.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,15 +27,21 @@ import java.util.List;
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
+    @Value("${app.client-url}")
+    private String client;
 
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     private final String[] whiteList = {
             "/",
             "/api/auth/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            "/login/oauth2/**",
+            "/oauth2/**",
+            "/login/oauth2/callback/**",
     };
 
     @Bean
@@ -78,7 +85,16 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .oauth2Login(oauth -> oauth
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            System.err.println("OAuth2 Login Error: " + exception.getMessage());
+                            System.err.println("Request URI: " + request.getRequestURI());
+                            System.err.println("Query String: " + request.getQueryString());
+                            response.sendRedirect(client + "/authentication/error?isLogin=false");
+                        })
+                )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .bearerTokenResolver(new CookieBearerTokenResolver("access_token", List.of(whiteList)))
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))

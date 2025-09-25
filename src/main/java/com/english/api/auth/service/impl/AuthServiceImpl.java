@@ -125,7 +125,7 @@ public class AuthServiceImpl implements AuthService {
         user.setActive(true);
 
         Role userRole = roleRepository.findByCode("USER")
-                .orElseThrow(() -> new RuntimeException("Role USER not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role USER not found"));
         user.getRoles().add(userRole);
 
         userService.save(user);
