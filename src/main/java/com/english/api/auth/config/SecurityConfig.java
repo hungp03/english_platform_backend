@@ -11,6 +11,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,12 +22,12 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.List;
-
+import java.util.Arrays;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
+
     @Value("${app.client-url}")
     private String client;
 
@@ -35,14 +36,16 @@ public class SecurityConfig {
 
     private final String[] whiteList = {
             "/",
-            "/api/auth/**",
+            "/api/auth/**", // login, register, refresh...
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html",
-            "/login/oauth2/**",
-            "/oauth2/**",
-            "/login/oauth2/callback/**",
+            "/swagger-ui.html"
     };
+
+    @Bean
+    public CookieBearerTokenResolver cookieBearerTokenResolver() {
+        return new CookieBearerTokenResolver("access_token", Arrays.asList(whiteList));
+    }
 
     @Bean
     public JwtBlacklistFilter jwtBlacklistFilter(RedisTemplate<String, String> redisTemplate) {
@@ -68,37 +71,52 @@ public class SecurityConfig {
         return reg;
     }
 
-
+    /**
+     * Chain 1: API (JWT via Cookie)
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   JwtAuthenticationConverter jwtAuthenticationConverter,
-                                                   JwtBlacklistFilter jwtBlacklistFilter,
-                                                   AccountLockFilter accountLockFilter) throws Exception {
-        http.cors(Customizer.withDefaults())
+    public SecurityFilterChain apiSecurity(HttpSecurity http,
+                                           JwtAuthenticationConverter jwtAuthenticationConverter,
+                                           JwtBlacklistFilter jwtBlacklistFilter,
+                                           AccountLockFilter accountLockFilter,
+                                           CookieBearerTokenResolver cookieBearerTokenResolver) throws Exception {
+        http.securityMatcher("/api/**")
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
-                // Add custom filter after default authentication
-                .addFilterAfter(jwtBlacklistFilter, BearerTokenAuthenticationFilter.class)
-                .addFilterAfter(accountLockFilter, BearerTokenAuthenticationFilter.class)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(whiteList).permitAll()
-                        .requestMatchers("/api/hello").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/hello").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
+                .addFilterAfter(jwtBlacklistFilter, BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(accountLockFilter, BearerTokenAuthenticationFilter.class)
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenResolver(cookieBearerTokenResolver)
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+                        .authenticationEntryPoint(authenticationEntryPoint) // JSON khi 401
+                );
+        return http.build();
+    }
+
+    /**
+     * Chain 2: OAuth2 Login (Google) – /oauth2/**
+     */
+    @Bean
+    public SecurityFilterChain oauth2LoginSecurity(HttpSecurity http) throws Exception {
+        http.securityMatcher("/oauth2/**", "/login/oauth2/**")
+                .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .oauth2Login(oauth -> oauth
+                        .loginPage("/oauth2/authorization/google")
                         .successHandler(oAuth2LoginSuccessHandler)
-                        .failureHandler((request, response, exception) -> {
+                                .failureHandler((request, response, exception) -> {
                             System.err.println("OAuth2 Login Error: " + exception.getMessage());
                             System.err.println("Request URI: " + request.getRequestURI());
                             System.err.println("Query String: " + request.getQueryString());
-                            response.sendRedirect(client + "/authentication/error?isLogin=false");
-                        })
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .bearerTokenResolver(new CookieBearerTokenResolver("access_token", List.of(whiteList)))
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
-                        .authenticationEntryPoint(authenticationEntryPoint)
+                                    response.sendRedirect(client + "/authentication/error?isLogin=false");
+                                })
                 );
         return http.build();
     }

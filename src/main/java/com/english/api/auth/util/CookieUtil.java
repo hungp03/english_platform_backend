@@ -9,10 +9,10 @@ public class CookieUtil {
     public static ResponseCookie buildCookie(String name, String value, long maxAgeSeconds) {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .secure(true)
+                .secure(false) // true when https
                 .path("/")
                 .maxAge(maxAgeSeconds)
-                .sameSite("None")
+                .sameSite("Lax") // None when https
                 .build();
     }
 }

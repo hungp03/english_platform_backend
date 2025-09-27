@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,6 +36,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Optional<User> findOptionalByEmailWithRoles(String email) {
+        return userRepository.findByEmailWithRoles(email);
+    }
+
+
+    @Override
     public User save(User user) {
         return userRepository.save(user);
     }
@@ -51,9 +59,27 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getCurrentUser() {
         UUID userId = SecurityUtil.getCurrentUserId();
-        User user = findById(userId);
-        return userMapper.toUserResponse(user);
+        List<Object[]> rows = userRepository.findUserWithRoles(userId);
+
+        if (rows.isEmpty()) {
+            throw new ResourceNotFoundException("User not found: " + userId);
+        }
+
+        Object[] first = rows.getFirst();
+
+        UUID id = (UUID) first[0];
+        String email = (String) first[1];
+        String fullName = (String) first[2];
+        String avatarUrl = (String) first[3];
+
+        List<String> roles = rows.stream()
+                .map(r -> (String) r[4])
+                .filter(Objects::nonNull)
+                .toList();
+
+        return new UserResponse(id, email, fullName, avatarUrl, roles);
     }
+
 
     @Override
     @Cacheable(value = "userStatus", key = "#userId")

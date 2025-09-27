@@ -23,7 +23,7 @@ public class CustomOauth2ServiceImpl implements CustomOauth2Service {
 
     @Override
     public User processOAuth2User(String email, String name, String socialId, String provider) {
-        Optional<User> optionalUser = userService.findOptionalByEmail(email);
+        Optional<User> optionalUser = userService.findOptionalByEmailWithRoles(email);
 
         if (optionalUser.isPresent()) {
             return optionalUser.get();
@@ -36,6 +36,7 @@ public class CustomOauth2ServiceImpl implements CustomOauth2Service {
                 .email(email)
                 .fullName(name)
                 .provider(provider)
+                .emailVerified(true)
                 .providerUid(socialId)
                 .roles(Set.of(userRole))
                 .build();

@@ -66,10 +66,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
             // Redirect to FE
-            response.sendRedirect(client + "/authentication/success");
+            response.sendRedirect(client + "/auth/callback/success");
 
         } catch (Exception e) {
-            response.sendRedirect(client + "/authentication/error?isLogin=false");
+            response.sendRedirect(client + "/auth/callback/error?isLogin=false");
         }
     }
 }

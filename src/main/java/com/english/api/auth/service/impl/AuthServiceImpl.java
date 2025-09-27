@@ -154,7 +154,7 @@ public class AuthServiceImpl implements AuthService {
         storeRefreshToken(currentUser.getId(), refreshToken);
 
         // Build response
-        UserLoginResponse userLoginResponse = UserLoginResponse.from(currentUser, accessToken);
+        UserLoginResponse userLoginResponse = UserLoginResponse.from(currentUser);
         return AuthResponse.of(userLoginResponse, accessToken, refreshToken);
     }
 
@@ -194,7 +194,7 @@ public class AuthServiceImpl implements AuthService {
         storeRefreshToken(uid, newRefreshToken);
 
         // Build response
-        UserLoginResponse userLoginResponse = UserLoginResponse.from(user, newAccessToken);
+        UserLoginResponse userLoginResponse = UserLoginResponse.from(user);
         return AuthResponse.of(userLoginResponse, newAccessToken, newRefreshToken);
     }
 

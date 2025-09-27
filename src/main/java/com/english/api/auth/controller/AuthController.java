@@ -9,6 +9,7 @@ import com.english.api.auth.util.CookieUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,26 +44,38 @@ public class AuthController {
     public ResponseEntity<UserLoginResponse> login(@Valid @RequestBody AuthRequest authRequest) {
         AuthResponse authResponse = authService.login(authRequest);
 
-        ResponseCookie accessTokenCookie = CookieUtil.buildCookie("access_token", authResponse.accessToken(), accessTokenExpiration);
-        ResponseCookie refreshTokenCookie = CookieUtil.buildCookie("refresh_token", authResponse.refreshToken(), refreshTokenExpiration);
+        ResponseCookie accessTokenCookie = CookieUtil.buildCookie(
+                "access_token", authResponse.accessToken(), accessTokenExpiration
+        );
+        ResponseCookie refreshTokenCookie = CookieUtil.buildCookie(
+                "refresh_token", authResponse.refreshToken(), refreshTokenExpiration
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+        headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         return ResponseEntity.ok()
-                .header("Set-Cookie", accessTokenCookie.toString())
-                .header("Set-Cookie", refreshTokenCookie.toString())
+                .headers(headers)
                 .body(authResponse.user());
     }
 
 
+
     @PostMapping("refresh")
     public ResponseEntity<UserLoginResponse> refresh(@CookieValue(name = "refresh_token", defaultValue = "none") String refreshToken) {
+        System.out.println(refreshToken);
         AuthResponse authResponse = authService.renewToken(refreshToken);
 
         ResponseCookie accessTokenCookie = CookieUtil.buildCookie("access_token", authResponse.accessToken(), accessTokenExpiration);
         ResponseCookie refreshTokenCookie = CookieUtil.buildCookie("refresh_token", authResponse.refreshToken(), refreshTokenExpiration);
 
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+        headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
         return ResponseEntity.ok()
-                .header("Set-Cookie", accessTokenCookie.toString())
-                .header("Set-Cookie", refreshTokenCookie.toString())
+                .headers(headers)
                 .body(authResponse.user());
     }
 

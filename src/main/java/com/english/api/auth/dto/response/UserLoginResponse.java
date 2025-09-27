@@ -9,15 +9,13 @@ import java.util.UUID;
  */
 public record UserLoginResponse(
         UUID userId,
-        String username,
         String email,
         String fullName,
         List<RoleResponse> roles
 ) {
-    public static UserLoginResponse from(User user, String accessToken) {
+    public static UserLoginResponse from(User user) {
         return new UserLoginResponse(
                 user.getId(),
-                user.getFullName(),
                 user.getEmail(),
                 user.getFullName(),
                 user.getRoles().stream()

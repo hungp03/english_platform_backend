@@ -12,6 +12,9 @@ import java.util.UUID;
 public interface UserService {
     boolean existsByEmail(String email);
     Optional<User> findOptionalByEmail(String email);
+
+    Optional<User> findOptionalByEmailWithRoles(String email);
+
     User save(User user);
     User findByEmail (String email);
     User findById(UUID uuid);

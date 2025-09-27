@@ -35,7 +35,7 @@ public class CookieBearerTokenResolver implements BearerTokenResolver {
         // Lấy token từ cookie
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                if (cookieName.equals(cookie.getName())) {
+                if (cookieName.equals(cookie.getName()) && !cookie.getValue().isEmpty()) {
                     return cookie.getValue();
                 }
             }
