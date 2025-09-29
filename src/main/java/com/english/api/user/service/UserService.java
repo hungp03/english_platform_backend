@@ -4,7 +4,7 @@ import com.english.api.user.dto.response.UserResponse;
 import com.english.api.user.model.User;
 
 import com.english.api.common.dto.PaginationResponse;
-import com.english.api.user.dto.request.UpdatePasswordRequest;
+import com.english.api.user.dto.request.ChangePasswordRequest;
 import com.english.api.user.dto.request.UpdateUserRequest;
 import com.english.api.user.dto.response.AdminUserResponse;
 import com.english.api.user.dto.response.UserUpdateResponse;
@@ -28,7 +28,7 @@ public interface UserService {
     boolean isUserActive(UUID userId);
     void resetPassword(String email, String newPassword);
     UserUpdateResponse updateCurrentUser(UpdateUserRequest request);
-    void updatePassword(UpdatePasswordRequest request);
+    void updatePassword(ChangePasswordRequest request);
     PaginationResponse getUsers(String searchTerm, int page, int size);
     void toggleUserStatus(UUID userId, String lockReason);
 }

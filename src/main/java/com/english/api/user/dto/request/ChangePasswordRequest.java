@@ -4,7 +4,7 @@ package com.english.api.user.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public class UpdatePasswordRequest {
+public class ChangePasswordRequest {
     @NotBlank
     private String oldPassword;
     @NotBlank
