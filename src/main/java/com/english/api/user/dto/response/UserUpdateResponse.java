@@ -6,6 +6,7 @@ public record UserUpdateResponse(
         UUID id,
         String fullName,
         String email,
-        String phone
+        String phone,
+        String avatarUrl
 ) {
 }

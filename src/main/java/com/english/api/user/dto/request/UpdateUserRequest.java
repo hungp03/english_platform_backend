@@ -12,7 +12,13 @@ public class UpdateUserRequest {
     private String email;
     @Size(min = 10, max = 15)
     private String phone;
-
+    private String avatarUrl;
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
     public String getEmail() { return email; }

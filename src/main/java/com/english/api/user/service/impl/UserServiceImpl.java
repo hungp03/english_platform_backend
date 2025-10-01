@@ -128,8 +128,9 @@ public class UserServiceImpl implements UserService {
         if (request.getFullName() != null) setIfPresent(user, "FullName", request.getFullName());
         if (request.getEmail() != null) setIfPresent(user, "Email", request.getEmail());
         if (request.getPhone() != null) setIfPresent(user, "Phone", request.getPhone());
+        if (request.getAvatarUrl() != null) setIfPresent(user, "AvatarUrl", request.getAvatarUrl());
         userRepository.save(user);
-        return new UserUpdateResponse(getId(user), getString(user, "FullName"), getString(user, "Email"), getString(user, "Phone"));
+        return new UserUpdateResponse(getId(user), getString(user, "FullName"), getString(user, "Email"), getString(user, "Phone"),getString(user, "AvatarUrl"));
     }
 
     @Override

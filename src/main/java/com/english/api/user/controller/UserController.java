@@ -28,25 +28,13 @@ public class UserController {
         return ResponseEntity.ok(userService.getCurrentUser());
     }
 
-    @GetMapping("/exists")
-    public ResponseEntity<Boolean> existsByEmail(@RequestParam String email) {
-        boolean exists = userService.existsByEmail(email);
-        return ResponseEntity.ok(exists);
-    }
-
-    @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@RequestParam String email, @RequestParam String newPassword) {
-        userService.resetPassword(email, newPassword);
-        return ResponseEntity.ok().build();
-    }
-
     @PutMapping("/me")
     public ResponseEntity<UserUpdateResponse> updateCurrentUser(@RequestBody UpdateUserRequest request) {
         UserUpdateResponse response = userService.updateCurrentUser(request);
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/me/password")
+    @PutMapping("/password")
     public ResponseEntity<Void> updatePassword(@RequestBody ChangePasswordRequest request) {
         userService.updatePassword(request);
         return ResponseEntity.ok().build();
@@ -68,9 +56,4 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{userId}/active")
-    public ResponseEntity<Boolean> isUserActive(@PathVariable UUID userId) {
-        boolean active = userService.isUserActive(userId);
-        return ResponseEntity.ok(active);
-    }
 }
