@@ -1,15 +1,28 @@
 package com.english.api.user.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
+import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.OperationNotAllowedException;
+import com.english.api.common.exception.ResourceAlreadyExistsException;
+import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
+import com.english.api.user.dto.request.UpdatePasswordRequest;
+import com.english.api.user.dto.request.UpdateUserRequest;
 import com.english.api.user.dto.response.UserResponse;
+import com.english.api.user.dto.response.UserUpdateResponse;
 import com.english.api.user.mapper.UserMapper;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
 import com.english.api.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -24,6 +37,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public boolean existsByEmail(String email) {
@@ -34,12 +48,6 @@ public class UserServiceImpl implements UserService {
     public Optional<User> findOptionalByEmail(String email) {
         return userRepository.findByEmail(email);
     }
-
-    @Override
-    public Optional<User> findOptionalByEmailWithRoles(String email) {
-        return userRepository.findByEmailWithRoles(email);
-    }
-
 
     @Override
     public User save(User user) {
@@ -80,10 +88,72 @@ public class UserServiceImpl implements UserService {
         return new UserResponse(id, email, fullName, avatarUrl, roles);
     }
 
+    @Transactional
+    @Override
+    public void changePassword(UpdatePasswordRequest request) {
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new ResourceInvalidException("Confirm password does not match.");
+        }
+        UUID uid = SecurityUtil.getCurrentUserId();
+        User user = findById(uid);
+        if (user.getPasswordHash() == null || user.getPasswordHash().isEmpty()) {
+            throw new ResourceInvalidException("You account did not have password. Please login with Google or reset password.");
+        }
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadCredentialsException("Old password does not match.");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
+    @Transactional
+    @Override
+    public UserUpdateResponse updateCurrentUser(UpdateUserRequest request) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        User user = findById(userId);
+
+        if (!user.getEmail().equals(request.email()) && existsByEmail(request.email())) {
+            throw new ResourceAlreadyExistsException("Email is already in use");
+        }
+
+        user.setFullName(request.fullName());
+        user.setEmail(request.email());
+
+        if (request.avatarUrl() != null && !request.avatarUrl().isBlank()) {
+            user.setAvatarUrl(request.avatarUrl());
+        }
+
+        // no need to save(), JPA will automatically update @Transactional + @PreUpdate
+        return userMapper.toUpdateResponse(user);
+    }
+
+
+    @Transactional
+    @CacheEvict(value = "userStatus", key = "#userId")
+    @Override
+    public void toggleUserStatus(UUID userId) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        if (currentUserId.equals(userId)) {
+            throw new OperationNotAllowedException("You cannot change your own status");
+        }
+
+        User user = findById(userId);
+        user.setActive(!user.isActive());
+        userRepository.save(user);
+    }
+
+    @Override
+    public PaginationResponse getUsers(String searchTerm, Pageable pageable) {
+        Page<User> pageResult = (searchTerm == null || searchTerm.isBlank())
+                ? userRepository.findAll(pageable)
+                : userRepository.findByFullNameOrEmail(searchTerm, pageable);
+
+        return PaginationResponse.from(pageResult.map(userMapper::toListUserResponse), pageable);
+    }
 
     @Override
     @Cacheable(value = "userStatus", key = "#userId")
-    public boolean isUserActive(UUID userId){
+    public boolean isUserActive(UUID userId) {
         Boolean active = userRepository.isUserActive(userId);
         if (active == null) {
             throw new ResourceNotFoundException("Invalid session: user not found. Please sign in again.");

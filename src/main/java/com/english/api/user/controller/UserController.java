@@ -1,12 +1,16 @@
 package com.english.api.user.controller;
 
+import com.english.api.common.dto.PaginationResponse;
+import com.english.api.user.dto.request.UpdatePasswordRequest;
 import com.english.api.user.dto.response.UserResponse;
 import com.english.api.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 /**
  * Created by hungpham on 9/24/2025
@@ -20,5 +24,25 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser() {
         return ResponseEntity.ok(userService.getCurrentUser());
+    }
+
+    @PatchMapping("password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody UpdatePasswordRequest request){
+        userService.changePassword(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<PaginationResponse> getUsers(
+            Pageable pageable,
+            @RequestParam(defaultValue = "", required = false) String searchTerm) {
+        return ResponseEntity.ok(userService.getUsers(searchTerm, pageable));
+    }
+
+    @PatchMapping("/{userId}/toggle-status")
+    public ResponseEntity<Void> toggleUserStatus(
+            @PathVariable UUID userId) {
+        userService.toggleUserStatus(userId);
+        return ResponseEntity.ok().build();
     }
 }

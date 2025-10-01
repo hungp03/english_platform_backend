@@ -5,7 +5,7 @@ import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.user.model.Role;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.RoleRepository;
-import com.english.api.user.service.UserService;
+import com.english.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,13 +18,12 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class CustomOauth2ServiceImpl implements CustomOauth2Service {
-    private final UserService userService;
+    private final UserRepository userRepository;
     private final RoleRepository roleRepository;
 
     @Override
     public User processOAuth2User(String email, String name, String socialId, String provider) {
-        Optional<User> optionalUser = userService.findOptionalByEmailWithRoles(email);
-
+        Optional<User> optionalUser = userRepository.findByEmailWithRoles(email);
         if (optionalUser.isPresent()) {
             return optionalUser.get();
         }
@@ -41,7 +40,7 @@ public class CustomOauth2ServiceImpl implements CustomOauth2Service {
                 .roles(Set.of(userRole))
                 .build();
 
-        return userService.save(newUser);
+        return userRepository.save(newUser);
     }
 }
 

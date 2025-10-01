@@ -73,6 +73,10 @@ public class GlobalExceptionHandler {
         return buildResponse(ErrorCode.CANNOT_DELETE, ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(OperationNotAllowedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleOperationNotAllowedException(RuntimeException ex) {
+        return buildResponse(ErrorCode.OPERATION_NOT_ALLOWED, ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleException(RuntimeException ex) {
         return buildResponse(ErrorCode.EXCEPTION, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

@@ -10,4 +10,5 @@ public interface ValidationPatterns {
     String PASSWORD_PATTERN = "^[^\\s]+$";
     String IDENTIFIER_PATTERN = "^[a-zA-Z0-9._+\\-@]+$";
     String OTP_PATTERN = "^[A-Z0-9]{6}$";
+    String URL_PATTERN = "^(https?://).+$";
 }

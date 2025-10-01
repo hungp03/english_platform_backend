@@ -1,6 +1,8 @@
 package com.english.api.user.repository;
 
 import com.english.api.user.model.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -28,4 +30,19 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.email = :email")
     Optional<User> findByEmailWithRoles(@Param("email") String email);
+
+    @Query(
+            value = """
+            SELECT * FROM users u
+            WHERE unaccent(lower(u.full_name)) LIKE unaccent(lower(concat('%', :searchTerm, '%')))
+               OR unaccent(lower(u.email)) LIKE unaccent(lower(concat('%', :searchTerm, '%')))
+            """,
+            countQuery = """
+            SELECT count(*) FROM users u
+            WHERE unaccent(lower(u.full_name)) LIKE unaccent(lower(concat('%', :searchTerm, '%')))
+               OR unaccent(lower(u.email)) LIKE unaccent(lower(concat('%', :searchTerm, '%')))
+            """,
+            nativeQuery = true
+    )
+    Page<User> findByFullNameOrEmail(@Param("searchTerm") String searchTerm, Pageable pageable);
 }
