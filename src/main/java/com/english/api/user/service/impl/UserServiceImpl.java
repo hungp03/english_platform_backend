@@ -112,20 +112,25 @@ public class UserServiceImpl implements UserService {
         UUID userId = SecurityUtil.getCurrentUserId();
         User user = findById(userId);
 
-        if (!user.getEmail().equals(request.email()) && existsByEmail(request.email())) {
-            throw new ResourceAlreadyExistsException("Email is already in use");
+        if (request.email() != null && !request.email().isBlank()) {
+            if (!user.getEmail().equals(request.email()) && existsByEmail(request.email())) {
+                throw new ResourceAlreadyExistsException("Email is already in use");
+            }
+            user.setEmail(request.email());
         }
 
-        user.setFullName(request.fullName());
-        user.setEmail(request.email());
+        if (request.fullName() != null && !request.fullName().isBlank()) {
+            user.setFullName(request.fullName());
+        }
 
         if (request.avatarUrl() != null && !request.avatarUrl().isBlank()) {
             user.setAvatarUrl(request.avatarUrl());
         }
 
-        // no need to save(), JPA will automatically update @Transactional + @PreUpdate
+        // no need to save(), JPA will automatically update @Transactional
         return userMapper.toUpdateResponse(user);
     }
+
 
 
     @Transactional

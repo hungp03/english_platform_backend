@@ -2,8 +2,6 @@ package com.english.api.user.dto.request;
 
 import com.english.api.common.util.constant.ValidationPatterns;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 /**
@@ -14,17 +12,8 @@ public record UpdateUserRequest(
                 regexp = ValidationPatterns.FULL_NAME_PATTERN,
                 message = "Full name must not contain numbers or special characters"
         )
-        @NotBlank(message = "Full name is required")
         String fullName,
 
-        @NotNull(message = "Username cannot be null")
-        @Pattern(
-                regexp = ValidationPatterns.USERNAME_PATTERN,
-                message = "Username cannot contain special characters or spaces, only -, _, ., and + are allowed"
-        )
-        String username,
-
-        @NotNull(message = "Email cannot be null")
         @Email(message = "Invalid email format")
         @Pattern(
                 regexp = ValidationPatterns.EMAIL_PATTERN,
@@ -38,4 +27,5 @@ public record UpdateUserRequest(
         )
         String avatarUrl
 ) {}
+
 

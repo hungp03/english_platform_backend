@@ -2,7 +2,9 @@ package com.english.api.user.controller;
 
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.user.dto.request.UpdatePasswordRequest;
+import com.english.api.user.dto.request.UpdateUserRequest;
 import com.english.api.user.dto.response.UserResponse;
+import com.english.api.user.dto.response.UserUpdateResponse;
 import com.english.api.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,11 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getCurrentUser() {
         return ResponseEntity.ok(userService.getCurrentUser());
+    }
+
+    @PutMapping("me")
+    public ResponseEntity<UserUpdateResponse> updateCurrentUser(@Valid @RequestBody UpdateUserRequest request) {
+        return ResponseEntity.ok(userService.updateCurrentUser(request));
     }
 
     @PatchMapping("password")
