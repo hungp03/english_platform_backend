@@ -52,8 +52,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             if (socialId == null) {
                 socialId = oAuth2User.getAttribute("id");
             }
-
-            User user = customOauth2Service.processOAuth2User(email, name, socialId, provider);
+            String avatar = oAuth2User.getAttribute("picture");
+            User user = customOauth2Service.processOAuth2User(email, name, socialId, provider, avatar);
             CustomUserDetails userDetails = CustomUserDetails.fromUser(user);
 
             String accessToken = jwtService.generateAccessToken(userDetails);

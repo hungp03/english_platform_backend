@@ -27,27 +27,27 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleUnauthorizedException(RuntimeException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleUnauthorizedException(UnauthorizedException ex) {
         return buildResponse(ErrorCode.UNAUTHORIZED, ex.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(RuntimeException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(AccessDeniedException ex) {
         return buildResponse(ErrorCode.FORBIDDEN, ex.getMessage(), HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(ResourceInvalidException.class)
-    public ResponseEntity<ApiResponse<Object>> handleResourceInvalidException(RuntimeException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleResourceInvalidException(ResourceInvalidException ex) {
         return buildResponse(ErrorCode.RESOURCE_INVALID, ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(RuntimeException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(ResourceNotFoundException ex) {
         return buildResponse(ErrorCode.RESOURCE_NOT_FOUND, ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Object>> handleResourceAlreadyExistsException(RuntimeException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleResourceAlreadyExistsException(ResourceAlreadyExistsException ex) {
         return buildResponse(ErrorCode.RESOURCE_ALREADY_EXISTS, ex.getMessage(), HttpStatus.CONFLICT);
     }
 
@@ -74,14 +74,19 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(OperationNotAllowedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleOperationNotAllowedException(RuntimeException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleOperationNotAllowedException(OperationNotAllowedException ex) {
         return buildResponse(ErrorCode.OPERATION_NOT_ALLOWED, ex.getMessage(), HttpStatus.FORBIDDEN);
     }
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleException(RuntimeException ex) {
-        return buildResponse(ErrorCode.EXCEPTION, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+
+    @ExceptionHandler(DuplicatePositionException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDuplicatePositionException(DuplicatePositionException ex) {
+        return buildResponse(ErrorCode.DUPLICATE_KEY, ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Object>> handleException(Exception ex) {
+        return buildResponse(ErrorCode.EXCEPTION, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
     private ResponseEntity<ApiResponse<Object>> buildResponse(int statusCode, String message, HttpStatus status) {
         ApiResponse<Object> response = ApiResponse.error(statusCode, message);

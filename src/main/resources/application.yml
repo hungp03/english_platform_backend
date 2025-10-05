@@ -21,13 +21,13 @@ spring:
     show-sql: true
     properties:
       hibernate:
-#        id:
-#          new_generator_mappings: true
-#        jdbc:
-#          batch_size: 60
-#          order_inserts: true
-#          order_updates: true
-#        format_sql: true
+        id:
+          new_generator_mappings: true
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          order_updates: true
+        format_sql: true
   main:
     banner-mode: off
   mail:
@@ -89,3 +89,12 @@ cloud:
   bucket: ${S3_BUCKET}
   public-url: ${S3_PUBLIC_URL}
 
+logging:
+  level:
+    org.springframework.orm.jpa: DEBUG
+    org.springframework.transaction: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.jdbc.BatchingBatch: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.engine.jdbc.batch.internal.BatchingBatch: DEBUG
+    org.hibernate.engine.jdbc.batch.internal.BatchingBatchPerform: DEBUG

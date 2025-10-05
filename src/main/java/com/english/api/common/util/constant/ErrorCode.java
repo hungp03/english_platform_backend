@@ -14,4 +14,5 @@ public interface ErrorCode {
     int CANNOT_DELETE = 8;
     int FORBIDDEN = 9;
     int OPERATION_NOT_ALLOWED = 10;
+    int DUPLICATE_KEY = 11;
 }

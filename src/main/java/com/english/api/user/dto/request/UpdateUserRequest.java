@@ -3,6 +3,7 @@ package com.english.api.user.dto.request;
 import com.english.api.common.util.constant.ValidationPatterns;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Created by hungpham on 10/1/2025
@@ -21,11 +22,7 @@ public record UpdateUserRequest(
         )
         String email,
 
-        @Pattern(
-                regexp = ValidationPatterns.URL_PATTERN,
-                message = "Invalid avatar URL format"
-        )
-        String avatarUrl
+        MultipartFile avatarFile
 ) {}
 
 
