@@ -16,7 +16,6 @@ import java.util.UUID;
 public class ContentComment {
 
     @Id
-    @GeneratedValue
     @Column(columnDefinition = "uuid")
     private UUID id;
 

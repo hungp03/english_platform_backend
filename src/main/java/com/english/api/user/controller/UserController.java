@@ -30,7 +30,11 @@ public class UserController {
         return ResponseEntity.ok(userService.getCurrentUser());
     }
 
-    @PutMapping(value = "me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    // @PutMapping(value = "me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    // public ResponseEntity<UserUpdateResponse> updateCurrentUser(@Valid @ModelAttribute UpdateUserRequest request) throws IOException {
+    //     return ResponseEntity.ok(userService.updateCurrentUser(request));
+    // }
+    @PutMapping(value = "me")
     public ResponseEntity<UserUpdateResponse> updateCurrentUser(@Valid @ModelAttribute UpdateUserRequest request) throws IOException {
         return ResponseEntity.ok(userService.updateCurrentUser(request));
     }

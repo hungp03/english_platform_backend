@@ -1,6 +1,7 @@
 package com.english.api.content.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
+import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.content.dto.request.PostCreateRequest;
 import com.english.api.content.dto.request.PostFilterRequest;
@@ -12,6 +13,7 @@ import com.english.api.content.dto.response.PublicPostSummaryResponse;
 import com.english.api.content.model.ContentCategory;
 import com.english.api.content.model.ContentPost;
 import com.english.api.content.repository.ContentCategoryRepository;
+import com.english.api.content.repository.ContentCommentRepository;
 import com.english.api.content.repository.ContentPostRepository;
 import com.english.api.content.service.ContentPostService;
 import com.english.api.content.spec.PostSpecifications;
@@ -36,27 +38,27 @@ public class ContentPostServiceImpl implements ContentPostService {
     private final ContentPostRepository postRepository;
     private final ContentCategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final ContentCommentRepository commentRepository;
 
     @Override
     @Transactional
     public PostResponse create(PostCreateRequest req, boolean canPublish) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        User author = userRepository.findById(currentUserId)
-                .orElse(null); // nullable aligns with schema
+        User author = userRepository.findById(currentUserId).orElse(null);
 
-        String slug = (req.getSlug() != null && !req.getSlug().isBlank())
-                ? SlugUtil.toSlug(req.getSlug())
-                : SlugUtil.toSlug(req.getTitle());
+        String slug = (req.slug() != null && !req.slug().isBlank())
+                ? SlugUtil.toSlug(req.slug())
+                : SlugUtil.toSlug(req.title());
         if (!SlugUtil.isSeoFriendly(slug)) throw new IllegalArgumentException("Slug is not SEO-friendly");
         slug = ensureUniqueSlug(slug, null);
 
-        Set<ContentCategory> categories = resolveCategories(req.getCategoryIds());
+        Set<ContentCategory> categories = resolveCategories(req.categoryIds());
 
         ContentPost post = ContentPost.builder()
                 .author(author)
-                .title(req.getTitle())
+                .title(req.title())
                 .slug(slug)
-                .bodyMd(req.getBodyMd())
+                .bodyMd(req.bodyMd())
                 .published(false)
                 .categories(categories)
                 .build();
@@ -76,16 +78,16 @@ public class ContentPostServiceImpl implements ContentPostService {
         ContentPost post = postRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 
-        if (req.getTitle() != null) post.setTitle(req.getTitle());
-        if (req.getBodyMd() != null) post.setBodyMd(req.getBodyMd());
-        if (req.getSlug() != null && !req.getSlug().isBlank()) {
-            String s = SlugUtil.toSlug(req.getSlug());
+        if (req.title() != null) post.setTitle(req.title());
+        if (req.bodyMd() != null) post.setBodyMd(req.bodyMd());
+        if (req.slug() != null && !req.slug().isBlank()) {
+            String s = SlugUtil.toSlug(req.slug());
             if (!SlugUtil.isSeoFriendly(s)) throw new IllegalArgumentException("Slug is not SEO-friendly");
             s = ensureUniqueSlug(s, id);
             post.setSlug(s);
         }
-        if (req.getCategoryIds() != null) {
-            post.setCategories(resolveCategories(req.getCategoryIds()));
+        if (req.categoryIds() != null) {
+            post.setCategories(resolveCategories(req.categoryIds()));
         }
         post = postRepository.save(post);
         return toResponse(post);
@@ -95,6 +97,9 @@ public class ContentPostServiceImpl implements ContentPostService {
     @Transactional
     public void delete(UUID id) {
         if (!postRepository.existsById(id)) throw new ResourceNotFoundException("Post not found");
+        // Xóa toàn bộ comment của post trước
+        commentRepository.deleteByPostId(id);
+        // Sau đó xóa post
         postRepository.deleteById(id);
     }
 
@@ -106,14 +111,16 @@ public class ContentPostServiceImpl implements ContentPostService {
     }
 
     @Override
-    public Page<PostResponse> search(PostFilterRequest filter, Pageable pageable, boolean includeUnpublished) {
+    public PaginationResponse search(PostFilterRequest filter, Pageable pageable, boolean includeUnpublished) {
         Specification<ContentPost> spec = Specification.where(PostSpecifications.publishedOnly(!includeUnpublished))
-                .and(PostSpecifications.keyword(filter.getKeyword()))
-                .and(PostSpecifications.author(filter.getAuthorId()))
-                .and(PostSpecifications.categoryId(filter.getCategoryId()))
-                .and(PostSpecifications.categorySlug(filter.getCategorySlug()))
-                .and(PostSpecifications.dateRange(filter.getFromDate(), filter.getToDate()));
-        return postRepository.findAll(spec, pageable).map(this::toResponse);
+                .and(PostSpecifications.keyword(filter.keyword()))
+                .and(PostSpecifications.author(filter.authorId()))
+                .and(PostSpecifications.categoryId(filter.categoryId()))
+                .and(PostSpecifications.categorySlug(filter.categorySlug()))
+                .and(PostSpecifications.dateRange(filter.fromDate(), filter.toDate()));
+
+        Page<PostResponse> page = postRepository.findAll(spec, pageable).map(this::toResponse);
+        return PaginationResponse.from(page, pageable); // meta.page = pageable.pageNumber + 1
     }
 
     @Override
@@ -139,14 +146,17 @@ public class ContentPostServiceImpl implements ContentPostService {
 
     // ------- public -------
     @Override
-    public Page<PublicPostSummaryResponse> publicList(PostFilterRequest filter, Pageable pageable) {
+    public PaginationResponse publicList(PostFilterRequest filter, Pageable pageable) {
         Specification<ContentPost> spec = Specification.where(PostSpecifications.publishedOnly(true))
-                .and(PostSpecifications.keyword(filter.getKeyword()))
-                .and(PostSpecifications.author(filter.getAuthorId()))
-                .and(PostSpecifications.categoryId(filter.getCategoryId()))
-                .and(PostSpecifications.categorySlug(filter.getCategorySlug()))
-                .and(PostSpecifications.dateRange(filter.getFromDate(), filter.getToDate()));
-        return postRepository.findAll(spec, pageable).map(this::toPublicSummary);
+                .and(PostSpecifications.keyword(filter.keyword()))
+                .and(PostSpecifications.author(filter.authorId()))
+                .and(PostSpecifications.categoryId(filter.categoryId()))
+                .and(PostSpecifications.categorySlug(filter.categorySlug()))
+                .and(PostSpecifications.dateRange(filter.fromDate(), filter.toDate()));
+
+        Page<PublicPostSummaryResponse> page =
+                postRepository.findAll(spec, pageable).map(this::toPublicSummary);
+        return PaginationResponse.from(page, pageable);
     }
 
     @Override
@@ -179,52 +189,36 @@ public class ContentPostServiceImpl implements ContentPostService {
     }
 
     private CategoryResponse toCategoryResp(ContentCategory c) {
-        return CategoryResponse.builder()
-                .id(c.getId())
-                .name(c.getName())
-                .slug(c.getSlug())
-                .description(c.getDescription())
-                .createdAt(c.getCreatedAt())
-                .build();
+        return new CategoryResponse(c.getId(), c.getName(), c.getSlug(), c.getDescription(), c.getCreatedAt());
     }
 
     private PostResponse toResponse(ContentPost p) {
-        return PostResponse.builder()
-                .id(p.getId())
-                .authorId(p.getAuthor() != null ? p.getAuthor().getId() : null)
-                .title(p.getTitle())
-                .slug(p.getSlug())
-                .bodyMd(p.getBodyMd())
-                .published(p.isPublished())
-                .publishedAt(p.getPublishedAt())
-                .createdAt(p.getCreatedAt())
-                .updatedAt(p.getUpdatedAt())
-                .categories(p.getCategories().stream().map(this::toCategoryResp).toList())
-                .build();
+        return new PostResponse(
+                p.getId(),
+                p.getAuthor() != null ? p.getAuthor().getId() : null,
+                p.getTitle(),
+                p.getSlug(),
+                p.getBodyMd(),
+                p.isPublished(),
+                p.getPublishedAt(),
+                p.getCreatedAt(),
+                p.getUpdatedAt(),
+                p.getCategories().stream().map(this::toCategoryResp).toList()
+        );
     }
 
     private PublicPostSummaryResponse toPublicSummary(ContentPost p) {
-        return PublicPostSummaryResponse.builder()
-                .id(p.getId())
-                .title(p.getTitle())
-                .slug(p.getSlug())
-                .published(p.isPublished())
-                .publishedAt(p.getPublishedAt())
-                .createdAt(p.getCreatedAt())
-                .categories(p.getCategories().stream().map(this::toCategoryResp).toList())
-                .build();
+        return new PublicPostSummaryResponse(
+                p.getId(), p.getTitle(), p.getSlug(), p.isPublished(), p.getPublishedAt(), p.getCreatedAt(),
+                p.getCategories().stream().map(this::toCategoryResp).toList()
+        );
     }
 
     private PublicPostDetailResponse toPublicDetail(ContentPost p) {
-        return PublicPostDetailResponse.builder()
-                .id(p.getId())
-                .title(p.getTitle())
-                .slug(p.getSlug())
-                .bodyMd(p.getBodyMd())
-                .publishedAt(p.getPublishedAt())
-                .createdAt(p.getCreatedAt())
-                .authorId(p.getAuthor() != null ? p.getAuthor().getId() : null)
-                .categories(p.getCategories().stream().map(this::toCategoryResp).toList())
-                .build();
+        return new PublicPostDetailResponse(
+                p.getId(), p.getTitle(), p.getSlug(), p.getBodyMd(), p.getPublishedAt(), p.getCreatedAt(),
+                p.getAuthor() != null ? p.getAuthor().getId() : null,
+                p.getCategories().stream().map(this::toCategoryResp).toList()
+        );
     }
 }

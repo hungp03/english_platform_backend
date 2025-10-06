@@ -21,7 +21,6 @@ import java.util.UUID;
 public class ContentPost {
 
     @Id
-    @GeneratedValue
     @Column(columnDefinition = "uuid")
     private UUID id;
 

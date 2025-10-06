@@ -22,7 +22,8 @@ public record UpdateUserRequest(
         )
         String email,
 
-        MultipartFile avatarFile
+        String avatarUrl
+        // MultipartFile avatarFile
 ) {}
 
 

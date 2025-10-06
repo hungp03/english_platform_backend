@@ -110,6 +110,48 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    // @Transactional
+    // @Override
+    // public UserUpdateResponse updateCurrentUser(UpdateUserRequest request) {
+    //     UUID userId = SecurityUtil.getCurrentUserId();
+    //     User user = findById(userId);
+
+    //     // === Update email ===
+    //     if (request.email() != null && !request.email().isBlank()) {
+    //         if (!user.getEmail().equals(request.email()) && existsByEmail(request.email())) {
+    //             throw new ResourceAlreadyExistsException("Email is already in use");
+    //         }
+    //         user.setEmail(request.email());
+    //     }
+
+    //     // === Update full name ===
+    //     if (request.fullName() != null && !request.fullName().isBlank()) {
+    //         user.setFullName(request.fullName());
+    //     }
+
+    //     // === Handle avatar upload ===
+    //     MultipartFile avatarFile = request.avatarFile();
+    //     if (avatarFile != null && !avatarFile.isEmpty()) {
+    //         try {
+    //             // Xóa ảnh cũ nếu có
+    //             if (user.getAvatarUrl() != null && !user.getAvatarUrl().isBlank()) {
+    //                 mediaService.deleteFileByUrl(user.getAvatarUrl());
+    //             }
+
+    //             // Upload ảnh mới
+    //             MediaUploadResponse uploaded = mediaService.uploadFile(avatarFile, "users");
+    //             user.setAvatarUrl(uploaded.url());
+
+    //         } catch (IOException e) {
+    //             log.error("Failed to upload or delete avatar: {}", e.getMessage());
+    //         } catch (Exception e) {
+    //             log.error("Unexpected error when handling avatar: {}", e.getMessage());
+    //         }
+    //     }
+
+    //     // JPA auto update on commit
+    //     return userMapper.toUpdateResponse(user);
+    // }
     @Transactional
     @Override
     public UserUpdateResponse updateCurrentUser(UpdateUserRequest request) {
@@ -129,29 +171,21 @@ public class UserServiceImpl implements UserService {
             user.setFullName(request.fullName());
         }
 
-        // === Handle avatar upload ===
-        MultipartFile avatarFile = request.avatarFile();
-        if (avatarFile != null && !avatarFile.isEmpty()) {
+        if (request.avatarUrl() != null && !request.avatarUrl().isEmpty()) {
             try {
-                // Xóa ảnh cũ nếu có
                 if (user.getAvatarUrl() != null && !user.getAvatarUrl().isBlank()) {
                     mediaService.deleteFileByUrl(user.getAvatarUrl());
                 }
-
-                // Upload ảnh mới
-                MediaUploadResponse uploaded = mediaService.uploadFile(avatarFile, "users");
-                user.setAvatarUrl(uploaded.url());
-
-            } catch (IOException e) {
-                log.error("Failed to upload or delete avatar: {}", e.getMessage());
             } catch (Exception e) {
                 log.error("Unexpected error when handling avatar: {}", e.getMessage());
             }
         }
+        user.setAvatarUrl(request.avatarUrl());
 
         // JPA auto update on commit
         return userMapper.toUpdateResponse(user);
     }
+
 
     @Transactional
     @CacheEvict(value = "userStatus", key = "#userId")

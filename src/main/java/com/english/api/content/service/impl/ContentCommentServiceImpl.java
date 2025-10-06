@@ -1,6 +1,7 @@
 package com.english.api.content.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
+import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.content.dto.request.CommentCreateRequest;
 import com.english.api.content.dto.request.CommentUpdateRequest;
@@ -15,7 +16,7 @@ import com.english.api.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Pageable;  
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -35,8 +36,8 @@ public class ContentCommentServiceImpl implements ContentCommentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 
         ContentComment parent = null;
-        if (req.getParentId() != null) {
-            parent = commentRepository.findById(req.getParentId())
+        if (req.parentId() != null) {
+            parent = commentRepository.findById(req.parentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Parent comment not found"));
         }
 
@@ -47,8 +48,8 @@ public class ContentCommentServiceImpl implements ContentCommentService {
                 .post(post)
                 .parent(parent)
                 .author(author)
-                .bodyMd(req.getBodyMd())
-                .published(true) // default true; moderators may hide later
+                .bodyMd(req.bodyMd())
+                .published(true)
                 .build();
         c = commentRepository.save(c);
         return toResponse(c);
@@ -59,7 +60,7 @@ public class ContentCommentServiceImpl implements ContentCommentService {
     public CommentResponse update(UUID commentId, CommentUpdateRequest req) {
         ContentComment c = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
-        c.setBodyMd(req.getBodyMd());
+        c.setBodyMd(req.bodyMd());
         c = commentRepository.save(c);
         return toResponse(c);
     }
@@ -94,26 +95,27 @@ public class ContentCommentServiceImpl implements ContentCommentService {
     }
 
     @Override
-    public Page<CommentResponse> listByPost(UUID postId, Pageable pageable, boolean includeUnpublished) {
+    public PaginationResponse listByPost(UUID postId, Pageable pageable, boolean includeUnpublished) {
         ContentPost post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        if (includeUnpublished) {
-            return commentRepository.findByPost(post, pageable).map(this::toResponse);
-        } else {
-            return commentRepository.findByPostAndPublishedIsTrue(post, pageable).map(this::toResponse);
-        }
+
+        Page<CommentResponse> page = includeUnpublished
+                ? commentRepository.findByPost(post, pageable).map(this::toResponse)
+                : commentRepository.findByPostAndPublishedIsTrue(post, pageable).map(this::toResponse);
+
+        return PaginationResponse.from(page, pageable);
     }
 
     private CommentResponse toResponse(ContentComment c) {
-        return CommentResponse.builder()
-                .id(c.getId())
-                .postId(c.getPost().getId())
-                .parentId(c.getParent() != null ? c.getParent().getId() : null)
-                .authorId(c.getAuthor() != null ? c.getAuthor().getId() : null)
-                .bodyMd(c.getBodyMd())
-                .published(c.isPublished())
-                .createdAt(c.getCreatedAt())
-                .updatedAt(c.getUpdatedAt())
-                .build();
+        return new CommentResponse(
+                c.getId(),
+                c.getPost().getId(),
+                c.getParent() != null ? c.getParent().getId() : null,
+                c.getAuthor() != null ? c.getAuthor().getId() : null,
+                c.getBodyMd(),
+                c.isPublished(),
+                c.getCreatedAt(),
+                c.getUpdatedAt()
+        );
     }
 }

@@ -1,5 +1,6 @@
 package com.english.api.content.service.impl;
 
+import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.content.dto.request.CategoryCreateRequest;
 import com.english.api.content.dto.request.CategoryUpdateRequest;
@@ -25,9 +26,9 @@ public class ContentCategoryServiceImpl implements ContentCategoryService {
     @Override
     @Transactional
     public CategoryResponse create(CategoryCreateRequest req) {
-        String slug = (req.getSlug() != null && !req.getSlug().isBlank())
-                ? SlugUtil.toSlug(req.getSlug())
-                : SlugUtil.toSlug(req.getName());
+        String slug = (req.slug() != null && !req.slug().isBlank())
+                ? SlugUtil.toSlug(req.slug())
+                : SlugUtil.toSlug(req.name());
         if (!SlugUtil.isSeoFriendly(slug)) {
             throw new IllegalArgumentException("Slug is not SEO-friendly");
         }
@@ -35,9 +36,9 @@ public class ContentCategoryServiceImpl implements ContentCategoryService {
             throw new IllegalArgumentException("Slug already exists");
         }
         ContentCategory category = ContentCategory.builder()
-                .name(req.getName())
+                .name(req.name())
                 .slug(slug)
-                .description(req.getDescription())
+                .description(req.description())
                 .build();
         category = categoryRepository.save(category);
         return toResponse(category);
@@ -48,10 +49,10 @@ public class ContentCategoryServiceImpl implements ContentCategoryService {
     public CategoryResponse update(UUID id, CategoryUpdateRequest req) {
         ContentCategory cat = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
-        if (req.getName() != null) cat.setName(req.getName());
-        if (req.getDescription() != null) cat.setDescription(req.getDescription());
-        if (req.getSlug() != null && !req.getSlug().isBlank()) {
-            String slug = SlugUtil.toSlug(req.getSlug());
+        if (req.name() != null) cat.setName(req.name());
+        if (req.description() != null) cat.setDescription(req.description());
+        if (req.slug() != null && !req.slug().isBlank()) {
+            String slug = SlugUtil.toSlug(req.slug());
             if (!SlugUtil.isSeoFriendly(slug)) {
                 throw new IllegalArgumentException("Slug is not SEO-friendly");
             }
@@ -80,18 +81,14 @@ public class ContentCategoryServiceImpl implements ContentCategoryService {
         return toResponse(cat);
     }
 
+    // ======= ĐÃ ĐỔI: trả PaginationResponse
     @Override
-    public Page<CategoryResponse> list(Pageable pageable) {
-        return categoryRepository.findAll(pageable).map(this::toResponse);
+    public PaginationResponse list(Pageable pageable) {
+        Page<CategoryResponse> page = categoryRepository.findAll(pageable).map(this::toResponse);
+        return PaginationResponse.from(page, pageable);
     }
 
     private CategoryResponse toResponse(ContentCategory c) {
-        return CategoryResponse.builder()
-                .id(c.getId())
-                .name(c.getName())
-                .slug(c.getSlug())
-                .description(c.getDescription())
-                .createdAt(c.getCreatedAt())
-                .build();
+        return new CategoryResponse(c.getId(), c.getName(), c.getSlug(), c.getDescription(), c.getCreatedAt());
     }
 }

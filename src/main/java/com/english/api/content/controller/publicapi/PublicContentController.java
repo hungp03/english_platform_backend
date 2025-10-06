@@ -1,16 +1,18 @@
 package com.english.api.content.controller.publicapi;
 
+import com.english.api.common.dto.PaginationResponse;
 import com.english.api.content.dto.request.PostFilterRequest;
-import com.english.api.content.dto.response.CommentResponse;
+
 import com.english.api.content.dto.response.PublicPostDetailResponse;
-import com.english.api.content.dto.response.PublicPostSummaryResponse;
 import com.english.api.content.service.ContentCommentService;
 import com.english.api.content.service.ContentPostService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import org.springframework.web.bind.annotation.ModelAttribute; // để bind query -> PostFilterRequest
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/content")
@@ -21,7 +23,7 @@ public class PublicContentController {
     private final ContentCommentService commentService;
 
     @GetMapping("/posts")
-    public ResponseEntity<Page<PublicPostSummaryResponse>> list(PostFilterRequest filter, Pageable pageable) {
+    public ResponseEntity<PaginationResponse> list(@ModelAttribute PostFilterRequest filter, Pageable pageable) {
         return ResponseEntity.ok(postService.publicList(filter, pageable));
     }
 
@@ -31,7 +33,7 @@ public class PublicContentController {
     }
 
     @GetMapping("/posts/{postId}/comments")
-    public ResponseEntity<Page<CommentResponse>> comments(@PathVariable java.util.UUID postId, Pageable pageable) {
+    public ResponseEntity<PaginationResponse> comments(@PathVariable UUID postId, Pageable pageable) {
         return ResponseEntity.ok(commentService.listByPost(postId, pageable, false));
     }
 }

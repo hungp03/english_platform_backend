@@ -1,5 +1,6 @@
 package com.english.api.content.controller.admin;
 
+import com.english.api.common.dto.PaginationResponse;     // <-- thêm
 import com.english.api.content.dto.request.PostCreateRequest;
 import com.english.api.content.dto.request.PostFilterRequest;
 import com.english.api.content.dto.request.PostUpdateRequest;
@@ -7,12 +8,12 @@ import com.english.api.content.dto.response.PostResponse;
 import com.english.api.content.service.ContentPostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.bind.annotation.ModelAttribute; // <-- thêm để bind query -> PostFilterRequest
 import java.util.UUID;
 
 @RestController
@@ -36,7 +37,7 @@ public class AdminPostController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        service.delete(id);
+        service.delete(id); // Service đã xử lý xóa comment kèm post (đã thêm ở bước trước)
         return ResponseEntity.noContent().build();
     }
 
@@ -46,7 +47,7 @@ public class AdminPostController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<PostResponse>> search(PostFilterRequest filter, Pageable pageable) {
+    public ResponseEntity<PaginationResponse> search(@ModelAttribute PostFilterRequest filter, Pageable pageable) {
         return ResponseEntity.ok(service.search(filter, pageable, true)); // includeUnpublished
     }
 

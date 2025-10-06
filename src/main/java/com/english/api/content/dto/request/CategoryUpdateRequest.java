@@ -1,12 +1,12 @@
 package com.english.api.content.dto.request;
 
 import jakarta.validation.constraints.Size;
-import lombok.Data;
 
-@Data
-public class CategoryUpdateRequest {
+public record CategoryUpdateRequest(
     @Size(max = 255)
-    private String name;
-    private String slug;
-    private String description;
-}
+    String name,
+    
+    String slug,
+    
+    String description
+) {}

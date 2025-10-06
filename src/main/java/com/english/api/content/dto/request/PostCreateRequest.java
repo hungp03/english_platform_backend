@@ -2,24 +2,20 @@ package com.english.api.content.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.util.List;
 import java.util.UUID;
 
-@Data
-public class PostCreateRequest {
-
+public record PostCreateRequest(
     @NotBlank
     @Size(max = 300)
-    private String title;
+    String title,
 
     // optional: if null, slug will be generated
-    private String slug;
+    String slug,
 
     @NotBlank
-    private String bodyMd;
+    String bodyMd,
 
     // category ids to link
-    private List<UUID> categoryIds;
-}
+    List<UUID> categoryIds
+) {}

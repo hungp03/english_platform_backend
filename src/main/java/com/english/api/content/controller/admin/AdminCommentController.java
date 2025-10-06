@@ -1,9 +1,9 @@
 package com.english.api.content.controller.admin;
 
+import com.english.api.common.dto.PaginationResponse;        // <-- thêm
 import com.english.api.content.dto.response.CommentResponse;
 import com.english.api.content.service.ContentCommentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,7 +20,7 @@ public class AdminCommentController {
     private final ContentCommentService service;
 
     @GetMapping("/by-post/{postId}")
-    public ResponseEntity<Page<CommentResponse>> listByPost(@PathVariable UUID postId, Pageable pageable) {
+    public ResponseEntity<PaginationResponse> listByPost(@PathVariable UUID postId, Pageable pageable) { 
         return ResponseEntity.ok(service.listByPost(postId, pageable, true));
     }
 
