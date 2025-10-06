@@ -11,6 +11,6 @@ public record ListUserResponse(
         String email,
         String fullName,
         String avatarUrl,
-        Boolean isActive,
+        boolean isActive,
         Instant createdAt
 ) {}
