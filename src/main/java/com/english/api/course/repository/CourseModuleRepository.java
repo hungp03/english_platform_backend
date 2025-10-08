@@ -3,8 +3,8 @@ package com.english.api.course.repository;
 import com.english.api.course.dto.response.CourseModuleResponse;
 import com.english.api.course.model.CourseModule;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -41,17 +41,6 @@ public interface CourseModuleRepository extends JpaRepository<CourseModule, UUID
 
     boolean existsByCourseIdAndPosition(UUID courseId, Integer position);
 
-    @Modifying
-    @Query("UPDATE CourseModule m SET m.position = m.position - 1 " +
-           "WHERE m.course.id = :courseId AND m.position > :deletedPosition")
-    void shiftPositionsAfterDelete(UUID courseId, Integer deletedPosition);
-
-    @Modifying
-    @Query("""
-                UPDATE CourseModule m
-                SET m.title = :title, m.position = :position
-                WHERE m.id = :id AND m.course.id = :courseId
-            """)
-    int updateModule(UUID courseId, UUID id, String title, Integer position);
-
+    @Query("SELECT COALESCE(MAX(m.position), 0) FROM CourseModule m WHERE m.course.id = :courseId")
+    Optional<Integer> findMaxPositionByCourseId(@Param("courseId") UUID courseId);
 }

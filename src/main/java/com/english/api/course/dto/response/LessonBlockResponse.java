@@ -9,6 +9,7 @@ public record LessonBlockResponse(
         UUID id,
         String blockType,
         String payload,
-        Integer position
+        Integer position,
+        MediaAssetResponse media
 ) {}
 

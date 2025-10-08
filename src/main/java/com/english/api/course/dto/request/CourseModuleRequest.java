@@ -11,7 +11,7 @@ public record CourseModuleRequest(
         @NotBlank(message = "Module title must not be blank")
         String title,
 
-        @NotNull(message = "Position is required")
+//        @NotNull(message = "Position is required")
         @Min(value = 1, message = "Position must be greater than or equal to 1")
         Integer position
 ) {}

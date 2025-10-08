@@ -1,4 +1,4 @@
-package com.english.api.course.model;
+package com.english.api.common.model;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;

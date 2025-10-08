@@ -20,7 +20,7 @@ public record LessonRequest(
         @Min(value = 1, message = "Estimated duration must be at least 1 minute")
         Integer estimatedMin,
 
-        @NotNull(message = "Position is required")
+//        @NotNull(message = "Position is required")
         @Min(value = 1, message = "Position must be greater than or equal to 1")
         Integer position,
 

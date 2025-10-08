@@ -38,7 +38,7 @@ public class CourseModuleController {
     @PostMapping
     public ResponseEntity<List<CourseModuleResponse>> create(
             @PathVariable UUID courseId,
-            @Valid @RequestBody List<CourseModuleRequest> requests
+            @Valid @RequestBody List<@Valid CourseModuleRequest> requests
     ) {
         return ResponseEntity.ok(service.create(courseId, requests));
     }
@@ -47,7 +47,7 @@ public class CourseModuleController {
     @PutMapping
     public ResponseEntity<List<CourseModuleUpdateResponse>> update(
             @PathVariable UUID courseId,
-            @Valid @RequestBody List<CourseModuleUpdateRequest> requests
+            @Valid @RequestBody List<@Valid CourseModuleUpdateRequest> requests
     ) {
         return ResponseEntity.ok(service.update(courseId, requests));
     }

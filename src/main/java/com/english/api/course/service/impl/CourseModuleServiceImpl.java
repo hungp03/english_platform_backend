@@ -1,6 +1,7 @@
 package com.english.api.course.service.impl;
 
 import com.english.api.common.exception.DuplicatePositionException;
+import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.request.CourseModuleRequest;
 import com.english.api.course.dto.request.CourseModuleUpdateRequest;
@@ -35,30 +36,46 @@ public class CourseModuleServiceImpl implements CourseModuleService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
-        // check duplicate positions trong cùng request
-        Set<Integer> positions = new HashSet<>();
+        // Check duplicate position trong payload
+        Set<Integer> seenPositions = new HashSet<>();
         for (CourseModuleRequest req : requests) {
-            if (!positions.add(req.position())) {
-                throw new DuplicatePositionException("Duplicate position " + req.position() + " in request payload");
-            }
-            if (moduleRepository.existsByCourseIdAndPosition(courseId, req.position())) {
-                throw new DuplicatePositionException(
-                        "Position " + req.position() + " already exists in course " + courseId
-                );
+            Integer pos = req.position();
+            if (pos != null && !seenPositions.add(pos)) {
+                throw new DuplicatePositionException("Duplicate position " + pos + " in request payload");
             }
         }
 
-        List<CourseModule> modules = requests.stream()
-                .map(req -> {
-                    CourseModule module = mapper.toEntity(req);
-                    module.setCourse(course);
-                    return module;
-                })
-                .toList();
+        // Lấy vị trí lớn nhất hiện tại trong DB
+        int currentMax = moduleRepository.findMaxPositionByCourseId(courseId).orElse(0);
+
+        // Gán position (auto tăng nếu thiếu) + check trùng DB
+        List<CourseModule> modules = new ArrayList<>();
+        int autoPosCounter = currentMax;
+
+        for (CourseModuleRequest req : requests) {
+            Integer pos = req.position();
+            if (pos == null || pos <= 0) {
+                pos = ++autoPosCounter;
+            } else {
+                if (moduleRepository.existsByCourseIdAndPosition(courseId, pos)) {
+                    throw new DuplicatePositionException(
+                            String.format("Position %d already exists in course %s", pos, courseId)
+                    );
+                }
+            }
+
+            CourseModule module = mapper.toEntity(req);
+            module.setCourse(course);
+            module.setPosition(pos);
+
+            modules.add(module);
+        }
 
         moduleRepository.saveAll(modules);
+
         return modules.stream().map(mapper::toResponse).toList();
     }
+
 
     @Override
     public List<CourseModuleResponse> list(UUID courseId) {
@@ -77,7 +94,7 @@ public class CourseModuleServiceImpl implements CourseModuleService {
     @Override
     @Transactional
     public List<CourseModuleUpdateResponse> update(UUID courseId, List<CourseModuleUpdateRequest> requests) {
-        // Check trùng position trong payload
+        // Check duplicate position trong payload
         Set<Integer> seen = new HashSet<>();
         for (CourseModuleUpdateRequest req : requests) {
             if (!seen.add(req.position())) {
@@ -93,19 +110,29 @@ public class CourseModuleServiceImpl implements CourseModuleService {
             throw new ResourceNotFoundException("One or more modules not found");
         }
 
-        // Validate position conflict trong DB (ngoài request)
+        // Validate ownership (đảm bảo module thuộc cùng course)
+        modules.forEach(m -> {
+            if (!m.getCourse().getId().equals(courseId)) {
+                throw new ResourceInvalidException("Module " + m.getId() + " does not belong to course " + courseId);
+            }
+        });
+
+        // Check conflict với module khác cùng course
         for (CourseModuleUpdateRequest req : requests) {
-            boolean conflict = moduleRepository.existsByCourseIdAndPosition(courseId, req.position())
-                               && modules.stream().noneMatch(m -> m.getId().equals(req.id()) && m.getPosition().equals(req.position()));
+            // ignore nếu module đang giữ cùng position (self-update)
+            boolean conflict = moduleRepository.existsByCourseIdAndPosition(courseId, req.position()) &&
+                               modules.stream().noneMatch(m ->
+                                       m.getId().equals(req.id()) &&
+                                       m.getPosition().equals(req.position())
+                               );
 
             if (conflict) {
                 throw new DuplicatePositionException(
-                        "Position " + req.position() + " already exists in course " + courseId
+                        String.format("Position %d already exists in course %s", req.position(), courseId)
                 );
             }
         }
 
-        // Apply update
         Map<UUID, CourseModuleUpdateRequest> requestMap = requests.stream()
                 .collect(Collectors.toMap(CourseModuleUpdateRequest::id, r -> r));
 
@@ -119,6 +146,7 @@ public class CourseModuleServiceImpl implements CourseModuleService {
 
         return modules.stream().map(mapper::toUpdateResponse).toList();
     }
+
 
     @Override
     @Transactional

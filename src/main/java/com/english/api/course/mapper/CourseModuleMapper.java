@@ -7,8 +7,6 @@ import com.english.api.course.model.CourseModule;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import java.util.List;
-
 /**
  * Created by hungpham on 10/4/2025
  */
@@ -17,10 +15,10 @@ public interface CourseModuleMapper {
 
     CourseModuleResponse toResponse(CourseModule entity);
     CourseModuleUpdateResponse toUpdateResponse(CourseModule entity);
-    List<CourseModuleResponse> toResponseList(List<CourseModule> entities);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "course", ignore = true) // set trong service
+    @Mapping(target = "position", ignore = true)
     CourseModule toEntity(CourseModuleRequest request);
 }
 

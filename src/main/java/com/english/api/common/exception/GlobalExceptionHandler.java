@@ -2,6 +2,7 @@ package com.english.api.common.exception;
 
 import com.english.api.common.dto.ApiResponse;
 import com.english.api.common.util.constant.ErrorCode;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,9 +12,11 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +62,20 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.toList());
         String errorMessage = errors.size() > 1 ? String.join(", ", errors) : errors.getFirst();
         return buildResponse(ErrorCode.METHOD_NOT_VALID, errorMessage, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHandlerMethodValidation(HandlerMethodValidationException ex) {
+        List<String> messages = ex.getAllErrors().stream()
+                .map(MessageSourceResolvable::getDefaultMessage)
+                .filter(Objects::nonNull)
+                .toList();
+
+        String message = messages.isEmpty()
+                ? "Validation failure"
+                : (messages.size() > 1 ? String.join(", ", messages) : messages.getFirst());
+
+        return buildResponse(ErrorCode.METHOD_NOT_VALID, message, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

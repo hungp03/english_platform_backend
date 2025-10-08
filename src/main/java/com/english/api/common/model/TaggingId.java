@@ -1,4 +1,4 @@
-package com.english.api.course.model;
+package com.english.api.common.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
