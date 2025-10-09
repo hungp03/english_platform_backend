@@ -1,21 +1,23 @@
 package com.english.api.course.service.impl;
 
 import com.english.api.common.exception.DuplicatePositionException;
+import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.request.LessonRequest;
 import com.english.api.course.dto.response.LessonResponse;
 import com.english.api.course.mapper.LessonMapper;
-import com.english.api.course.model.CourseModule;
-import com.english.api.course.model.Lesson;
-import com.english.api.course.model.MediaAsset;
+import com.english.api.course.model.*;
 import com.english.api.course.repository.CourseModuleRepository;
+import com.english.api.course.repository.LessonMediaRepository;
 import com.english.api.course.repository.LessonRepository;
 import com.english.api.course.repository.MediaAssetRepository;
 import com.english.api.course.service.LessonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -24,23 +26,25 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class LessonServiceImpl implements LessonService {
+
     private final CourseModuleRepository moduleRepository;
     private final LessonRepository lessonRepository;
     private final MediaAssetRepository assetRepository;
+    private final LessonMediaRepository lessonMediaRepository;
     private final LessonMapper lessonMapper;
 
+    // --- CREATE ---
     @Override
+    @Transactional
     public LessonResponse create(UUID moduleId, LessonRequest request) {
         CourseModule module = moduleRepository.findById(moduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Module not found"));
 
-        // auto position if null
-        Integer position = request.position();
-        if (position == null) {
-            position = lessonRepository.findMaxPositionByModuleId(moduleId).orElse(0) + 1;
-        }
+        // Auto position nếu null
+        Integer position = Optional.ofNullable(request.position())
+                .orElseGet(() -> lessonRepository.findMaxPositionByModuleId(moduleId).orElse(0) + 1);
 
-        // check duplicate
+        // Check trùng position trong module
         if (lessonRepository.existsByModuleIdAndPosition(moduleId, position)) {
             throw new DuplicatePositionException(
                     String.format("Lesson position %d already exists in this module", position)
@@ -51,10 +55,23 @@ public class LessonServiceImpl implements LessonService {
         lesson.setPosition(position);
         lessonRepository.save(lesson);
 
+        // Nếu có mediaId → thêm link PRIMARY
+        if (request.mediaId() != null) {
+            MediaAsset media = assetRepository.findById(request.mediaId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Media not found"));
+            LessonMedia link = LessonMedia.builder()
+                    .lesson(lesson)
+                    .media(media)
+                    .role(LessonMediaRole.PRIMARY)
+                    .position(0)
+                    .build();
+            lessonMediaRepository.save(link);
+        }
+
         return lessonMapper.toResponse(lesson);
     }
 
-
+    // --- LIST ---
     @Override
     public List<LessonResponse> list(UUID moduleId) {
         return lessonRepository.findByModuleIdOrderByPosition(moduleId).stream()
@@ -62,7 +79,7 @@ public class LessonServiceImpl implements LessonService {
                 .toList();
     }
 
-    // --- Get by ID ---
+    // --- GET ---
     @Override
     public LessonResponse getById(UUID moduleId, UUID lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
@@ -71,8 +88,9 @@ public class LessonServiceImpl implements LessonService {
         return lessonMapper.toResponse(lesson);
     }
 
-    // --- Update ---
+    // --- UPDATE ---
     @Override
+    @Transactional
     public LessonResponse update(UUID moduleId, UUID lessonId, LessonRequest request) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .filter(l -> l.getModule().getId().equals(moduleId))
@@ -80,28 +98,58 @@ public class LessonServiceImpl implements LessonService {
 
         Integer newPosition = request.position();
 
-        // Nếu người dùng gửi position mới và nó khác position hiện tại
+        // Check trùng position
         if (newPosition != null && !newPosition.equals(lesson.getPosition())) {
             boolean exists = lessonRepository.existsByModuleIdAndPosition(moduleId, newPosition);
-
             if (exists) {
                 throw new DuplicatePositionException(
                         String.format("Lesson position %d already exists in this module", newPosition)
                 );
             }
-
             lesson.setPosition(newPosition);
         }
 
-        // 🧩 Update các field còn lại bằng MapStruct
+        // Update field khác
         lessonMapper.updateFromRequest(request, lesson);
+
+        // Xử lý media chính
+        UUID mediaId = request.mediaId();
+        Optional<LessonMedia> currentPrimary = lessonMediaRepository
+                .findByLessonIdAndRole(lessonId, LessonMediaRole.PRIMARY);
+
+        if (mediaId != null) {
+            MediaAsset media = assetRepository.findById(mediaId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Media not found"));
+            if (currentPrimary.isEmpty()) {
+                LessonMedia newLink = LessonMedia.builder()
+                        .lesson(lesson)
+                        .media(media)
+                        .role(LessonMediaRole.PRIMARY)
+                        .position(0)
+                        .build();
+                lessonMediaRepository.save(newLink);
+            } else {
+                LessonMedia old = currentPrimary.get();
+                if (!old.getMedia().getId().equals(mediaId)) {
+                    lessonMediaRepository.delete(old);
+                    lessonMediaRepository.save(LessonMedia.builder()
+                            .lesson(lesson)
+                            .media(media)
+                            .role(LessonMediaRole.PRIMARY)
+                            .position(0)
+                            .build());
+                }
+            }
+        } else {
+            // Gỡ media chính nếu client gửi null
+            currentPrimary.ifPresent(lessonMediaRepository::delete);
+        }
 
         lessonRepository.save(lesson);
         return lessonMapper.toResponse(lesson);
     }
 
-
-    // --- Delete ---
+    // --- DELETE ---
     @Override
     public void delete(UUID moduleId, UUID lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
@@ -110,7 +158,7 @@ public class LessonServiceImpl implements LessonService {
         lessonRepository.delete(lesson);
     }
 
-    // --- Attach Asset ---
+    // --- ATTACH ASSET ---
     @Override
     public LessonResponse attachAsset(UUID lessonId, UUID assetId) {
         Lesson lesson = lessonRepository.findById(lessonId)
@@ -118,21 +166,35 @@ public class LessonServiceImpl implements LessonService {
         MediaAsset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new ResourceNotFoundException("Asset not found"));
 
-        lesson.getAssets().add(asset);
-        lessonRepository.save(lesson);
+        boolean exists = lessonMediaRepository.existsByLessonIdAndMediaId(lessonId, assetId);
+        if (!exists) {
+            int nextPos = lessonMediaRepository.findByLessonIdOrderByPositionAsc(lessonId).size() + 1;
+            LessonMedia link = LessonMedia.builder()
+                    .lesson(lesson)
+                    .media(asset)
+                    .role(LessonMediaRole.ATTACHMENT)
+                    .position(nextPos)
+                    .build();
+            lessonMediaRepository.save(link);
+        }
+
         return lessonMapper.toResponse(lesson);
     }
 
-    // --- Detach Asset ---
+    // --- DETACH ASSET ---
     @Override
     public LessonResponse detachAsset(UUID lessonId, UUID assetId) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
-        boolean removed = lesson.getAssets().removeIf(a -> a.getId().equals(assetId));
-        if (!removed) throw new ResourceNotFoundException("Asset not attached to this lesson");
+        LessonMedia link = lessonMediaRepository.findByLessonIdAndMediaId(lessonId, assetId)
+                .orElseThrow(() -> new ResourceNotFoundException("Asset not attached to this lesson"));
 
-        lessonRepository.save(lesson);
+        if (link.getRole() == LessonMediaRole.PRIMARY) {
+            throw new ResourceInvalidException("Cannot detach primary media via this endpoint");
+        }
+
+        lessonMediaRepository.delete(link);
         return lessonMapper.toResponse(lesson);
     }
 }

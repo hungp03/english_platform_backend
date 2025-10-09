@@ -118,7 +118,12 @@ public class MediaServiceImpl implements MediaService {
 
 
         // Upload lên S3
-        String filename = UUID.randomUUID() + "-" + originalFilename;
+        String extension = "";
+        int dotIndex = originalFilename.lastIndexOf('.');
+        if (dotIndex > 0 && dotIndex < originalFilename.length() - 1) {
+            extension = originalFilename.substring(dotIndex);
+        }
+        String filename = UUID.randomUUID() + extension;
         String key = String.format("%s/%s",
                 folder.replaceAll("^/+", "").replaceAll("/+$", ""),
                 filename
@@ -138,7 +143,7 @@ public class MediaServiceImpl implements MediaService {
         String url = String.join("/", publicUrl.replaceAll("/+$", ""), key);
 
         return new MediaUploadResponse(
-                originalFilename,
+                filename,
                 url,
                 file.getSize(),
                 contentType

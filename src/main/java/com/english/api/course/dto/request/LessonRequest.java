@@ -1,9 +1,13 @@
 package com.english.api.course.dto.request;
 
+import com.english.api.course.validator.ValidJsonContent;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import java.util.UUID;
 
 /**
  * Created by hungpham on 10/4/2025
@@ -20,10 +24,15 @@ public record LessonRequest(
         @Min(value = 1, message = "Estimated duration must be at least 1 minute")
         Integer estimatedMin,
 
-//        @NotNull(message = "Position is required")
         @Min(value = 1, message = "Position must be greater than or equal to 1")
         Integer position,
 
         @NotNull(message = "isFree flag is required")
-        Boolean isFree
+        Boolean isFree,
+
+        @NotNull(message = "Content must not be null")
+        @ValidJsonContent
+        JsonNode content,
+
+        UUID mediaId
 ) {}

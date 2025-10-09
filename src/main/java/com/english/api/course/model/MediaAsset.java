@@ -13,8 +13,11 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "media_assets")
-@Getter @Setter @Builder
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MediaAsset {
     @Id
     private UUID id;

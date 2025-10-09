@@ -1,6 +1,5 @@
 package com.english.api.course.service.impl;
 
-import com.english.api.common.service.MediaService;
 import com.english.api.course.dto.response.MediaAssetResponse;
 import com.english.api.course.mapper.MediaAssetMapper;
 import com.english.api.course.model.MediaAsset;
