@@ -13,8 +13,11 @@ import java.util.UUID;
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"lesson_id", "media_id"})
         })
-@Getter @Setter @Builder
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class LessonMedia {
 
     @Id

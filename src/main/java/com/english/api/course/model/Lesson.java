@@ -18,8 +18,11 @@ import java.util.UUID;
 @Entity
 @Table(name = "lessons",
         uniqueConstraints = {@UniqueConstraint(columnNames = {"module_id", "position"})})
-@Getter @Setter @Builder
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Lesson {
 
     @Id

@@ -1,13 +1,16 @@
 package com.english.api.course.service.impl;
 
+import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.request.CourseRequest;
 import com.english.api.course.dto.response.CourseResponse;
+import com.english.api.course.dto.response.CourseWithStatsResponse;
 import com.english.api.course.mapper.CourseMapper;
 import com.english.api.course.model.Course;
 import com.english.api.course.repository.CourseRepository;
 import com.english.api.course.service.CourseService;
+import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,30 +30,37 @@ public class CourseServiceImpl implements CourseService {
     private final CourseMapper mapper;
 
     @Override
-    public CourseResponse getById(UUID id) {
-        return courseRepository.findById(id)
-                .map(mapper::toResponse)
+    public CourseWithStatsResponse getById(UUID id) {
+        return courseRepository.findByIdWithStats(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
     }
 
     @Transactional
     @Override
     public CourseResponse create(CourseRequest req) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
         Course course = mapper.toEntity(req);
+        course.setCreatedBy(User.builder().id(currentUserId).build());
         return mapper.toResponse(courseRepository.save(course));
     }
 
     @Override
     public PaginationResponse getCourses(Pageable pageable, String keyword, Boolean isPublished) {
-        Page<Course> page;
+        Page<CourseWithStatsResponse> page;
         if ((keyword == null || keyword.isBlank()) && isPublished == null) {
             // no filter
-            page = courseRepository.findAll(pageable);
+            page = courseRepository.findAllWithStats(pageable);
         } else {
-            // use native query with unaccent + publish
-            page = courseRepository.search(keyword, isPublished, pageable);
+            page = courseRepository.searchWithStats(keyword, isPublished, pageable);
         }
 
+        return PaginationResponse.from(page, pageable);
+    }
+
+    @Override
+    public PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, Boolean isPublished) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        Page<CourseWithStatsResponse> page = courseRepository.searchByOwnerWithStats(currentUserId, keyword, isPublished, pageable);
         return PaginationResponse.from(page, pageable);
     }
 

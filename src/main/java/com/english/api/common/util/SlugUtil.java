@@ -11,7 +11,7 @@ public final class SlugUtil {
 
     public static String toSlugWithUuid(String title) {
         String base = toSlug(title);
-        String suffix = UUID.randomUUID().toString().substring(0, 13);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
         return base.isEmpty() ? suffix : base + "-" + suffix;
     }
 

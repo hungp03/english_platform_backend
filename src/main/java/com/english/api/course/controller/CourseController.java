@@ -3,6 +3,7 @@ package com.english.api.course.controller;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.request.CourseRequest;
 import com.english.api.course.dto.response.CourseResponse;
+import com.english.api.course.dto.response.CourseWithStatsResponse;
 import com.english.api.course.service.CourseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,9 +32,18 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getCourses(pageable, keyword, isPublished));
     }
 
+    @GetMapping("mine")
+    public ResponseEntity<PaginationResponse> getMineCourses(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean isPublished
+    ){
+        return ResponseEntity.ok(courseService.getCoursesForInstructor(pageable, keyword, isPublished));
+    }
+
     // === Get course by id ===
     @GetMapping("/{id}")
-    public ResponseEntity<CourseResponse> getCourseById(@PathVariable UUID id) {
+    public ResponseEntity<CourseWithStatsResponse> getCourseById(@PathVariable UUID id) {
         return ResponseEntity.ok(courseService.getById(id));
     }
 

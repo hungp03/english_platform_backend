@@ -12,9 +12,11 @@ import java.util.UUID;
 @Table(name = "course_modules", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"course_id", "position"})
 })
-@Getter @Setter
+@Getter
+@Setter
 @Builder
-@NoArgsConstructor @AllArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 public class CourseModule {
     @Id
     private UUID id;

@@ -2,6 +2,7 @@ package com.english.api.course.model;
 
 import com.english.api.common.util.SlugUtil;
 import com.english.api.user.model.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
@@ -52,6 +53,7 @@ public class Course {
 
     @ManyToOne
     @JoinColumn(name = "created_by")
+    @JsonIgnore
     private User createdBy;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -82,9 +84,7 @@ public class Course {
 
     @PreUpdate
     public void preUpdate() {
-        if (slug == null || slug.isBlank()) {
-            slug = SlugUtil.toSlugWithUuid(title);
-        }
+        slug = SlugUtil.toSlugWithUuid(title);
         updatedAt = Instant.now();
     }
 }
