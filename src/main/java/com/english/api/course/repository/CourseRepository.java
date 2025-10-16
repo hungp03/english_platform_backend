@@ -5,10 +5,12 @@ import com.english.api.course.model.Course;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,77 +22,80 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
     boolean existsBySlug(String slug);
 
     @Query("""
-    SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(
-        c.id,
-        c.title,
-        c.description,
-        c.language,
-        c.skillFocus,
-        c.priceCents,
-        c.currency,
-        c.published,
-        COUNT(DISTINCT m.id),
-        COUNT(DISTINCT l.id),
-        c.createdAt,
-        c.updatedAt
-    )
-    FROM Course c
-    LEFT JOIN CourseModule m ON m.course.id = c.id
-    LEFT JOIN Lesson l ON l.module.id = m.id
-    WHERE c.id = :courseId
-    GROUP BY c.id, c.title, c.description, c.language, c.skillFocus,
-             c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
-    """)
+            SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(
+                c.id,
+                c.title,
+                c.description,
+                c.language,
+                c.thumbnail,
+                c.skillFocus,
+                c.priceCents,
+                c.currency,
+                c.published,
+                COUNT(DISTINCT m.id),
+                COUNT(DISTINCT l.id),
+                c.createdAt,
+                c.updatedAt
+            )
+            FROM Course c
+            LEFT JOIN CourseModule m ON m.course.id = c.id
+            LEFT JOIN Lesson l ON l.module.id = m.id
+            WHERE c.id = :courseId
+            GROUP BY c.id, c.title, c.description, c.language,c.thumbnail, c.skillFocus,
+                     c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
+            """)
     Optional<CourseWithStatsResponse> findByIdWithStats(@Param("courseId") UUID courseId);
 
     @Query("""
-    SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(
-        c.id,
-        c.title,
-        c.description,
-        c.language,
-        c.skillFocus,
-        c.priceCents,
-        c.currency,
-        c.published,
-        COUNT(DISTINCT m.id),
-        COUNT(DISTINCT l.id),
-        c.createdAt,
-        c.updatedAt
-    )
-    FROM Course c
-    LEFT JOIN CourseModule m ON m.course.id = c.id
-    LEFT JOIN Lesson l ON l.module.id = m.id
-    GROUP BY c.id, c.title, c.description, c.language, c.skillFocus,
-             c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
-    """)
+            SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(
+                c.id,
+                c.title,
+                c.description,
+                c.language,
+                c.thumbnail,
+                c.skillFocus,
+                c.priceCents,
+                c.currency,
+                c.published,
+                COUNT(DISTINCT m.id),
+                COUNT(DISTINCT l.id),
+                c.createdAt,
+                c.updatedAt
+            )
+            FROM Course c
+            LEFT JOIN CourseModule m ON m.course.id = c.id
+            LEFT JOIN Lesson l ON l.module.id = m.id
+            GROUP BY c.id, c.title, c.description, c.language,c.thumbnail, c.skillFocus,
+                     c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
+            """)
     Page<CourseWithStatsResponse> findAllWithStats(Pageable pageable);
 
     @Query("""
-    SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(
-        c.id,
-        c.title,
-        c.description,
-        c.language,
-        c.skillFocus,
-        c.priceCents,
-        c.currency,
-        c.published,
-        COUNT(DISTINCT m.id),
-        COUNT(DISTINCT l.id),
-        c.createdAt,
-        c.updatedAt
-    )
-    FROM Course c
-    LEFT JOIN CourseModule m ON m.course.id = c.id
-    LEFT JOIN Lesson l ON l.module.id = m.id
-    WHERE (:keyword IS NULL OR 
-           LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-           OR LOWER(c.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
-      AND (:isPublished IS NULL OR c.published = :isPublished)
-    GROUP BY c.id, c.title, c.description, c.language, c.skillFocus,
-             c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
-    """)
+            SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(
+                c.id,
+                c.title,
+                c.description,
+                c.language,
+                c.thumbnail,
+                c.skillFocus,
+                c.priceCents,
+                c.currency,
+                c.published,
+                COUNT(DISTINCT m.id),
+                COUNT(DISTINCT l.id),
+                c.createdAt,
+                c.updatedAt
+            )
+            FROM Course c
+            LEFT JOIN CourseModule m ON m.course.id = c.id
+            LEFT JOIN Lesson l ON l.module.id = m.id
+            WHERE (:keyword IS NULL OR 
+                   LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(c.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND (:isPublished IS NULL OR c.published = :isPublished)
+            GROUP BY c.id, c.title, c.description, c.language,c.thumbnail, c.skillFocus,
+                     c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
+            """)
     Page<CourseWithStatsResponse> searchWithStats(
             @Param("keyword") String keyword,
             @Param("isPublished") Boolean isPublished,
@@ -103,6 +108,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
                     c.title,
                     c.description,
                     c.language,
+                    c.thumbnail,
                     c.skillFocus,
                     c.priceCents,
                     c.currency,
@@ -123,7 +129,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
                       OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                   )
                   AND (:isPublished IS NULL OR c.published = :isPublished)
-                GROUP BY c.id, c.title, c.description, c.language, c.skillFocus,
+                GROUP BY c.id, c.title, c.description, c.language,c.thumbnail, c.skillFocus,
                          c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
             """)
     Page<CourseWithStatsResponse> searchByOwnerWithStats(
@@ -132,5 +138,21 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
             @Param("isPublished") Boolean isPublished,
             Pageable pageable
     );
+
+    @Query("SELECT c.createdBy.id FROM Course c WHERE c.id = :id")
+    Optional<UUID> findOwnerIdById(@Param("id") UUID id);
+
+    @Modifying
+    @Query("UPDATE Course c SET c.deleted = true, c.deletedAt = :now WHERE c.id = :id")
+    void softDeleteById(@Param("id") UUID id, @Param("now") Instant now);
+
+    @Query("""
+            SELECT c.createdBy.id
+            FROM Course c
+            JOIN CourseModule m ON m.course.id = c.id
+            JOIN Lesson l ON l.module.id = m.id
+            WHERE l.id = :lessonId
+            """)
+    Optional<UUID> findOwnerIdByLessonId(@Param("lessonId") UUID lessonId);
 
 }

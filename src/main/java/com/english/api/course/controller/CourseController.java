@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,7 +51,7 @@ public class CourseController {
     // === Create new course ===
     @PostMapping
     public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
-        return ResponseEntity.ok(courseService.create(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(courseService.create(request));
     }
 
     @PutMapping("/{id}")

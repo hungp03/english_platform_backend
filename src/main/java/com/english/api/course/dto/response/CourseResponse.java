@@ -13,6 +13,7 @@ public record CourseResponse(
         String slug,
         String description,
         String language,
+        String thumbnail,
         List<String> skillFocus,
         Long priceCents,
         String currency,

@@ -12,13 +12,13 @@ import java.util.UUID;
  * Created by hungpham on 10/4/2025
  */
 public interface CourseModuleService {
-    List<CourseModuleResponse> create(UUID courseId, List<CourseModuleRequest> requests);
+    CourseModuleResponse create(UUID courseId, CourseModuleRequest requests);
 
     List<CourseModuleResponse> list(UUID courseId);
 
     CourseModuleResponse getById(UUID courseId, UUID moduleId);
 
-    List<CourseModuleUpdateResponse> update(UUID courseId, List<CourseModuleUpdateRequest> requests);
+    CourseModuleUpdateResponse update(UUID courseId, CourseModuleUpdateRequest requests);
 
     void delete(UUID courseId, UUID moduleId);
 }

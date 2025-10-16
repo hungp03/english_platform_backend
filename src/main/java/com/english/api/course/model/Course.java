@@ -36,6 +36,8 @@ public class Course {
 
     private String language;
 
+    private String thumbnail;
+
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "skill_focus", columnDefinition = "text[]")
     private String[] skillFocus;

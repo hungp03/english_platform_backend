@@ -5,7 +5,6 @@ package com.english.api.course.dto.request;
  */
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public record CourseModuleRequest(
         @NotBlank(message = "Module title must not be blank")

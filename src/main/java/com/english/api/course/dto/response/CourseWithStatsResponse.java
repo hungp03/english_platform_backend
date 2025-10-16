@@ -11,6 +11,7 @@ public record CourseWithStatsResponse (
         String title,
         String description,
         String language,
+        String thumbnail,
         String[] skillFocus,
         Long priceCents,
         String currency,

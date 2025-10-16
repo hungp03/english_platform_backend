@@ -3,6 +3,7 @@ package com.english.api.course.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceNotFoundException;
+import com.english.api.common.exception.UnauthorizedException;
 import com.english.api.course.dto.request.CourseRequest;
 import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.dto.response.CourseWithStatsResponse;
@@ -67,29 +68,52 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     @Override
     public CourseResponse update(UUID id, CourseRequest req) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+
+        UUID ownerId = courseRepository.findOwnerIdById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+
+        if (!ownerId.equals(currentUserId)) {
+            throw new UnauthorizedException("You are not allowed to update this course.");
+        }
+
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         course.setTitle(req.title());
         course.setDescription(req.description());
         course.setLanguage(req.language());
+
+        if (req.thumbnail() != null && !req.thumbnail().isBlank()) {
+            course.setThumbnail(req.thumbnail());
+        }
+
         if (req.skillFocus() != null) {
             course.setSkillFocus(req.skillFocus().toArray(new String[0]));
         }
+
         course.setPriceCents(req.priceCents());
         course.setCurrency(req.currency());
 
         return mapper.toResponse(courseRepository.save(course));
     }
 
+
     @Override
+    @Transactional
     public void delete(UUID id) {
-        Course course = courseRepository.findById(id)
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+
+        UUID ownerId = courseRepository.findOwnerIdById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
-        course.setDeletedAt(Instant.now());
-        course.setDeleted(true);
-        courseRepository.save(course);
+
+        if (!ownerId.equals(currentUserId)) {
+            throw new UnauthorizedException("You are not allowed to delete this course.");
+        }
+
+        courseRepository.softDeleteById(id, Instant.now());
     }
+
 
     @Transactional
     @Override

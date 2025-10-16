@@ -1,16 +1,15 @@
 package com.english.api.course.service.impl;
 
+import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.exception.DuplicatePositionException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
+import com.english.api.common.exception.UnauthorizedException;
 import com.english.api.course.dto.request.LessonRequest;
 import com.english.api.course.dto.response.LessonResponse;
 import com.english.api.course.mapper.LessonMapper;
 import com.english.api.course.model.*;
-import com.english.api.course.repository.CourseModuleRepository;
-import com.english.api.course.repository.LessonMediaRepository;
-import com.english.api.course.repository.LessonRepository;
-import com.english.api.course.repository.MediaAssetRepository;
+import com.english.api.course.repository.*;
 import com.english.api.course.service.LessonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +25,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class LessonServiceImpl implements LessonService {
-
+    private final CourseRepository courseRepository;
     private final CourseModuleRepository moduleRepository;
     private final LessonRepository lessonRepository;
     private final MediaAssetRepository assetRepository;
@@ -92,6 +91,7 @@ public class LessonServiceImpl implements LessonService {
     @Override
     @Transactional
     public LessonResponse update(UUID moduleId, UUID lessonId, LessonRequest request) {
+        validateCourseOwnershipByLesson(lessonId);
         Lesson lesson = lessonRepository.findById(lessonId)
                 .filter(l -> l.getModule().getId().equals(moduleId))
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
@@ -152,6 +152,7 @@ public class LessonServiceImpl implements LessonService {
     // --- DELETE ---
     @Override
     public void delete(UUID moduleId, UUID lessonId) {
+        validateCourseOwnershipByLesson(lessonId);
         Lesson lesson = lessonRepository.findById(lessonId)
                 .filter(l -> l.getModule().getId().equals(moduleId))
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
@@ -161,6 +162,7 @@ public class LessonServiceImpl implements LessonService {
     // --- ATTACH ASSET ---
     @Override
     public LessonResponse attachAsset(UUID lessonId, UUID assetId) {
+        validateCourseOwnershipByLesson(lessonId);
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
         MediaAsset asset = assetRepository.findById(assetId)
@@ -184,6 +186,7 @@ public class LessonServiceImpl implements LessonService {
     // --- DETACH ASSET ---
     @Override
     public LessonResponse detachAsset(UUID lessonId, UUID assetId) {
+        validateCourseOwnershipByLesson(lessonId);
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
@@ -197,4 +200,17 @@ public class LessonServiceImpl implements LessonService {
         lessonMediaRepository.delete(link);
         return lessonMapper.toResponse(lesson);
     }
+
+    private void validateCourseOwnershipByLesson(UUID lessonId) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+
+        // Truy vấn trực tiếp chủ sở hữu của course qua lesson
+        UUID ownerId = courseRepository.findOwnerIdByLessonId(lessonId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found for this lesson"));
+
+        if (!ownerId.equals(currentUserId)) {
+            throw new UnauthorizedException("You are not allowed to modify this lesson.");
+        }
+    }
+
 }

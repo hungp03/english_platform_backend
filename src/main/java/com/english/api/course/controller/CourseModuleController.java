@@ -7,6 +7,7 @@ import com.english.api.course.dto.response.CourseModuleUpdateResponse;
 import com.english.api.course.service.CourseModuleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,18 +37,18 @@ public class CourseModuleController {
     }
 
     @PostMapping
-    public ResponseEntity<List<CourseModuleResponse>> create(
+    public ResponseEntity<CourseModuleResponse> create(
             @PathVariable UUID courseId,
-            @Valid @RequestBody List<@Valid CourseModuleRequest> requests
+            @Valid @RequestBody CourseModuleRequest requests
     ) {
-        return ResponseEntity.ok(service.create(courseId, requests));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(courseId, requests));
     }
 
 
     @PutMapping
-    public ResponseEntity<List<CourseModuleUpdateResponse>> update(
+    public ResponseEntity<CourseModuleUpdateResponse> update(
             @PathVariable UUID courseId,
-            @Valid @RequestBody List<@Valid CourseModuleUpdateRequest> requests
+            @Valid @RequestBody CourseModuleUpdateRequest requests
     ) {
         return ResponseEntity.ok(service.update(courseId, requests));
     }

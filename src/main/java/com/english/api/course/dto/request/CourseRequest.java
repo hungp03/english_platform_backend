@@ -19,6 +19,8 @@ public record CourseRequest(
         @Size(max = 10, message = "Language code too long")
         String language,
 
+        String thumbnail,
+        @Size(max = 10, message = "Skill focus list must not exceed 10 items")
         List<@NotBlank String> skillFocus,
 
         @NotNull(message = "Price is required")
