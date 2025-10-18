@@ -34,6 +34,9 @@ public class Course {
 
     private String description;
 
+    @Column(name = "detailed_description", columnDefinition = "text")
+    private String detailedDescription;
+
     private String language;
 
     private String thumbnail;

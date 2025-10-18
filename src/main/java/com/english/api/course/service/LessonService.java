@@ -2,6 +2,7 @@ package com.english.api.course.service;
 
 import com.english.api.course.dto.request.LessonRequest;
 import com.english.api.course.dto.response.LessonResponse;
+import com.english.api.course.dto.response.LessonSummaryResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -12,7 +13,7 @@ import java.util.UUID;
 public interface LessonService {
     LessonResponse create(UUID moduleId, LessonRequest request);
 
-    List<LessonResponse> list(UUID moduleId);
+    List<LessonSummaryResponse> list(UUID moduleId);
 
     // --- Get by ID ---
     LessonResponse getById(UUID moduleId, UUID lessonId);

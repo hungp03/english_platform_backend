@@ -1,5 +1,6 @@
 package com.english.api.course.repository;
 
+import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseWithStatsResponse;
 import com.english.api.course.model.Course;
 import org.springframework.data.domain.Page;
@@ -22,29 +23,31 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
     boolean existsBySlug(String slug);
 
     @Query("""
-            SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(
-                c.id,
-                c.title,
-                c.description,
-                c.language,
-                c.thumbnail,
-                c.skillFocus,
-                c.priceCents,
-                c.currency,
-                c.published,
-                COUNT(DISTINCT m.id),
-                COUNT(DISTINCT l.id),
-                c.createdAt,
-                c.updatedAt
-            )
-            FROM Course c
-            LEFT JOIN CourseModule m ON m.course.id = c.id
-            LEFT JOIN Lesson l ON l.module.id = m.id
-            WHERE c.id = :courseId
-            GROUP BY c.id, c.title, c.description, c.language,c.thumbnail, c.skillFocus,
-                     c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
-            """)
-    Optional<CourseWithStatsResponse> findByIdWithStats(@Param("courseId") UUID courseId);
+        SELECT new com.english.api.course.dto.response.CourseDetailResponse(
+            c.id,
+            c.title,
+            c.slug,
+            c.description,
+            c.detailedDescription,
+            c.language,
+            c.thumbnail,
+            c.skillFocus,
+            c.priceCents,
+            c.currency,
+            c.published,
+            cb.fullName,
+            c.updatedAt,
+            COUNT(DISTINCT m.id),
+            COUNT(DISTINCT l.id)
+        )
+        FROM Course c
+        LEFT JOIN c.createdBy cb
+        LEFT JOIN CourseModule m ON m.course.id = c.id
+        LEFT JOIN Lesson l ON l.module.id = m.id
+        WHERE c.id = :id
+        GROUP BY c.id, cb.fullName
+    """)
+    Optional<CourseDetailResponse> findDetailById(@Param("id") UUID id);
 
     @Query("""
             SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(

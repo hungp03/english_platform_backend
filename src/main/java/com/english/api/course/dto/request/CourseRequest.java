@@ -12,8 +12,10 @@ public record CourseRequest(
         @Size(max = 255, message = "Title must not exceed 255 characters")
         String title,
 
-        @Size(max = 2000, message = "Description must not exceed 2000 characters")
+        @Size(max = 255, message = "Description must not exceed 255 characters")
         String description,
+
+        String detailedDescription,
 
         @NotBlank(message = "Language is required")
         @Size(max = 10, message = "Language code too long")

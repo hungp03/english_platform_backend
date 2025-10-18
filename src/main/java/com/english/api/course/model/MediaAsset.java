@@ -1,9 +1,12 @@
 package com.english.api.course.model;
 
 import com.english.api.user.model.User;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -31,7 +34,8 @@ public class MediaAsset {
     private String url;
 
     @Column(columnDefinition = "jsonb")
-    private String meta;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private JsonNode meta;
 
     private Instant createdAt;
 

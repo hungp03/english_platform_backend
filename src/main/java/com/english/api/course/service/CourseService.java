@@ -2,6 +2,7 @@ package com.english.api.course.service;
 
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.request.CourseRequest;
+import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.dto.response.CourseWithStatsResponse;
 import org.springframework.data.domain.Pageable;
@@ -13,7 +14,7 @@ import java.util.UUID;
  * Created by hungpham on 10/2/2025
  */
 public interface CourseService {
-    CourseWithStatsResponse getById(UUID id);
+    CourseDetailResponse getById(UUID id);
 
     @Transactional
     CourseResponse create(CourseRequest req);

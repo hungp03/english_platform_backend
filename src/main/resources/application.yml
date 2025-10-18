@@ -79,8 +79,14 @@ springdoc:
     enabled: false
     url: /v3/api-docs
 app:
+  media:
+    secret-token: ${MEDIA_SECRET_TOKEN}
   register-verification-link: ${REGISTRATION_VERIFY_URL}
   client-url: ${CLIENT_URL}
+  worker:
+    url: ${WORKER_URL}
+    api-token: ${WORKER_API_TOKEN}
+    callback-secret: ${WORKER_CALLBACK_SECRET}
 
 cloud:
   endpoint: ${S3_ENDPOINT}

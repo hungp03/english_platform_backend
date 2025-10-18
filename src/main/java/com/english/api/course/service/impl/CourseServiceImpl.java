@@ -5,6 +5,7 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.common.exception.UnauthorizedException;
 import com.english.api.course.dto.request.CourseRequest;
+import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.dto.response.CourseWithStatsResponse;
 import com.english.api.course.mapper.CourseMapper;
@@ -31,8 +32,8 @@ public class CourseServiceImpl implements CourseService {
     private final CourseMapper mapper;
 
     @Override
-    public CourseWithStatsResponse getById(UUID id) {
-        return courseRepository.findByIdWithStats(id)
+    public CourseDetailResponse getById(UUID id) {
+        return courseRepository.findDetailById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
     }
 
@@ -82,6 +83,7 @@ public class CourseServiceImpl implements CourseService {
 
         course.setTitle(req.title());
         course.setDescription(req.description());
+        course.setDetailedDescription(req.detailedDescription());
         course.setLanguage(req.language());
 
         if (req.thumbnail() != null && !req.thumbnail().isBlank()) {

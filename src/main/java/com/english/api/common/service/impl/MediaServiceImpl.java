@@ -44,10 +44,10 @@ public class MediaServiceImpl implements MediaService {
             "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp"
     );
 
-    // Cấu hình quy tắc cho từng thư mục upload
     private static final Map<String, FolderRule> FOLDER_RULES = Map.of(
-            "users", new FolderRule(2 * 1024 * 1024, IMAGE_MIME_TYPES),     // 2MB, chỉ ảnh
-            "forums", new FolderRule(50 * 1024 * 1024, ALLOWED_MIME_TYPES)  // 50MB, tất cả loại hợp lệ
+            "users", new FolderRule(2 * 1024 * 1024, IMAGE_MIME_TYPES), // 2MB, chỉ ảnh
+            "forums", new FolderRule(50 * 1024 * 1024, ALLOWED_MIME_TYPES),// 50MB, tất cả loại hợp lệ
+            "course_thumbnail", new FolderRule(5 * 1024 * 1024, IMAGE_MIME_TYPES) // 5MB, chỉ ảnh
     );
 
     // Inner class chứa rule cho từng folder

@@ -2,6 +2,7 @@ package com.english.api.course.controller;
 
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.request.CourseRequest;
+import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.dto.response.CourseWithStatsResponse;
 import com.english.api.course.service.CourseService;
@@ -44,7 +45,7 @@ public class CourseController {
 
     // === Get course by id ===
     @GetMapping("/{id}")
-    public ResponseEntity<CourseWithStatsResponse> getCourseById(@PathVariable UUID id) {
+    public ResponseEntity<CourseDetailResponse> getCourseById(@PathVariable UUID id) {
         return ResponseEntity.ok(courseService.getById(id));
     }
 

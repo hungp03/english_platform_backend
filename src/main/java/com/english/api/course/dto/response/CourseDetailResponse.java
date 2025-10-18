@@ -1,13 +1,12 @@
 package com.english.api.course.dto.response;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 /**
- * Created by hungpham on 10/2/2025
+ * Created by hungpham on 10/18/2025
  */
-public record CourseResponse(
+public record CourseDetailResponse(
         UUID id,
         String title,
         String slug,
@@ -15,11 +14,13 @@ public record CourseResponse(
         String detailedDescription,
         String language,
         String thumbnail,
-        List<String> skillFocus,
+        String[] skillFocus,
         Long priceCents,
         String currency,
         boolean published,
-        Instant publishedAt,
-        Instant createdAt,
-        Instant updatedAt
-) {}
+        String createdBy,
+        Instant updatedAt,
+        Long moduleCount,
+        Long lessonCount
+) {
+}

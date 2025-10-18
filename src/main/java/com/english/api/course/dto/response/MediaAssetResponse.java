@@ -1,5 +1,7 @@
 package com.english.api.course.dto.response;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -10,7 +12,7 @@ public record MediaAssetResponse(
         UUID id,
         String mimeType,
         String url,
-        String meta,
+        JsonNode meta,
         Instant createdAt
 ) {}
 

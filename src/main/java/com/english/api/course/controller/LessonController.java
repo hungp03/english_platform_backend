@@ -2,9 +2,11 @@ package com.english.api.course.controller;
 
 import com.english.api.course.dto.request.LessonRequest;
 import com.english.api.course.dto.response.LessonResponse;
+import com.english.api.course.dto.response.LessonSummaryResponse;
 import com.english.api.course.service.LessonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +24,7 @@ public class LessonController {
 
     // --- List ---
     @GetMapping
-    public ResponseEntity<List<LessonResponse>> list(@PathVariable UUID moduleId) {
+    public ResponseEntity<List<LessonSummaryResponse>> list(@PathVariable UUID moduleId) {
         return ResponseEntity.ok(service.list(moduleId));
     }
 
@@ -41,7 +43,7 @@ public class LessonController {
             @PathVariable UUID moduleId,
             @Valid @RequestBody LessonRequest request
     ) {
-        return ResponseEntity.ok(service.create(moduleId, request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(moduleId, request));
     }
 
     // --- Update ---
