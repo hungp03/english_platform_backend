@@ -3,7 +3,7 @@ package com.english.api.cart.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.cart.dto.response.CartItemResponse;
 import com.english.api.cart.dto.response.CartPaginationResponse;
-import com.english.api.cart.dto.response.CourseInCartResponse;
+import com.english.api.cart.mapper.CartItemMapper;
 import com.english.api.cart.model.CartItem;
 import com.english.api.cart.repository.CartItemRepository;
 import com.english.api.cart.service.CartService;
@@ -28,6 +28,7 @@ public class CartServiceImpl implements CartService {
 
     private final CartItemRepository cartItemRepository;
     private final CourseRepository courseRepository;
+    private final CartItemMapper cartItemMapper;
 
     @Transactional
     @Override
@@ -76,8 +77,8 @@ public class CartServiceImpl implements CartService {
         // Get paginated cart items
         Page<CartItem> cartItemsPage = cartItemRepository.findByUserIdWithPublishedCourses(currentUserId, pageable);
 
-        // Map to response
-        Page<CartItemResponse> itemResponsesPage = cartItemsPage.map(this::mapToCartItemResponse);
+        // Map to response using MapStruct
+        Page<CartItemResponse> itemResponsesPage = cartItemsPage.map(cartItemMapper::toCartItemResponse);
 
         // Get total count of published courses in cart
         long totalPublishedCourses = cartItemRepository.countPublishedByUserId(currentUserId);
@@ -115,27 +116,5 @@ public class CartServiceImpl implements CartService {
     public void clearCart() {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         cartItemRepository.deleteAllByUserId(currentUserId);
-    }
-
-    private CartItemResponse mapToCartItemResponse(CartItem cartItem) {
-        Course course = cartItem.getCourse();
-
-        CourseInCartResponse courseResponse = new CourseInCartResponse(
-                course.getId(),
-                course.getTitle(),
-                course.getSlug(),
-                course.getDescription(),
-                course.getThumbnail(),
-                course.getLanguage(),
-                course.getPriceCents(),
-                course.getCurrency(),
-                course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : null
-        );
-
-        return new CartItemResponse(
-                cartItem.getId(),
-                courseResponse,
-                cartItem.getAddedAt()
-        );
     }
 }
