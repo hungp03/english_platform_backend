@@ -29,10 +29,16 @@ public class CourseModule {
 
     private Integer position;
 
+    @Builder.Default
+    private Boolean published = false;
+
     @PrePersist
     public void prePersist() {
         if (id == null) {
             id = UuidCreator.getTimeOrderedEpoch(); // UUIDv7
+        }
+        if (published == null) {
+            published = false;
         }
     }
 }

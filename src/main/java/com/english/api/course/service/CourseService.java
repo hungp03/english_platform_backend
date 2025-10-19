@@ -19,9 +19,9 @@ public interface CourseService {
     @Transactional
     CourseResponse create(CourseRequest req);
 
-    PaginationResponse getCourses(Pageable pageable, String keyword, Boolean isPublished);
+    PaginationResponse getCourses(Pageable pageable, String keyword, Boolean isPublished, String[] skills);
 
-    PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, Boolean isPublished);
+    PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, Boolean isPublished, String[] skills);
 
     @Transactional
     CourseResponse update(UUID id, CourseRequest req);
@@ -30,4 +30,6 @@ public interface CourseService {
 
     @Transactional
     CourseResponse publish(UUID id, boolean publish);
+
+    PaginationResponse getPublishedCourses(Pageable pageable, String keyword, String[] skills);
 }

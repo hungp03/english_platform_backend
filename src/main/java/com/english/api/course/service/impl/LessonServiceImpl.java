@@ -77,6 +77,11 @@ public class LessonServiceImpl implements LessonService {
         return lessonRepository.findSummaryByModuleId(moduleId);
     }
 
+    @Override
+    public List<LessonSummaryResponse> listPublished(UUID moduleId) {
+        return lessonRepository.findPublishedSummaryByModuleId(moduleId);
+    }
+
 
     // --- GET ---
     @Override
@@ -211,6 +216,21 @@ public class LessonServiceImpl implements LessonService {
         if (!ownerId.equals(currentUserId)) {
             throw new UnauthorizedException("You are not allowed to modify this lesson.");
         }
+    }
+
+    // --- PUBLISH ---
+    @Override
+    @Transactional
+    public LessonResponse publish(UUID moduleId, UUID lessonId, boolean publish) {
+        validateCourseOwnershipByLesson(lessonId);
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .filter(l -> l.getModule().getId().equals(moduleId))
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
+
+        lesson.setPublished(publish);
+        lessonRepository.save(lesson);
+
+        return lessonMapper.toResponse(lesson);
     }
 
 }

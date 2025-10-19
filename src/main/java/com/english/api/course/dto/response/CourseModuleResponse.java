@@ -9,6 +9,7 @@ public record CourseModuleResponse(
         UUID id,
         String title,
         Integer position,
+        Boolean published,
         Long lessonCount
 ) {}
 

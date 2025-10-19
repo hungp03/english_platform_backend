@@ -16,6 +16,7 @@ public record LessonResponse(
         Integer estimatedMin,
         Integer position,
         Boolean isFree,
+        Boolean published,
         JsonNode content,
         UUID primaryMediaId,
         List<UUID> attachmentIds

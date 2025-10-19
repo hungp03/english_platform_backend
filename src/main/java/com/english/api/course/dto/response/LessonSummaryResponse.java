@@ -11,5 +11,6 @@ public record LessonSummaryResponse(
         String kind,
         Integer estimatedMin,
         Integer position,
-        Boolean isFree
+        Boolean isFree,
+        Boolean published
 ) {}

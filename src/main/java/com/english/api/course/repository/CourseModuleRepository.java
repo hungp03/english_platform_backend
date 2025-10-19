@@ -18,26 +18,38 @@ import java.util.UUID;
 public interface CourseModuleRepository extends JpaRepository<CourseModule, UUID> {
     @Query("""
                 SELECT new com.english.api.course.dto.response.CourseModuleResponse(
-                    m.id, m.title, m.position, COUNT(l.id)
+                    m.id, m.title, m.position, m.published, COUNT(l.id)
                 )
                 FROM CourseModule m
                 LEFT JOIN Lesson l ON l.module.id = m.id
                 WHERE m.course.id = :courseId
-                GROUP BY m.id, m.title, m.position
+                GROUP BY m.id, m.title, m.position, m.published
                 ORDER BY m.position
             """)
     List<CourseModuleResponse> findModulesWithLessonCount(UUID courseId);
 
     @Query("""
                 SELECT new com.english.api.course.dto.response.CourseModuleResponse(
-                    m.id, m.title, m.position, COUNT(l.id)
+                    m.id, m.title, m.position, m.published, COUNT(l.id)
                 )
                 FROM CourseModule m
                 LEFT JOIN Lesson l ON l.module.id = m.id
                 WHERE m.course.id = :courseId AND m.id = :moduleId
-                GROUP BY m.id, m.title, m.position
+                GROUP BY m.id, m.title, m.position, m.published
             """)
     Optional<CourseModuleResponse> findModuleWithLessonCount(UUID courseId, UUID moduleId);
+
+    @Query("""
+                SELECT new com.english.api.course.dto.response.CourseModuleResponse(
+                    m.id, m.title, m.position, m.published, COUNT(l.id)
+                )
+                FROM CourseModule m
+                LEFT JOIN Lesson l ON l.module.id = m.id
+                WHERE m.course.id = :courseId AND m.published = true
+                GROUP BY m.id, m.title, m.position, m.published
+                ORDER BY m.position
+            """)
+    List<CourseModuleResponse> findPublishedModulesWithLessonCount(UUID courseId);
 
     boolean existsByCourseIdAndPosition(UUID courseId, Integer position);
 

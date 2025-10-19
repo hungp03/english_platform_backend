@@ -19,12 +19,22 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
     boolean existsByModuleIdAndPosition(UUID moduleId, Integer position);
     @Query("SELECT COALESCE(MAX(l.position), 0) FROM Lesson l WHERE l.module.id = :moduleId")
     Optional<Integer> findMaxPositionByModuleId(@Param("moduleId") UUID moduleId);
+
     @Query("""
         SELECT new com.english.api.course.dto.response.LessonSummaryResponse(
-            l.id, l.title, l.kind, l.estimatedMin, l.position, l.isFree)
+            l.id, l.title, l.kind, l.estimatedMin, l.position, l.isFree, l.published)
         FROM Lesson l
         WHERE l.module.id = :moduleId
         ORDER BY l.position
         """)
     List<LessonSummaryResponse> findSummaryByModuleId(@Param("moduleId") UUID moduleId);
+
+    @Query("""
+        SELECT new com.english.api.course.dto.response.LessonSummaryResponse(
+            l.id, l.title, l.kind, l.estimatedMin, l.position, l.isFree, l.published)
+        FROM Lesson l
+        WHERE l.module.id = :moduleId AND l.published = true
+        ORDER BY l.position
+        """)
+    List<LessonSummaryResponse> findPublishedSummaryByModuleId(@Param("moduleId") UUID moduleId);
 }

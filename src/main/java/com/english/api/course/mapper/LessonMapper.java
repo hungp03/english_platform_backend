@@ -58,6 +58,7 @@ public interface LessonMapper {
                 lesson.getEstimatedMin(),
                 lesson.getPosition(),
                 lesson.getIsFree(),
+                lesson.getPublished(),
                 lesson.getContent(),
                 primaryId,
                 attachmentIds

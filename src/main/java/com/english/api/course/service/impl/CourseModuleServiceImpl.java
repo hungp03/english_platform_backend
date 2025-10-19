@@ -74,6 +74,14 @@ public class CourseModuleServiceImpl implements CourseModuleService {
     }
 
     @Override
+    public List<CourseModuleResponse> listPublished(UUID courseId) {
+        if (!courseRepository.existsById(courseId)) {
+            throw new ResourceNotFoundException("Course not found");
+        }
+        return moduleRepository.findPublishedModulesWithLessonCount(courseId);
+    }
+
+    @Override
     public CourseModuleResponse getById(UUID courseId, UUID moduleId) {
         return moduleRepository.findModuleWithLessonCount(courseId, moduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Module not found"));
@@ -144,6 +152,30 @@ public class CourseModuleServiceImpl implements CourseModuleService {
 
         // Cập nhật vị trí
         // moduleRepository.shiftPositionsAfterDelete(courseId, module.getPosition());
+    }
+
+    @Override
+    @Transactional
+    public CourseModuleResponse publish(UUID courseId, UUID moduleId, boolean publish) {
+        // Kiểm tra quyền sở hữu
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        UUID ownerId = courseRepository.findOwnerIdById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+
+        if (!ownerId.equals(currentUserId)) {
+            throw new UnauthorizedException("You are not allowed to modify this course.");
+        }
+
+        // Tìm module
+        CourseModule module = moduleRepository.findById(moduleId)
+                .filter(m -> m.getCourse().getId().equals(courseId))
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found"));
+
+        // Cập nhật trạng thái publish
+        module.setPublished(publish);
+        moduleRepository.save(module);
+
+        return mapper.toResponse(module);
     }
 
 }

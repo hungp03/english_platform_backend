@@ -29,18 +29,30 @@ public class CourseController {
     public ResponseEntity<PaginationResponse> getCourses(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Boolean isPublished
+            @RequestParam(required = false) Boolean isPublished,
+            @RequestParam(required = false) String[] skills
     ) {
-        return ResponseEntity.ok(courseService.getCourses(pageable, keyword, isPublished));
+        return ResponseEntity.ok(courseService.getCourses(pageable, keyword, isPublished, skills));
+    }
+
+    // Get only published courses (with pagination, keyword)
+    @GetMapping("/published")
+    public ResponseEntity<PaginationResponse> getPublishedCourses(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String[] skills
+    ) {
+        return ResponseEntity.ok(courseService.getPublishedCourses(pageable, keyword, skills));
     }
 
     @GetMapping("mine")
     public ResponseEntity<PaginationResponse> getMineCourses(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Boolean isPublished
+            @RequestParam(required = false) Boolean isPublished,
+            @RequestParam(required = false) String[] skills
     ){
-        return ResponseEntity.ok(courseService.getCoursesForInstructor(pageable, keyword, isPublished));
+        return ResponseEntity.ok(courseService.getCoursesForInstructor(pageable, keyword, isPublished, skills));
     }
 
     // === Get course by id ===

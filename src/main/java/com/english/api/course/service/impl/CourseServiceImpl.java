@@ -47,22 +47,46 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public PaginationResponse getCourses(Pageable pageable, String keyword, Boolean isPublished) {
-        Page<CourseWithStatsResponse> page;
-        if ((keyword == null || keyword.isBlank()) && isPublished == null) {
-            // no filter
-            page = courseRepository.findAllWithStats(pageable);
-        } else {
-            page = courseRepository.searchWithStats(keyword, isPublished, pageable);
-        }
+    public PaginationResponse getCourses(Pageable pageable, String keyword, Boolean isPublished, String[] skills) {
+        var page = courseRepository.searchWithStats(keyword, isPublished, skills, pageable)
+                .map(projection -> new CourseWithStatsResponse(
+                        projection.getId(),
+                        projection.getTitle(),
+                        projection.getDescription(),
+                        projection.getLanguage(),
+                        projection.getThumbnail(),
+                        projection.getSkillFocus(),
+                        projection.getPriceCents(),
+                        projection.getCurrency(),
+                        projection.getIsPublished(),
+                        projection.getModuleCount(),
+                        projection.getLessonCount(),
+                        projection.getCreatedAt(),
+                        projection.getUpdatedAt()
+                ));
 
         return PaginationResponse.from(page, pageable);
     }
 
     @Override
-    public PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, Boolean isPublished) {
+    public PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, Boolean isPublished, String[] skills) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        Page<CourseWithStatsResponse> page = courseRepository.searchByOwnerWithStats(currentUserId, keyword, isPublished, pageable);
+        var page = courseRepository.searchByOwnerWithStats(currentUserId, keyword, isPublished, skills, pageable)
+                .map(projection -> new CourseWithStatsResponse(
+                        projection.getId(),
+                        projection.getTitle(),
+                        projection.getDescription(),
+                        projection.getLanguage(),
+                        projection.getThumbnail(),
+                        projection.getSkillFocus(),
+                        projection.getPriceCents(),
+                        projection.getCurrency(),
+                        projection.getIsPublished(),
+                        projection.getModuleCount(),
+                        projection.getLessonCount(),
+                        projection.getCreatedAt(),
+                        projection.getUpdatedAt()
+                ));
         return PaginationResponse.from(page, pageable);
     }
 
@@ -125,5 +149,26 @@ public class CourseServiceImpl implements CourseService {
         course.setPublished(publish);
         course.setPublishedAt(publish ? Instant.now() : null);
         return mapper.toResponse(courseRepository.save(course));
+    }
+
+    @Override
+    public PaginationResponse getPublishedCourses(Pageable pageable, String keyword, String[] skills) {
+        var page = courseRepository.searchWithStats(keyword, true, skills, pageable)
+                .map(projection -> new CourseWithStatsResponse(
+                        projection.getId(),
+                        projection.getTitle(),
+                        projection.getDescription(),
+                        projection.getLanguage(),
+                        projection.getThumbnail(),
+                        projection.getSkillFocus(),
+                        projection.getPriceCents(),
+                        projection.getCurrency(),
+                        projection.getIsPublished(),
+                        projection.getModuleCount(),
+                        projection.getLessonCount(),
+                        projection.getCreatedAt(),
+                        projection.getUpdatedAt()
+                ));
+        return PaginationResponse.from(page, pageable);
     }
 }

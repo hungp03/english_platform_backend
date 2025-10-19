@@ -28,6 +28,11 @@ public class CourseModuleController {
         return ResponseEntity.ok(service.list(courseId));
     }
 
+    @GetMapping("/published")
+    public ResponseEntity<List<CourseModuleResponse>> listPublished(@PathVariable UUID courseId) {
+        return ResponseEntity.ok(service.listPublished(courseId));
+    }
+
     @GetMapping("/{moduleId}")
     public ResponseEntity<CourseModuleResponse> getById(
             @PathVariable UUID courseId,
@@ -61,6 +66,15 @@ public class CourseModuleController {
     ) {
         service.delete(courseId, moduleId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{moduleId}/publish")
+    public ResponseEntity<CourseModuleResponse> publish(
+            @PathVariable UUID courseId,
+            @PathVariable UUID moduleId,
+            @RequestParam(name = "publish") Boolean publish
+    ) {
+        return ResponseEntity.ok(service.publish(courseId, moduleId, publish));
     }
 }
 

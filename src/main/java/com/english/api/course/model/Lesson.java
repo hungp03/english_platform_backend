@@ -36,7 +36,12 @@ public class Lesson {
     private String kind;
     private Integer estimatedMin;
     private Integer position;
+
+    @Builder.Default
     private Boolean isFree = false;
+
+    @Builder.Default
+    private Boolean published = false;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
@@ -48,6 +53,8 @@ public class Lesson {
     @PrePersist
     public void prePersist() {
         if (id == null) id = UuidCreator.getTimeOrderedEpoch();
+        if (isFree == null) isFree = false;
+        if (published == null) published = false;
     }
 
     public Optional<MediaAsset> getPrimaryMedia() {

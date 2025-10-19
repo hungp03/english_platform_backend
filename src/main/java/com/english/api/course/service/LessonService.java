@@ -15,6 +15,8 @@ public interface LessonService {
 
     List<LessonSummaryResponse> list(UUID moduleId);
 
+    List<LessonSummaryResponse> listPublished(UUID moduleId);
+
     // --- Get by ID ---
     LessonResponse getById(UUID moduleId, UUID lessonId);
 
@@ -29,4 +31,7 @@ public interface LessonService {
 
     // --- Detach Asset ---
     LessonResponse detachAsset(UUID lessonId, UUID assetId);
+
+    // --- Publish ---
+    LessonResponse publish(UUID moduleId, UUID lessonId, boolean publish);
 }

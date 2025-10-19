@@ -16,9 +16,13 @@ public interface CourseModuleService {
 
     List<CourseModuleResponse> list(UUID courseId);
 
+    List<CourseModuleResponse> listPublished(UUID courseId);
+
     CourseModuleResponse getById(UUID courseId, UUID moduleId);
 
     CourseModuleUpdateResponse update(UUID courseId, CourseModuleUpdateRequest requests);
 
     void delete(UUID courseId, UUID moduleId);
+
+    CourseModuleResponse publish(UUID courseId, UUID moduleId, boolean publish);
 }
