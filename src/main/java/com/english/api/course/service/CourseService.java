@@ -16,6 +16,8 @@ import java.util.UUID;
 public interface CourseService {
     CourseDetailResponse getById(UUID id);
 
+    CourseDetailResponse getPublishedBySlug(String slug);
+
     @Transactional
     CourseResponse create(CourseRequest req);
 

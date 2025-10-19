@@ -51,9 +51,37 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
     Optional<CourseDetailResponse> findDetailById(@Param("id") UUID id);
 
     @Query("""
+        SELECT new com.english.api.course.dto.response.CourseDetailResponse(
+            c.id,
+            c.title,
+            c.slug,
+            c.description,
+            c.detailedDescription,
+            c.language,
+            c.thumbnail,
+            c.skillFocus,
+            c.priceCents,
+            c.currency,
+            c.published,
+            cb.fullName,
+            c.updatedAt,
+            COUNT(DISTINCT m.id),
+            COUNT(DISTINCT l.id)
+        )
+        FROM Course c
+        LEFT JOIN c.createdBy cb
+        LEFT JOIN CourseModule m ON m.course.id = c.id
+        LEFT JOIN Lesson l ON l.module.id = m.id
+        WHERE c.slug = :slug
+        GROUP BY c.id, cb.fullName
+    """)
+    Optional<CourseDetailResponse> findDetailBySlug(@Param("slug") String slug);
+
+    @Query("""
             SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(
                 c.id,
                 c.title,
+                c.slug,
                 c.description,
                 c.language,
                 c.thumbnail,
@@ -69,7 +97,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
             FROM Course c
             LEFT JOIN CourseModule m ON m.course.id = c.id
             LEFT JOIN Lesson l ON l.module.id = m.id
-            GROUP BY c.id, c.title, c.description, c.language,c.thumbnail, c.skillFocus,
+            GROUP BY c.id, c.title, c.slug, c.description, c.language,c.thumbnail, c.skillFocus,
                      c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
             """)
     Page<CourseWithStatsResponse> findAllWithStats(Pageable pageable);

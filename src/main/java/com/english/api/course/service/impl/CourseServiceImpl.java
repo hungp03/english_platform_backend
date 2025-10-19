@@ -37,6 +37,18 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
     }
 
+    @Override
+    public CourseDetailResponse getPublishedBySlug(String slug) {
+        CourseDetailResponse course = courseRepository.findDetailBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+
+        if (!course.published()) {
+            throw new ResourceNotFoundException("Course not found");
+        }
+
+        return course;
+    }
+
     @Transactional
     @Override
     public CourseResponse create(CourseRequest req) {
@@ -52,6 +64,7 @@ public class CourseServiceImpl implements CourseService {
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
+                        projection.getSlug(),
                         projection.getDescription(),
                         projection.getLanguage(),
                         projection.getThumbnail(),
@@ -75,6 +88,7 @@ public class CourseServiceImpl implements CourseService {
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
+                        projection.getSlug(),
                         projection.getDescription(),
                         projection.getLanguage(),
                         projection.getThumbnail(),
@@ -157,6 +171,7 @@ public class CourseServiceImpl implements CourseService {
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
+                        projection.getSlug(),
                         projection.getDescription(),
                         projection.getLanguage(),
                         projection.getThumbnail(),

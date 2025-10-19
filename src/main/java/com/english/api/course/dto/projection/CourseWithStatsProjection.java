@@ -9,6 +9,7 @@ import java.util.UUID;
 public interface CourseWithStatsProjection {
     UUID getId();
     String getTitle();
+    String getSlug();
     String getDescription();
     String getLanguage();
     String getThumbnail();

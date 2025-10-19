@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.query.NativeQuery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -56,6 +57,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
         String baseQuery = """
             SELECT c.id AS id,
                 c.title AS title,
+                c.slug AS slug,
                 c.description AS description,
                 c.language AS language,
                 c.thumbnail AS thumbnail,
@@ -70,10 +72,10 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             FROM courses c
             LEFT JOIN course_modules m ON m.course_id = c.id
             LEFT JOIN lessons l ON l.module_id = m.id
-            WHERE (:keyword IS NULL OR
-                   LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                   OR LOWER(c.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
-              AND (:isPublished IS NULL OR c.is_published = :isPublished)
+            WHERE (CAST(:keyword AS text) IS NULL OR
+                   LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
+                   OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
+              AND (CAST(:isPublished AS boolean) IS NULL OR c.is_published = CAST(:isPublished AS boolean))
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill
@@ -81,17 +83,17 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                            SELECT LOWER(unnest) FROM unnest(CAST(:skills AS text[]))
                        )
                    ))
-            GROUP BY c.id, c.title, c.description, c.language, c.thumbnail, c.skill_focus,
+            GROUP BY c.id, c.title, c.slug, c.description, c.language, c.thumbnail, c.skill_focus,
                      c.price_cents, c.currency, c.is_published, c.created_at, c.updated_at
             """;
 
         String countQuery = """
             SELECT COUNT(DISTINCT c.id)
             FROM courses c
-            WHERE (:keyword IS NULL OR
-                   LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                   OR LOWER(c.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
-              AND (:isPublished IS NULL OR c.is_published = :isPublished)
+            WHERE (CAST(:keyword AS text) IS NULL OR
+                   LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
+                   OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
+              AND (CAST(:isPublished AS boolean) IS NULL OR c.is_published = CAST(:isPublished AS boolean))
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill
@@ -115,6 +117,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
         String baseQuery = """
             SELECT c.id AS id,
                 c.title AS title,
+                c.slug AS slug,
                 c.description AS description,
                 c.language AS language,
                 c.thumbnail AS thumbnail,
@@ -132,11 +135,11 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             WHERE c.created_by = :ownerId
               AND c.is_deleted = false
               AND (
-                  :keyword IS NULL
-                  OR LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                  OR LOWER(c.description) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                  CAST(:keyword AS text) IS NULL
+                  OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
+                  OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
               )
-              AND (:isPublished IS NULL OR c.is_published = :isPublished)
+              AND (CAST(:isPublished AS boolean) IS NULL OR c.is_published = CAST(:isPublished AS boolean))
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill
@@ -144,7 +147,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                            SELECT LOWER(unnest) FROM unnest(CAST(:skills AS text[]))
                        )
                    ))
-            GROUP BY c.id, c.title, c.description, c.language, c.thumbnail, c.skill_focus,
+            GROUP BY c.id, c.title, c.slug, c.description, c.language, c.thumbnail, c.skill_focus,
                      c.price_cents, c.currency, c.is_published, c.created_at, c.updated_at
             """;
 
@@ -154,11 +157,11 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             WHERE c.created_by = :ownerId
               AND c.is_deleted = false
               AND (
-                  :keyword IS NULL
-                  OR LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                  OR LOWER(c.description) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                  CAST(:keyword AS text) IS NULL
+                  OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
+                  OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
               )
-              AND (:isPublished IS NULL OR c.is_published = :isPublished)
+              AND (CAST(:isPublished AS boolean) IS NULL OR c.is_published = CAST(:isPublished AS boolean))
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill
@@ -222,13 +225,23 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
     }
 
     private void setParameters(Query query, String keyword, Boolean isPublished, UUID ownerId, String[] skills) {
-        query.setParameter("keyword", keyword);
-        query.setParameter("isPublished", isPublished);
+        // Unwrap to Hibernate NativeQuery for better type handling
+        NativeQuery<?> nativeQuery = query.unwrap(NativeQuery.class);
+
+        // Set parameters with proper type handling
+        nativeQuery.setParameter("keyword", keyword);
+        nativeQuery.setParameter("isPublished", isPublished);
+
         if (ownerId != null) {
-            query.setParameter("ownerId", ownerId);
+            nativeQuery.setParameter("ownerId", ownerId);
         }
-        query.setParameter("skillsCount", skills == null ? 0 : skills.length);
-        query.setParameter("skills", skills == null ? new String[0] : skills);
+
+        int skillsCount = (skills == null || skills.length == 0) ? 0 : skills.length;
+        nativeQuery.setParameter("skillsCount", skillsCount);
+
+        // Set array parameter - Hibernate will handle PostgreSQL array type correctly
+        String[] skillsParam = (skills == null || skills.length == 0) ? new String[0] : skills;
+        nativeQuery.setParameter("skills", skillsParam);
     }
 
     private CourseWithStatsProjection mapToProjection(Object[] row) {
@@ -244,23 +257,28 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             }
 
             @Override
-            public String getDescription() {
+            public String getSlug() {
                 return (String) row[2];
             }
 
             @Override
-            public String getLanguage() {
+            public String getDescription() {
                 return (String) row[3];
             }
 
             @Override
-            public String getThumbnail() {
+            public String getLanguage() {
                 return (String) row[4];
             }
 
             @Override
+            public String getThumbnail() {
+                return (String) row[5];
+            }
+
+            @Override
             public String[] getSkillFocus() {
-                Object skillFocus = row[5];
+                Object skillFocus = row[6];
                 if (skillFocus instanceof String[]) {
                     return (String[]) skillFocus;
                 }
@@ -269,7 +287,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
 
             @Override
             public Long getPriceCents() {
-                Object priceCents = row[6];
+                Object priceCents = row[7];
                 if (priceCents instanceof BigInteger) {
                     return ((BigInteger) priceCents).longValue();
                 }
@@ -278,25 +296,16 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
 
             @Override
             public String getCurrency() {
-                return (String) row[7];
+                return (String) row[8];
             }
 
             @Override
             public Boolean getIsPublished() {
-                return (Boolean) row[8];
+                return (Boolean) row[9];
             }
 
             @Override
             public Long getModuleCount() {
-                Object count = row[9];
-                if (count instanceof BigInteger) {
-                    return ((BigInteger) count).longValue();
-                }
-                return count != null ? ((Number) count).longValue() : 0L;
-            }
-
-            @Override
-            public Long getLessonCount() {
                 Object count = row[10];
                 if (count instanceof BigInteger) {
                     return ((BigInteger) count).longValue();
@@ -305,8 +314,17 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             }
 
             @Override
+            public Long getLessonCount() {
+                Object count = row[11];
+                if (count instanceof BigInteger) {
+                    return ((BigInteger) count).longValue();
+                }
+                return count != null ? ((Number) count).longValue() : 0L;
+            }
+
+            @Override
             public Instant getCreatedAt() {
-                Object timestamp = row[11];
+                Object timestamp = row[12];
                 if (timestamp instanceof Timestamp) {
                     return ((Timestamp) timestamp).toInstant();
                 }
@@ -315,7 +333,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
 
             @Override
             public Instant getUpdatedAt() {
-                Object timestamp = row[12];
+                Object timestamp = row[13];
                 if (timestamp instanceof Timestamp) {
                     return ((Timestamp) timestamp).toInstant();
                 }

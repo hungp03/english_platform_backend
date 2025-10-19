@@ -61,6 +61,12 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getById(id));
     }
 
+    // === Get published course by slug ===
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<CourseDetailResponse> getPublishedCourseBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(courseService.getPublishedBySlug(slug));
+    }
+
     // === Create new course ===
     @PostMapping
     public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {

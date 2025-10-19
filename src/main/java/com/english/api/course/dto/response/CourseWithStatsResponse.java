@@ -9,6 +9,7 @@ import java.util.UUID;
 public record CourseWithStatsResponse (
         UUID id,
         String title,
+        String slug,
         String description,
         String language,
         String thumbnail,
