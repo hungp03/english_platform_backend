@@ -2,8 +2,9 @@ package com.english.api.course.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.common.exception.ResourceNotFoundException;
-import com.english.api.common.exception.UnauthorizedException;
+import com.english.api.common.service.MediaService;
 import com.english.api.course.dto.request.CourseRequest;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
@@ -14,7 +15,6 @@ import com.english.api.course.repository.CourseRepository;
 import com.english.api.course.service.CourseService;
 import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +30,7 @@ import java.util.UUID;
 public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final CourseMapper mapper;
+    private final MediaService mediaService;
 
     @Override
     public CourseDetailResponse getById(UUID id) {
@@ -113,7 +114,7 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         if (!ownerId.equals(currentUserId)) {
-            throw new UnauthorizedException("You are not allowed to update this course.");
+            throw new AccessDeniedException("You are not allowed to update this course.");
         }
 
         Course course = courseRepository.findById(id)
@@ -123,8 +124,12 @@ public class CourseServiceImpl implements CourseService {
         course.setDescription(req.description());
         course.setDetailedDescription(req.detailedDescription());
         course.setLanguage(req.language());
-
+        // Store the old thumbnail URL before updating
+        String oldThumbnail = course.getThumbnail();
         if (req.thumbnail() != null && !req.thumbnail().isBlank()) {
+            if (oldThumbnail != null && !oldThumbnail.isBlank() && !oldThumbnail.equals(req.thumbnail())) {
+                mediaService.deleteFileByUrl(oldThumbnail);
+            }
             course.setThumbnail(req.thumbnail());
         }
 
@@ -148,7 +153,7 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         if (!ownerId.equals(currentUserId)) {
-            throw new UnauthorizedException("You are not allowed to delete this course.");
+            throw new AccessDeniedException("You are not allowed to delete this course.");
         }
 
         courseRepository.softDeleteById(id, Instant.now());
@@ -158,6 +163,15 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     @Override
     public CourseResponse publish(UUID id, boolean publish) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+
+        UUID ownerId = courseRepository.findOwnerIdById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+
+        if (!ownerId.equals(currentUserId)) {
+            throw new AccessDeniedException("You are not allowed to publish/unpublish this course.");
+        }
+
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
         course.setPublished(publish);

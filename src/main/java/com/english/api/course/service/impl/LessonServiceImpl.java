@@ -1,10 +1,8 @@
 package com.english.api.course.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
-import com.english.api.common.exception.DuplicatePositionException;
-import com.english.api.common.exception.ResourceInvalidException;
-import com.english.api.common.exception.ResourceNotFoundException;
-import com.english.api.common.exception.UnauthorizedException;
+import com.english.api.common.exception.*;
+import com.english.api.common.service.MediaService;
 import com.english.api.course.dto.request.LessonRequest;
 import com.english.api.course.dto.response.LessonResponse;
 import com.english.api.course.dto.response.LessonSummaryResponse;
@@ -14,6 +12,7 @@ import com.english.api.course.repository.*;
 import com.english.api.course.service.LessonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -32,6 +31,7 @@ public class LessonServiceImpl implements LessonService {
     private final MediaAssetRepository assetRepository;
     private final LessonMediaRepository lessonMediaRepository;
     private final LessonMapper lessonMapper;
+    private final MediaService mediaService;
 
     // --- CREATE ---
     @Override
@@ -97,13 +97,13 @@ public class LessonServiceImpl implements LessonService {
     @Transactional
     public LessonResponse update(UUID moduleId, UUID lessonId, LessonRequest request) {
         validateCourseOwnershipByLesson(lessonId);
+
         Lesson lesson = lessonRepository.findById(lessonId)
                 .filter(l -> l.getModule().getId().equals(moduleId))
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
+        // Cập nhật vị trí nếu có thay đổi
         Integer newPosition = request.position();
-
-        // Check trùng position
         if (newPosition != null && !newPosition.equals(lesson.getPosition())) {
             boolean exists = lessonRepository.existsByModuleIdAndPosition(moduleId, newPosition);
             if (exists) {
@@ -114,55 +114,112 @@ public class LessonServiceImpl implements LessonService {
             lesson.setPosition(newPosition);
         }
 
-        // Update field khác
+        // Cập nhật các trường khác
         lessonMapper.updateFromRequest(request, lesson);
 
         // Xử lý media chính
         UUID mediaId = request.mediaId();
-        Optional<LessonMedia> currentPrimary = lessonMediaRepository
-                .findByLessonIdAndRole(lessonId, LessonMediaRole.PRIMARY);
-
         if (mediaId != null) {
-            MediaAsset media = assetRepository.findById(mediaId)
+            // Xóa media cũ (transaction riêng, commit xong trước)
+            removePrimaryMedia(lessonId);
+
+            // Thêm media mới
+            MediaAsset newMedia = assetRepository.findById(mediaId)
                     .orElseThrow(() -> new ResourceNotFoundException("Media not found"));
-            if (currentPrimary.isEmpty()) {
-                LessonMedia newLink = LessonMedia.builder()
-                        .lesson(lesson)
-                        .media(media)
-                        .role(LessonMediaRole.PRIMARY)
-                        .position(0)
-                        .build();
-                lessonMediaRepository.save(newLink);
-            } else {
-                LessonMedia old = currentPrimary.get();
-                if (!old.getMedia().getId().equals(mediaId)) {
-                    lessonMediaRepository.delete(old);
-                    lessonMediaRepository.save(LessonMedia.builder()
-                            .lesson(lesson)
-                            .media(media)
-                            .role(LessonMediaRole.PRIMARY)
-                            .position(0)
-                            .build());
-                }
-            }
+
+            LessonMedia newPrimary = LessonMedia.builder()
+                    .lesson(lesson)
+                    .media(newMedia)
+                    .role(LessonMediaRole.PRIMARY)
+                    .position(0)
+                    .build();
+
+            lesson.getMediaLinks().add(newPrimary);
         } else {
-            // Gỡ media chính nếu client gửi null
-            currentPrimary.ifPresent(lessonMediaRepository::delete);
+            // Nếu client gửi null → chỉ cần xóa media cũ
+            removePrimaryMedia(lessonId);
         }
 
+        // Lưu lesson (Hibernate sẽ tự insert LessonMedia mới)
         lessonRepository.save(lesson);
         return lessonMapper.toResponse(lesson);
     }
 
+//    -- ALTER TABLE IF EXISTS public.lesson_media DROP CONSTRAINT IF EXISTS fk_lesson_media_asset;
+//
+//    ALTER TABLE IF EXISTS public.lesson_media
+//    ADD CONSTRAINT fk_lesson_media_asset FOREIGN KEY (media_id)
+//    REFERENCES public.media_assets (id) MATCH SIMPLE
+//    ON UPDATE NO ACTION
+//    ON DELETE CASCADE;
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void removePrimaryMedia(UUID lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
+
+        // Lấy danh sách LessonMedia đóng vai trò PRIMARY
+        List<LessonMedia> toRemove = lesson.getMediaLinks().stream()
+                .filter(m -> m.getRole() == LessonMediaRole.PRIMARY)
+                .toList();
+
+        if (!toRemove.isEmpty()) {
+            for (LessonMedia lm : toRemove) {
+                MediaAsset asset = lm.getMedia();
+                String fileUrl = asset.getUrl();
+
+                // Xóa file vật lý (nếu có)
+                if (fileUrl != null && !fileUrl.isBlank()) {
+                    mediaService.deleteFileByUrl(fileUrl);
+                }
+
+                // Xóa luôn MediaAsset (Hibernate sẽ tự xóa LessonMedia vì cascade REMOVE)
+                assetRepository.delete(asset);
+            }
+
+            // Flush để đảm bảo commit transaction xóa trước khi thêm mới
+            lessonRepository.flush();
+        }
+    }
+
+
     // --- DELETE ---
     @Override
+    @Transactional
     public void delete(UUID moduleId, UUID lessonId) {
         validateCourseOwnershipByLesson(lessonId);
+
         Lesson lesson = lessonRepository.findById(lessonId)
                 .filter(l -> l.getModule().getId().equals(moduleId))
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
+
+        // Xóa tất cả media và file vật lý trước khi xóa lesson
+        if (!lesson.getMediaLinks().isEmpty()) {
+            for (LessonMedia lm : lesson.getMediaLinks()) {
+                MediaAsset asset = lm.getMedia();
+                if (asset != null) {
+                    String url = asset.getUrl();
+
+                    // Xóa file thật (nếu có)
+                    if (url != null && !url.isBlank()) {
+                        try {
+                            mediaService.deleteFileByUrl(url);
+                        } catch (Exception ignored) {
+                        }
+                    }
+
+                    // Xóa MediaAsset trong DB
+                    try {
+                        assetRepository.delete(asset);
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        }
+
+        // Hibernate sẽ tự xóa LessonMedia nhờ cascade + orphanRemoval
         lessonRepository.delete(lesson);
     }
+
 
     // --- ATTACH ASSET ---
     @Override
@@ -214,7 +271,7 @@ public class LessonServiceImpl implements LessonService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found for this lesson"));
 
         if (!ownerId.equals(currentUserId)) {
-            throw new UnauthorizedException("You are not allowed to modify this lesson.");
+            throw new AccessDeniedException("You are not allowed to modify this lesson.");
         }
     }
 

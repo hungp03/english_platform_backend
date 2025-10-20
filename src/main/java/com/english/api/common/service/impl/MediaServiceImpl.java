@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -196,16 +197,21 @@ public class MediaServiceImpl implements MediaService {
     @Override
     public void deleteFileByUrl(String fileUrl) {
         if (fileUrl == null || fileUrl.isBlank()) return;
-        String key = fileUrl.replace(publicUrl, "")
-                .replaceAll("^/+", "");
         try {
+            URI uri = URI.create(fileUrl);
+
+            String key = uri.getPath().replaceFirst("^/", "");
+
             DeleteObjectRequest deleteReq = DeleteObjectRequest.builder()
                     .bucket(bucket)
                     .key(key)
                     .build();
+
             s3Client.deleteObject(deleteReq);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
+
 
 }

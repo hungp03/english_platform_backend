@@ -1,10 +1,7 @@
 package com.english.api.course.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
-import com.english.api.common.exception.DuplicatePositionException;
-import com.english.api.common.exception.ResourceInvalidException;
-import com.english.api.common.exception.ResourceNotFoundException;
-import com.english.api.common.exception.UnauthorizedException;
+import com.english.api.common.exception.*;
 import com.english.api.course.dto.request.CourseModuleRequest;
 import com.english.api.course.dto.request.CourseModuleUpdateRequest;
 import com.english.api.course.dto.response.CourseModuleResponse;
@@ -96,7 +93,7 @@ public class CourseModuleServiceImpl implements CourseModuleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         if (!ownerId.equals(currentUserId)) {
-            throw new UnauthorizedException("You are not allowed to modify this course.");
+            throw new AccessDeniedException("You are not allowed to modify this course.");
         }
 
         // 2Tìm module cần update và xác nhận thuộc đúng course
@@ -139,7 +136,7 @@ public class CourseModuleServiceImpl implements CourseModuleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         if (!ownerId.equals(currentUserId)) {
-            throw new UnauthorizedException("You are not allowed to modify this course.");
+            throw new AccessDeniedException("You are not allowed to modify this course.");
         }
 
         // Xác nhận module thuộc đúng course
@@ -163,7 +160,7 @@ public class CourseModuleServiceImpl implements CourseModuleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         if (!ownerId.equals(currentUserId)) {
-            throw new UnauthorizedException("You are not allowed to modify this course.");
+            throw new AccessDeniedException("You are not allowed to modify this course.");
         }
 
         // Tìm module

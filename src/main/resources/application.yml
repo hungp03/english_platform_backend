@@ -95,12 +95,12 @@ cloud:
   bucket: ${S3_BUCKET}
   public-url: ${S3_PUBLIC_URL}
 
-logging:
-  level:
-    org.springframework.orm.jpa: DEBUG
-    org.springframework.transaction: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.jdbc.BatchingBatch: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.hibernate.engine.jdbc.batch.internal.BatchingBatch: DEBUG
-    org.hibernate.engine.jdbc.batch.internal.BatchingBatchPerform: DEBUG
+#logging:
+#  level:
+#    org.springframework.orm.jpa: DEBUG
+#    org.springframework.transaction: DEBUG
+#    org.hibernate.SQL: DEBUG
+#    org.hibernate.jdbc.BatchingBatch: DEBUG
+#    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+#    org.hibernate.engine.jdbc.batch.internal.BatchingBatch: DEBUG
+#    org.hibernate.engine.jdbc.batch.internal.BatchingBatchPerform: DEBUG

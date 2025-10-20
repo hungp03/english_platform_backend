@@ -9,6 +9,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -38,6 +40,9 @@ public class MediaAsset {
     private JsonNode meta;
 
     private Instant createdAt;
+
+    @OneToMany(mappedBy = "media", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<LessonMedia> lessonMediaLinks = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

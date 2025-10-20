@@ -2,6 +2,7 @@ package com.english.api.course.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.common.util.SlugUtil;
 import com.english.api.course.dto.request.MediaCallbackRequest;
@@ -198,7 +199,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
         ObjectNode meta = (ObjectNode) asset.meta();
         String status = meta.path("status").asText("");
         if (!"done".equalsIgnoreCase(status)) {
-            throw new IllegalStateException("Video is being processed, please try again later");
+            throw new ResourceInvalidException("Video is being processed, please try again later");
         }
 
         double duration = meta.path("duration").asDouble(0.0);
