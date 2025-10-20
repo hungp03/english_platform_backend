@@ -33,7 +33,7 @@ build/
 .vscode/
 .idx/
 .env
-
+.kiro/
 
 ### Log ###
 logs/
