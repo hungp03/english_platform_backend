@@ -1,5 +1,6 @@
 package com.english.api.course.model;
 
+import com.english.api.course.model.enums.LessonMediaRole;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;

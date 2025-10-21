@@ -1,5 +1,6 @@
 package com.english.api.course.model;
 
+import com.english.api.course.model.enums.LessonMediaRole;
 import jakarta.persistence.*;
 import lombok.*;
 

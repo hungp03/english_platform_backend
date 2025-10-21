@@ -8,6 +8,7 @@ import com.english.api.course.dto.response.LessonResponse;
 import com.english.api.course.dto.response.LessonSummaryResponse;
 import com.english.api.course.mapper.LessonMapper;
 import com.english.api.course.model.*;
+import com.english.api.course.model.enums.LessonMediaRole;
 import com.english.api.course.repository.*;
 import com.english.api.course.service.LessonService;
 import lombok.RequiredArgsConstructor;

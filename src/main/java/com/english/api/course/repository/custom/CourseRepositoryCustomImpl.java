@@ -42,7 +42,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
         SORT_COLUMN_MAP.put("priceCents", "c.price_cents");
         SORT_COLUMN_MAP.put("createdAt", "c.created_at");
         SORT_COLUMN_MAP.put("updatedAt", "c.updated_at");
-        SORT_COLUMN_MAP.put("published", "c.is_published");
+        SORT_COLUMN_MAP.put("status", "c.status");
         SORT_COLUMN_MAP.put("moduleCount", "module_count");
         SORT_COLUMN_MAP.put("lessonCount", "lesson_count");
     }
@@ -50,7 +50,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
     @Override
     public Page<CourseWithStatsProjection> searchWithStats(
             String keyword,
-            Boolean isPublished,
+            String status,
             String[] skills,
             Pageable pageable
     ) {
@@ -64,7 +64,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.skill_focus AS skill_focus,
                 c.price_cents AS price_cents,
                 c.currency AS currency,
-                c.is_published AS is_published,
+                c.status AS status,
                 COUNT(DISTINCT m.id) AS module_count,
                 COUNT(DISTINCT l.id) AS lesson_count,
                 c.created_at AS created_at,
@@ -75,7 +75,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             WHERE (CAST(:keyword AS text) IS NULL OR
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
-              AND (CAST(:isPublished AS boolean) IS NULL OR c.is_published = CAST(:isPublished AS boolean))
+              AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill
@@ -84,7 +84,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                        )
                    ))
             GROUP BY c.id, c.title, c.slug, c.description, c.language, c.thumbnail, c.skill_focus,
-                     c.price_cents, c.currency, c.is_published, c.created_at, c.updated_at
+                     c.price_cents, c.currency, c.status, c.created_at, c.updated_at
             """;
 
         String countQuery = """
@@ -93,7 +93,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             WHERE (CAST(:keyword AS text) IS NULL OR
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
-              AND (CAST(:isPublished AS boolean) IS NULL OR c.is_published = CAST(:isPublished AS boolean))
+              AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill
@@ -103,14 +103,14 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                    ))
             """;
 
-        return executeQuery(baseQuery, countQuery, keyword, isPublished, null, skills, pageable);
+        return executeQuery(baseQuery, countQuery, keyword, status, null, skills, pageable);
     }
 
     @Override
     public Page<CourseWithStatsProjection> searchByOwnerWithStats(
             UUID ownerId,
             String keyword,
-            Boolean isPublished,
+            String status,
             String[] skills,
             Pageable pageable
     ) {
@@ -124,7 +124,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.skill_focus AS skill_focus,
                 c.price_cents AS price_cents,
                 c.currency AS currency,
-                c.is_published AS is_published,
+                c.status AS status,
                 COUNT(DISTINCT m.id) AS module_count,
                 COUNT(DISTINCT l.id) AS lesson_count,
                 c.created_at AS created_at,
@@ -139,7 +139,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                   OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                   OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
               )
-              AND (CAST(:isPublished AS boolean) IS NULL OR c.is_published = CAST(:isPublished AS boolean))
+              AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill
@@ -148,7 +148,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                        )
                    ))
             GROUP BY c.id, c.title, c.slug, c.description, c.language, c.thumbnail, c.skill_focus,
-                     c.price_cents, c.currency, c.is_published, c.created_at, c.updated_at
+                     c.price_cents, c.currency, c.status, c.created_at, c.updated_at
             """;
 
         String countQuery = """
@@ -161,7 +161,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                   OR LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                   OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
               )
-              AND (CAST(:isPublished AS boolean) IS NULL OR c.is_published = CAST(:isPublished AS boolean))
+              AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill
@@ -170,15 +170,14 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                        )
                    ))
             """;
-
-        return executeQuery(baseQuery, countQuery, keyword, isPublished, ownerId, skills, pageable);
+        return executeQuery(baseQuery, countQuery, keyword, status, ownerId, skills, pageable);
     }
 
     private Page<CourseWithStatsProjection> executeQuery(
             String baseQuery,
             String countQuery,
             String keyword,
-            Boolean isPublished,
+            String status,
             UUID ownerId,
             String[] skills,
             Pageable pageable
@@ -189,7 +188,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
 
         // Execute main query
         Query query = entityManager.createNativeQuery(fullQuery);
-        setParameters(query, keyword, isPublished, ownerId, skills);
+        setParameters(query, keyword, status, ownerId, skills);
         query.setFirstResult((int) pageable.getOffset());
         query.setMaxResults(pageable.getPageSize());
 
@@ -202,7 +201,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
 
         // Execute count query
         Query countQueryObj = entityManager.createNativeQuery(countQuery);
-        setParameters(countQueryObj, keyword, isPublished, ownerId, skills);
+        setParameters(countQueryObj, keyword, status, ownerId, skills);
         long total = ((Number) countQueryObj.getSingleResult()).longValue();
 
         return new PageImpl<>(content, pageable, total);
@@ -224,13 +223,13 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
         return " ORDER BY " + orderBy;
     }
 
-    private void setParameters(Query query, String keyword, Boolean isPublished, UUID ownerId, String[] skills) {
+    private void setParameters(Query query, String keyword, String status, UUID ownerId, String[] skills) {
         // Unwrap to Hibernate NativeQuery for better type handling
         NativeQuery<?> nativeQuery = query.unwrap(NativeQuery.class);
 
         // Set parameters with proper type handling
         nativeQuery.setParameter("keyword", keyword);
-        nativeQuery.setParameter("isPublished", isPublished);
+        nativeQuery.setParameter("status", status);
 
         if (ownerId != null) {
             nativeQuery.setParameter("ownerId", ownerId);
@@ -300,8 +299,8 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             }
 
             @Override
-            public Boolean getIsPublished() {
-                return (Boolean) row[9];
+            public String getStatus() {
+                return (String) row[9];
             }
 
             @Override

@@ -35,18 +35,15 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
             c.skillFocus,
             c.priceCents,
             c.currency,
-            c.published,
+            c.status,
             cb.fullName,
             c.updatedAt,
-            COUNT(DISTINCT m.id),
-            COUNT(DISTINCT l.id)
+            COALESCE((SELECT COUNT(m) FROM CourseModule m WHERE m.course.id = c.id), 0L),
+            COALESCE((SELECT COUNT(l) FROM Lesson l WHERE l.module.course.id = c.id), 0L)
         )
         FROM Course c
         LEFT JOIN c.createdBy cb
-        LEFT JOIN CourseModule m ON m.course.id = c.id
-        LEFT JOIN Lesson l ON l.module.id = m.id
         WHERE c.id = :id
-        GROUP BY c.id, cb.fullName
     """)
     Optional<CourseDetailResponse> findDetailById(@Param("id") UUID id);
 
@@ -62,46 +59,19 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
             c.skillFocus,
             c.priceCents,
             c.currency,
-            c.published,
+            c.status,
             cb.fullName,
             c.updatedAt,
-            COUNT(DISTINCT m.id),
-            COUNT(DISTINCT l.id)
+            COALESCE((SELECT COUNT(m) FROM CourseModule m WHERE m.course.id = c.id AND m.published = true), 0L),
+            COALESCE((SELECT COUNT(l) FROM Lesson l WHERE l.module.course.id = c.id AND l.published = true), 0L)
         )
         FROM Course c
         LEFT JOIN c.createdBy cb
-        LEFT JOIN CourseModule m ON m.course.id = c.id
-        LEFT JOIN Lesson l ON l.module.id = m.id
-        WHERE c.slug = :slug
-        GROUP BY c.id, cb.fullName
+        WHERE c.slug = :slug AND c.status = com.english.api.course.model.enums.CourseStatus.PUBLISHED
     """)
     Optional<CourseDetailResponse> findDetailBySlug(@Param("slug") String slug);
 
-    @Query("""
-            SELECT new com.english.api.course.dto.response.CourseWithStatsResponse(
-                c.id,
-                c.title,
-                c.slug,
-                c.description,
-                c.language,
-                c.thumbnail,
-                c.skillFocus,
-                c.priceCents,
-                c.currency,
-                c.published,
-                COUNT(DISTINCT m.id),
-                COUNT(DISTINCT l.id),
-                c.createdAt,
-                c.updatedAt
-            )
-            FROM Course c
-            LEFT JOIN CourseModule m ON m.course.id = c.id
-            LEFT JOIN Lesson l ON l.module.id = m.id
-            GROUP BY c.id, c.title, c.slug, c.description, c.language,c.thumbnail, c.skillFocus,
-                     c.priceCents, c.currency, c.published, c.createdAt, c.updatedAt
-            """)
-    Page<CourseWithStatsResponse> findAllWithStats(Pageable pageable);
-
+    
     @Query("SELECT c.createdBy.id FROM Course c WHERE c.id = :id")
     Optional<UUID> findOwnerIdById(@Param("id") UUID id);
 
@@ -117,5 +87,4 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
             WHERE l.id = :lessonId
             """)
     Optional<UUID> findOwnerIdByLessonId(@Param("lessonId") UUID lessonId);
-
 }

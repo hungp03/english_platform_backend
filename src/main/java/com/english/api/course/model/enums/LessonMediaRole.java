@@ -1,4 +1,4 @@
-package com.english.api.course.model;
+package com.english.api.course.model.enums;
 
 /**
  * Created by hungpham on 10/10/2025

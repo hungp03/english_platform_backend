@@ -5,7 +5,7 @@ package com.english.api.course.repository;
  */
 
 import com.english.api.course.model.LessonMedia;
-import com.english.api.course.model.LessonMediaRole;
+import com.english.api.course.model.enums.LessonMediaRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

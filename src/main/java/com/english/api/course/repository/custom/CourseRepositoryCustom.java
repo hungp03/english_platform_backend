@@ -13,7 +13,7 @@ public interface CourseRepositoryCustom {
 
     Page<CourseWithStatsProjection> searchWithStats(
             String keyword,
-            Boolean isPublished,
+            String status,
             String[] skills,
             Pageable pageable
     );
@@ -21,7 +21,7 @@ public interface CourseRepositoryCustom {
     Page<CourseWithStatsProjection> searchByOwnerWithStats(
             UUID ownerId,
             String keyword,
-            Boolean isPublished,
+            String status,
             String[] skills,
             Pageable pageable
     );

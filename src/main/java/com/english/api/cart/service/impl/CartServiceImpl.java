@@ -12,6 +12,7 @@ import com.english.api.common.exception.ResourceAlreadyExistsException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.model.Course;
+import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.course.repository.CourseRepository;
 import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,7 @@ public class CartServiceImpl implements CartService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
-        if (!course.isPublished()) {
+        if (course.getStatus() != CourseStatus.PUBLISHED) {
             throw new ResourceInvalidException("Course is not available for purchase");
         }
 

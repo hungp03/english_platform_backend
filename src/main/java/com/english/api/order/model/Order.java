@@ -30,15 +30,15 @@ public class Order {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "order_status")
     private OrderStatus status = OrderStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "currency_type")
+    private CurrencyType currency = CurrencyType.VND;
+    
     @Column(name = "total_cents", nullable = false)
     private Long totalCents;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private CurrencyType currency = CurrencyType.VND;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

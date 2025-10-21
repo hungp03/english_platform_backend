@@ -11,6 +11,7 @@ import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.dto.response.CourseWithStatsResponse;
 import com.english.api.course.mapper.CourseMapper;
 import com.english.api.course.model.Course;
+import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.course.repository.CourseRepository;
 import com.english.api.course.service.CourseService;
 import com.english.api.user.model.User;
@@ -40,14 +41,8 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseDetailResponse getPublishedBySlug(String slug) {
-        CourseDetailResponse course = courseRepository.findDetailBySlug(slug)
+        return courseRepository.findDetailBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
-
-        if (!course.published()) {
-            throw new ResourceNotFoundException("Course not found");
-        }
-
-        return course;
     }
 
     @Transactional
@@ -60,8 +55,8 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public PaginationResponse getCourses(Pageable pageable, String keyword, Boolean isPublished, String[] skills) {
-        var page = courseRepository.searchWithStats(keyword, isPublished, skills, pageable)
+    public PaginationResponse getCourses(Pageable pageable, String keyword, String status, String[] skills) {
+        var page = courseRepository.searchWithStats(keyword, status, skills, pageable)
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
@@ -72,7 +67,7 @@ public class CourseServiceImpl implements CourseService {
                         projection.getSkillFocus(),
                         projection.getPriceCents(),
                         projection.getCurrency(),
-                        projection.getIsPublished(),
+                        projection.getStatus(),
                         projection.getModuleCount(),
                         projection.getLessonCount(),
                         projection.getCreatedAt(),
@@ -83,9 +78,9 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, Boolean isPublished, String[] skills) {
+    public PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, String status, String[] skills) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        var page = courseRepository.searchByOwnerWithStats(currentUserId, keyword, isPublished, skills, pageable)
+        var page = courseRepository.searchByOwnerWithStats(currentUserId, keyword, status, skills, pageable)
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
@@ -96,7 +91,7 @@ public class CourseServiceImpl implements CourseService {
                         projection.getSkillFocus(),
                         projection.getPriceCents(),
                         projection.getCurrency(),
-                        projection.getIsPublished(),
+                        projection.getStatus(),
                         projection.getModuleCount(),
                         projection.getLessonCount(),
                         projection.getCreatedAt(),
@@ -162,26 +157,34 @@ public class CourseServiceImpl implements CourseService {
 
     @Transactional
     @Override
-    public CourseResponse publish(UUID id, boolean publish) {
+    public CourseResponse changeStatus(UUID id, CourseStatus status) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
 
         UUID ownerId = courseRepository.findOwnerIdById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         if (!ownerId.equals(currentUserId)) {
-            throw new AccessDeniedException("You are not allowed to publish/unpublish this course.");
+            throw new AccessDeniedException("You are not allowed to change status of this course.");
         }
 
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
-        course.setPublished(publish);
-        course.setPublishedAt(publish ? Instant.now() : null);
+
+        course.setStatus(status);
+
+        // Set publishedAt when status is PUBLISHED
+        if (status == CourseStatus.PUBLISHED) {
+            course.setPublishedAt(Instant.now());
+        } else {
+            course.setPublishedAt(null);
+        }
+
         return mapper.toResponse(courseRepository.save(course));
     }
 
     @Override
     public PaginationResponse getPublishedCourses(Pageable pageable, String keyword, String[] skills) {
-        var page = courseRepository.searchWithStats(keyword, true, skills, pageable)
+        var page = courseRepository.searchWithStats(keyword, "PUBLISHED", skills, pageable)
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
@@ -192,7 +195,7 @@ public class CourseServiceImpl implements CourseService {
                         projection.getSkillFocus(),
                         projection.getPriceCents(),
                         projection.getCurrency(),
-                        projection.getIsPublished(),
+                        projection.getStatus(),
                         projection.getModuleCount(),
                         projection.getLessonCount(),
                         projection.getCreatedAt(),

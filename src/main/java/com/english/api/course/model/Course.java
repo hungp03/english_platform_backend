@@ -1,6 +1,7 @@
 package com.english.api.course.model;
 
 import com.english.api.common.util.SlugUtil;
+import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.user.model.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.f4b6a3.uuid.UuidCreator;
@@ -50,8 +51,10 @@ public class Course {
 
     private String currency;
 
-    @Column(name = "is_published")
-    private boolean published;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private CourseStatus status = CourseStatus.DRAFT;
 
     @Column(name = "published_at")
     private Instant publishedAt;

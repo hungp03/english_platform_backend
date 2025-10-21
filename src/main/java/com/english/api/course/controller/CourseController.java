@@ -4,7 +4,7 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.request.CourseRequest;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
-import com.english.api.course.dto.response.CourseWithStatsResponse;
+import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.course.service.CourseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,15 +24,15 @@ public class CourseController {
 
     private final CourseService courseService;
 
-    // Get all courses (with pagination, keyword, publish filter)
+    // Get all courses (with pagination, keyword, status filter)
     @GetMapping
     public ResponseEntity<PaginationResponse> getCourses(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Boolean isPublished,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String[] skills
     ) {
-        return ResponseEntity.ok(courseService.getCourses(pageable, keyword, isPublished, skills));
+        return ResponseEntity.ok(courseService.getCourses(pageable, keyword, status, skills));
     }
 
     // Get only published courses (with pagination, keyword)
@@ -49,10 +49,10 @@ public class CourseController {
     public ResponseEntity<PaginationResponse> getMineCourses(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Boolean isPublished,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String[] skills
     ){
-        return ResponseEntity.ok(courseService.getCoursesForInstructor(pageable, keyword, isPublished, skills));
+        return ResponseEntity.ok(courseService.getCoursesForInstructor(pageable, keyword, status, skills));
     }
 
     // === Get course by id ===
@@ -87,11 +87,11 @@ public class CourseController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/publish")
-    public ResponseEntity<CourseResponse> publishCourse(
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<CourseResponse> changeCourseStatus(
             @PathVariable UUID id,
-            @RequestParam(name = "publish") Boolean publish
+            @RequestParam CourseStatus status
     ) {
-        return ResponseEntity.ok(courseService.publish(id, publish));
+        return ResponseEntity.ok(courseService.changeStatus(id, status));
     }
 }

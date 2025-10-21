@@ -44,7 +44,7 @@ public interface CourseModuleRepository extends JpaRepository<CourseModule, UUID
                     m.id, m.title, m.position, m.published, COUNT(l.id)
                 )
                 FROM CourseModule m
-                LEFT JOIN Lesson l ON l.module.id = m.id
+                LEFT JOIN Lesson l ON l.module.id = m.id AND l.published = true
                 WHERE m.course.id = :courseId AND m.published = true
                 GROUP BY m.id, m.title, m.position, m.published
                 ORDER BY m.position

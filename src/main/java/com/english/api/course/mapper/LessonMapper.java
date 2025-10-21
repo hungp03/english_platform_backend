@@ -7,7 +7,7 @@ import com.english.api.course.dto.request.LessonRequest;
 import com.english.api.course.dto.response.LessonResponse;
 import com.english.api.course.model.CourseModule;
 import com.english.api.course.model.Lesson;
-import com.english.api.course.model.LessonMediaRole;
+import com.english.api.course.model.enums.LessonMediaRole;
 import com.english.api.course.model.MediaAsset;
 import org.mapstruct.*;
 

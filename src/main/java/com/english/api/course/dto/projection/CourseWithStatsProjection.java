@@ -16,7 +16,7 @@ public interface CourseWithStatsProjection {
     String[] getSkillFocus();
     Long getPriceCents();
     String getCurrency();
-    Boolean getIsPublished();
+    String getStatus();
     Long getModuleCount();
     Long getLessonCount();
     Instant getCreatedAt();

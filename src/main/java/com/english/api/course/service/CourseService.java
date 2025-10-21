@@ -4,7 +4,7 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.request.CourseRequest;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
-import com.english.api.course.dto.response.CourseWithStatsResponse;
+import com.english.api.course.model.enums.CourseStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +21,9 @@ public interface CourseService {
     @Transactional
     CourseResponse create(CourseRequest req);
 
-    PaginationResponse getCourses(Pageable pageable, String keyword, Boolean isPublished, String[] skills);
+    PaginationResponse getCourses(Pageable pageable, String keyword, String status, String[] skills);
 
-    PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, Boolean isPublished, String[] skills);
+    PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, String status, String[] skills);
 
     @Transactional
     CourseResponse update(UUID id, CourseRequest req);
@@ -31,7 +31,7 @@ public interface CourseService {
     void delete(UUID id);
 
     @Transactional
-    CourseResponse publish(UUID id, boolean publish);
+    CourseResponse changeStatus(UUID id, CourseStatus status);
 
     PaginationResponse getPublishedCourses(Pageable pageable, String keyword, String[] skills);
 }

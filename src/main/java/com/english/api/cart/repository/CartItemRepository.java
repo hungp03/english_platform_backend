@@ -24,7 +24,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
         JOIN FETCH ci.course c
         LEFT JOIN FETCH c.createdBy
         WHERE ci.user.id = :userId
-        AND c.published = true
+        AND c.status = 'PUBLISHED'
     """)
     Page<CartItem> findByUserIdWithPublishedCourses(@Param("userId") UUID userId, Pageable pageable);
 
@@ -36,7 +36,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
         FROM CartItem ci
         JOIN ci.course c
         WHERE ci.user.id = :userId
-        AND c.published = true
+        AND c.status = 'PUBLISHED'
     """)
     long countPublishedByUserId(@Param("userId") UUID userId);
 
@@ -48,7 +48,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
         FROM CartItem ci
         JOIN ci.course c
         WHERE ci.user.id = :userId
-        AND c.published = true
+        AND c.status = 'PUBLISHED'
     """)
     Long sumTotalPriceByUserId(@Param("userId") UUID userId);
 

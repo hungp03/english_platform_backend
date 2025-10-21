@@ -18,7 +18,7 @@ public interface CourseMapper {
     @Mapping(target = "deletedAt", ignore = true)
     @Mapping(target = "publishedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "published", constant = "false")
+    @Mapping(target = "status", constant = "DRAFT")
     Course toEntity(CourseRequest req);
 
     @Mapping(target = "skillFocus", expression = "java(c.getSkillFocus() != null ? java.util.Arrays.asList(c.getSkillFocus()) : null)")
