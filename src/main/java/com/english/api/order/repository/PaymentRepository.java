@@ -1,10 +1,11 @@
 package com.english.api.order.repository;
 
 import com.english.api.order.model.Payment;
-import com.english.api.order.model.PaymentProvider;
-import com.english.api.order.model.PaymentStatus;
+import com.english.api.order.model.enums.PaymentProvider;
+import com.english.api.order.model.enums.PaymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,12 +22,15 @@ import java.util.UUID;
  */
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
-
+    @EntityGraph(attributePaths = "refunds")
+    Optional<Payment> findById(UUID id);
+    Optional<Payment> findTopByOrderIdAndProviderOrderByCreatedAtDesc(UUID orderId, PaymentProvider provider);
     /**
      * Find payments by order ID
      * @param orderId the order ID to filter by
      * @return list of payments for the specified order
      */
+    @EntityGraph(attributePaths = "refunds")
     List<Payment> findByOrderIdOrderByCreatedAtDesc(UUID orderId);
 
     /**
@@ -77,6 +81,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
      * @param providerTxn the provider transaction ID
      * @return optional payment matching both criteria
      */
+    @EntityGraph(attributePaths = "refunds")
     Optional<Payment> findByProviderAndProviderTxn(PaymentProvider provider, String providerTxn);
 
     /**

@@ -3,6 +3,7 @@ package com.english.api.cart.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.cart.dto.response.CartItemResponse;
 import com.english.api.cart.dto.response.CartPaginationResponse;
+import com.english.api.cart.dto.response.CartCheckoutResponse;
 import com.english.api.cart.mapper.CartItemMapper;
 import com.english.api.cart.model.CartItem;
 import com.english.api.cart.repository.CartItemRepository;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -117,5 +119,11 @@ public class CartServiceImpl implements CartService {
     public void clearCart() {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         cartItemRepository.deleteAllByUserId(currentUserId);
+    }
+
+    @Override
+    public List<CartCheckoutResponse> getCartCheckout() {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        return cartItemRepository.findCoursesForCheckoutByUserId(currentUserId);
     }
 }

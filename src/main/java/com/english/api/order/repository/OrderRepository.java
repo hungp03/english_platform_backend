@@ -1,7 +1,7 @@
 package com.english.api.order.repository;
 
 import com.english.api.order.model.Order;
-import com.english.api.order.model.OrderStatus;
+import com.english.api.order.model.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -254,8 +253,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
      * @return page of orders with items loaded
      */
     @Query("""
-        SELECT DISTINCT o FROM Order o 
-        LEFT JOIN FETCH o.items 
+        SELECT DISTINCT o FROM Order o
+        LEFT JOIN FETCH o.items
         ORDER BY o.createdAt DESC
         """)
     Page<Order> findAllWithItems(Pageable pageable);

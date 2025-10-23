@@ -42,7 +42,13 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .name("Normal User")
                     .build();
 
-            roleRepository.saveAll(List.of(adminRole, userRole));
+            Role instructorRole = Role.builder()
+                    .id(UuidCreator.getTimeOrderedEpoch())
+                    .code("INSTRUCTOR")
+                    .name("Instructor")
+                    .build();
+
+            roleRepository.saveAll(List.of(adminRole, userRole, instructorRole));
             System.out.println("-----INIT ROLES-----");
         } else {
             System.out.println("-----ROLES ALREADY EXIST, SKIP INIT ROLES-----");

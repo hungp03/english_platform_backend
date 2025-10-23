@@ -2,6 +2,7 @@ package com.english.api.cart.controller;
 
 import com.english.api.cart.dto.request.AddToCartRequest;
 import com.english.api.cart.dto.response.CartPaginationResponse;
+import com.english.api.cart.dto.response.CartCheckoutResponse;
 import com.english.api.cart.service.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +31,14 @@ public class CartController {
             @PageableDefault(size = 10, sort = "addedAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(cartService.getMyCart(pageable));
+    }
+
+    /**
+     * Get all courses in cart for checkout
+     */
+    @GetMapping("/checkout")
+    public ResponseEntity<List<CartCheckoutResponse>> getCartCheckout() {
+        return ResponseEntity.ok(cartService.getCartCheckout());
     }
 
     /**

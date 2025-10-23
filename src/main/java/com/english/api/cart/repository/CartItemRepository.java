@@ -1,6 +1,7 @@
 package com.english.api.cart.repository;
 
 import com.english.api.cart.model.CartItem;
+import com.english.api.cart.dto.response.CartCheckoutResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -90,4 +91,22 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
      * Count cart items for a user
      */
     long countByUserId(UUID userId);
+
+    /**
+     * Get all courses in user's cart for checkout (only essential fields)
+     */
+    @Query("""
+        SELECT new com.english.api.cart.dto.response.CartCheckoutResponse(
+            c.id,
+            c.title,
+            c.thumbnail,
+            c.priceCents,
+            c.currency
+        )
+        FROM CartItem ci
+        JOIN ci.course c
+        WHERE ci.user.id = :userId
+        AND c.status = 'PUBLISHED'
+    """)
+    List<CartCheckoutResponse> findCoursesForCheckoutByUserId(@Param("userId") UUID userId);
 }
