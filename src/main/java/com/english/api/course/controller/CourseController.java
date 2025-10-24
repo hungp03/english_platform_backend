@@ -2,6 +2,7 @@ package com.english.api.course.controller;
 
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.request.CourseRequest;
+import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.model.enums.CourseStatus;
@@ -65,6 +66,12 @@ public class CourseController {
     @GetMapping("/slug/{slug}")
     public ResponseEntity<CourseDetailResponse> getPublishedCourseBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(courseService.getPublishedBySlug(slug));
+    }
+
+    // === Get course info for checkout ===
+    @GetMapping("/{id}/checkout")
+    public ResponseEntity<CourseCheckoutResponse> getCourseCheckoutInfo(@PathVariable UUID id) {
+        return ResponseEntity.ok(courseService.getCheckoutInfoById(id));
     }
 
     // === Create new course ===

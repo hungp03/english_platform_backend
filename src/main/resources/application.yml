@@ -95,6 +95,21 @@ cloud:
   bucket: ${S3_BUCKET}
   public-url: ${S3_PUBLIC_URL}
 
+payos:
+  client-id: ${PAYOS_CLIENT_ID}
+  api-key: ${PAYOS_API_KEY}
+  checksum-key: ${PAYOS_CHECKSUM_KEY}
+  success-url: ${PAYOS_SUCCESS_URL}
+  cancel-url: ${PAYOS_CANCEL_URL}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  success-url: ${STRIPE_SUCCESS_URL}
+  cancel-url: ${STRIPE_CANCEL_URL}
+
+
+
 #logging:
 #  level:
 #    org.springframework.orm.jpa: DEBUG

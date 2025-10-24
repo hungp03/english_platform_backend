@@ -1,5 +1,6 @@
 package com.english.api.course.repository;
 
+import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseWithStatsResponse;
 import com.english.api.course.model.Course;
@@ -87,4 +88,34 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
             WHERE l.id = :lessonId
             """)
     Optional<UUID> findOwnerIdByLessonId(@Param("lessonId") UUID lessonId);
+
+    /**
+     * Gets minimal course information needed for checkout payment display.
+     * Only returns essential fields to minimize data transfer and avoid loading unnecessary data.
+     *
+     * @param id the course identifier
+     * @return minimal course information for checkout
+     */
+    @Query("""
+        SELECT new com.english.api.course.dto.response.CourseCheckoutResponse(
+            c.id,
+            c.title,
+            c.thumbnail,
+            c.priceCents,
+            c.currency
+        )
+        FROM Course c
+        WHERE c.id = :id AND c.status = com.english.api.course.model.enums.CourseStatus.PUBLISHED
+    """)
+    Optional<CourseCheckoutResponse> findCheckoutInfoById(@Param("id") UUID id);
+
+    /**
+     * Checks if a published course exists with the given ID
+     * Used for order validation to ensure only published courses can be ordered
+     *
+     * @param id the course identifier
+     * @return true if a published course exists with the given ID, false otherwise
+     */
+    @Query("SELECT COUNT(c) > 0 FROM Course c WHERE c.id = :id AND c.status = com.english.api.course.model.enums.CourseStatus.PUBLISHED")
+    boolean existsByIdAndStatusPublished(@Param("id") UUID id);
 }

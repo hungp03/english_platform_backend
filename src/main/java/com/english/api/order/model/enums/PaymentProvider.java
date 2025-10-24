@@ -1,4 +1,4 @@
-package com.english.api.order.model;
+package com.english.api.order.model.enums;
 
 /**
  * Created by hungpham on 10/20/2025
@@ -8,5 +8,6 @@ public enum PaymentProvider {
 //    ZALOPAY,
     VNPAY,
     STRIPE,
+    PAYOS,
 //    PAYPAL
 }

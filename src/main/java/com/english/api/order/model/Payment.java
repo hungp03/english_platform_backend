@@ -1,9 +1,14 @@
 package com.english.api.order.model;
 
+import com.english.api.order.model.enums.PaymentProvider;
+import com.english.api.order.model.enums.PaymentStatus;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -41,7 +46,8 @@ public class Payment {
     private PaymentStatus status = PaymentStatus.INITIATED;
 
     @Column(name = "raw_payload", columnDefinition = "jsonb")
-    private String rawPayload;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private JsonNode rawPayload;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

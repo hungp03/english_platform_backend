@@ -2,6 +2,7 @@ package com.english.api.course.service;
 
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.request.CourseRequest;
+import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.model.enums.CourseStatus;
@@ -34,4 +35,6 @@ public interface CourseService {
     CourseResponse changeStatus(UUID id, CourseStatus status);
 
     PaginationResponse getPublishedCourses(Pageable pageable, String keyword, String[] skills);
+
+    CourseCheckoutResponse getCheckoutInfoById(UUID id);
 }

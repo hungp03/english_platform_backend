@@ -1,7 +1,4 @@
 package com.english.api.course.dto.response;
-
-import com.english.api.course.model.enums.CourseStatus;
-
 import java.time.Instant;
 import java.util.UUID;
 

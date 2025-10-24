@@ -1,9 +1,11 @@
 package com.english.api.cart.service;
 
 import com.english.api.cart.dto.response.CartPaginationResponse;
+import com.english.api.cart.dto.response.CartCheckoutResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface CartService {
@@ -30,4 +32,9 @@ public interface CartService {
      */
     @Transactional
     void clearCart();
+
+    /**
+     * Get all courses in user's cart for checkout
+     */
+    List<CartCheckoutResponse> getCartCheckout();
 }

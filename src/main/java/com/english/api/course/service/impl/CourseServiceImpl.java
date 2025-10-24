@@ -6,6 +6,7 @@ import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.common.service.MediaService;
 import com.english.api.course.dto.request.CourseRequest;
+import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.dto.response.CourseWithStatsResponse;
@@ -202,5 +203,15 @@ public class CourseServiceImpl implements CourseService {
                         projection.getUpdatedAt()
                 ));
         return PaginationResponse.from(page, pageable);
+    }
+
+    /**
+     * Gets minimal course information needed for checkout payment display.
+     * Only returns essential fields to minimize data transfer.
+     */
+    @Override
+    public CourseCheckoutResponse getCheckoutInfoById(UUID id) {
+        return courseRepository.findCheckoutInfoById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
     }
 }
