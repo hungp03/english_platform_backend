@@ -88,6 +88,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(whiteList).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/stripe/webhook").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payments/payos/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hello").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

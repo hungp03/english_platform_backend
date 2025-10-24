@@ -8,5 +8,6 @@ public enum PaymentProvider {
 //    ZALOPAY,
     VNPAY,
     STRIPE,
+    PAYOS,
 //    PAYPAL
 }

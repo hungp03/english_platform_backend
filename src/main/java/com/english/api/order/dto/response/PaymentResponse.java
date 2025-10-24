@@ -21,6 +21,5 @@ public record PaymentResponse(
         PaymentStatus status,
         JsonNode rawPayload,
         OffsetDateTime createdAt,
-        OffsetDateTime confirmedAt,
-        List<RefundResponse> refunds
+        OffsetDateTime confirmedAt
 ) {}

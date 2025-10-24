@@ -34,13 +34,9 @@ public class OrderController {
 
     /**
      * Create a new order
-     * Requirements: 5.1 - Order creation endpoint with validation
-     * 
-     * @param request the order creation request
-     * @return the created order response
      */
     @PostMapping
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         OrderResponse response = orderService.createOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -48,13 +44,10 @@ public class OrderController {
 
     /**
      * Get order by ID with authorization check
-     * Requirements: 5.2 - Order retrieval with proper authorization
-     * 
-     * @param id the order ID
-     * @return the order response
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
+
     public ResponseEntity<OrderResponse> getOrderById(@PathVariable UUID id) {
         OrderResponse response = orderService.getOrderById(id);
         return ResponseEntity.ok(response);

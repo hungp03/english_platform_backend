@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Pattern;
 
 /**
  * Request DTO for creating a payment
- * Requirements: 2.1 - Payment processing with provider-specific fields
  */
 public record CreatePaymentRequest(
         @NotNull(message = "Payment provider is required")

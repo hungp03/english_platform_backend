@@ -15,7 +15,7 @@ public record OrderResponse(
         Long totalCents,
         OffsetDateTime createdAt,
         OffsetDateTime paidAt,
-        List<OrderItemResponse> items,
-        List<PaymentResponse> payments,
-        List<InvoiceResponse> invoices
+        List<OrderItemResponse> items
+//        List<PaymentResponse> payments,
+//        List<InvoiceResponse> invoices
 ) {}
