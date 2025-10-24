@@ -3,6 +3,8 @@ package com.english.api.course.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.common.exception.ResourceAlreadyExistsException;
+import com.english.api.common.exception.ResourceAlreadyOwnedException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.common.service.MediaService;
 import com.english.api.course.dto.request.CourseRequest;
@@ -15,6 +17,7 @@ import com.english.api.course.model.Course;
 import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.course.repository.CourseRepository;
 import com.english.api.course.service.CourseService;
+import com.english.api.order.repository.OrderRepository;
 import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +36,7 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final CourseMapper mapper;
     private final MediaService mediaService;
+    private final OrderRepository orderRepository;
 
     @Override
     public CourseDetailResponse getById(UUID id) {
@@ -208,9 +212,17 @@ public class CourseServiceImpl implements CourseService {
     /**
      * Gets minimal course information needed for checkout payment display.
      * Only returns essential fields to minimize data transfer.
+     * Throws exception if user has already purchased the course.
      */
     @Override
     public CourseCheckoutResponse getCheckoutInfoById(UUID id) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        
+        // Check if user has already purchased this course
+        if (orderRepository.hasUserPurchasedCourse(currentUserId, id)) {
+            throw new ResourceAlreadyOwnedException("You have already purchased this course");
+        }
+        
         return courseRepository.findCheckoutInfoById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
     }

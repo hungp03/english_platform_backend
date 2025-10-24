@@ -15,4 +15,5 @@ public interface ErrorCode {
     int FORBIDDEN = 9;
     int OPERATION_NOT_ALLOWED = 10;
     int DUPLICATE_KEY = 11;
+    int RESOURCE_ALREADY_OWNER = 12;
 }

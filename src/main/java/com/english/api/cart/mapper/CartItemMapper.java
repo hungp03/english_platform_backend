@@ -16,7 +16,8 @@ public interface CartItemMapper {
     CartItemResponse toCartItemResponse(CartItem cartItem);
 
     @Mapping(target = "instructorName", expression = "java(course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : null)")
-    CourseInCartResponse toCourseInCartResponse(Course course);
+    @Mapping(target = "isPurchased", source = "isPurchased")
+    CourseInCartResponse toCourseInCartResponse(Course course, boolean isPurchased);
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "title", source = "title")

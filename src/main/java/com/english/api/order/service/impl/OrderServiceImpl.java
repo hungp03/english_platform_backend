@@ -3,6 +3,7 @@ package com.english.api.order.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.common.exception.ResourceAlreadyOwnedException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
@@ -13,10 +14,12 @@ import com.english.api.order.dto.response.OrderResponse;
 import com.english.api.order.mapper.OrderMapper;
 import com.english.api.order.model.Order;
 import com.english.api.order.model.OrderItem;
+import com.english.api.order.dto.request.OrderSource;
 import com.english.api.order.model.enums.OrderStatus;
 import com.english.api.order.model.enums.OrderItemEntityType;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.service.OrderService;
+import com.english.api.cart.service.CartService;
 import com.english.api.user.model.User;
 import com.english.api.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +44,7 @@ public class OrderServiceImpl implements OrderService {
     private final UserService userService;
     private final CourseService courseService;
     private final OrderMapper orderMapper;
+    private final CartService cartService;
 
     // Valid status transitions mapping
     private static final Set<OrderStatus> PENDING_TRANSITIONS = Set.of(OrderStatus.PAID, OrderStatus.CANCELLED, OrderStatus.FAILED);
@@ -57,6 +61,9 @@ public class OrderServiceImpl implements OrderService {
         // Get current authenticated user
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         User currentUser = userService.findById(currentUserId);
+        
+        // Check if user has already purchased any of the courses in the order
+        validateNoPurchasedCourses(currentUserId, request);
         
         // Validate order items and calculate total
         Long totalCents = validateAndCalculateTotal(request);
@@ -88,7 +95,18 @@ public class OrderServiceImpl implements OrderService {
         // Save order
         Order savedOrder = orderRepository.save(order);
         
-        log.info("Successfully created order with ID: {}", savedOrder.getId());
+        // If order is from cart, remove the purchased items from cart after successful order creation
+        if (request.orderSource() == OrderSource.CART) {
+            try {
+                removeOrderedItemsFromCart(request.items());
+                log.info("Successfully removed ordered items from cart for user {} after creating order from cart", currentUserId);
+            } catch (Exception e) {
+                log.warn("Failed to remove items from cart for user {} after creating order: {}", currentUserId, e.getMessage());
+                // Don't fail the order creation if cart clearing fails
+            }
+        }
+        
+        log.info("Successfully created order with ID: {} from source: {}", savedOrder.getId(), request.orderSource());
         return orderMapper.toOrderResponse(savedOrder);
     }
 
@@ -319,5 +337,50 @@ public class OrderServiceImpl implements OrderService {
                 throw new ResourceInvalidException("BUNDLE entities are not supported yet");
             }
         };
+    }
+
+    /**
+     * Validates that user hasn't already purchased any courses in the order
+     */
+    private void validateNoPurchasedCourses(UUID userId, CreateOrderRequest request) {
+        log.debug("Validating no purchased courses for user: {}", userId);
+        
+        for (CreateOrderRequest.OrderItemRequest item : request.items()) {
+            // Only check for COURSE entities
+            if (item.entityType() == OrderItemEntityType.COURSE) {
+                if (orderRepository.hasUserPurchasedCourse(userId, item.entityId())) {
+                    throw new ResourceAlreadyOwnedException(
+                        String.format("You have already purchased the course with ID: %s. Please remove it from your order.", item.entityId())
+                    );
+                }
+            }
+        }
+        
+        log.debug("All courses in order are valid for purchase");
+    }
+
+    /**
+     * Removes ordered items from user's cart using batch delete
+     * Only removes COURSE items as other entity types are not supported in cart yet
+     */
+    private void removeOrderedItemsFromCart(List<CreateOrderRequest.OrderItemRequest> items) {
+        log.debug("Removing ordered items from cart using batch delete");
+        
+        // Collect all course IDs to remove
+        List<UUID> courseIdsToRemove = items.stream()
+                .filter(item -> item.entityType() == OrderItemEntityType.COURSE)
+                .map(CreateOrderRequest.OrderItemRequest::entityId)
+                .toList();
+        
+        if (!courseIdsToRemove.isEmpty()) {
+            try {
+                cartService.removeFromCart(courseIdsToRemove);
+                log.info("Successfully removed {} courses from cart in batch", courseIdsToRemove.size());
+            } catch (Exception e) {
+                log.warn("Failed to batch remove courses from cart: {}", e.getMessage());
+            }
+        } else {
+            log.debug("No course items to remove from cart");
+        }
     }
 }

@@ -12,7 +12,10 @@ import java.util.UUID;
 public record CreateOrderRequest(
         @NotEmpty(message = "Order must contain at least one item")
         @Valid
-        List<OrderItemRequest> items
+        List<OrderItemRequest> items,
+        
+        @NotNull(message = "Order source is required")
+        OrderSource orderSource
 ) {
 
     public record OrderItemRequest(

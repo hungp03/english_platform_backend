@@ -1,14 +1,12 @@
 package com.english.api.cart.controller;
 
 import com.english.api.cart.dto.request.AddToCartRequest;
-import com.english.api.cart.dto.response.CartPaginationResponse;
+import com.english.api.cart.dto.response.CartResponse;
 import com.english.api.cart.dto.response.CartCheckoutResponse;
 import com.english.api.cart.service.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,17 +22,15 @@ public class CartController {
     private final CartService cartService;
 
     /**
-     * Get current user's cart with pagination
+     * Get current user's cart (no pagination needed since max 10 items)
      */
     @GetMapping
-    public ResponseEntity<CartPaginationResponse> getMyCart(
-            @PageableDefault(size = 10, sort = "addedAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-        return ResponseEntity.ok(cartService.getMyCart(pageable));
+    public ResponseEntity<CartResponse> getMyCart() {
+        return ResponseEntity.ok(cartService.getMyCart());
     }
 
     /**
-     * Get all courses in cart for checkout
+     * Get all unpurchased courses in cart for checkout
      */
     @GetMapping("/checkout")
     public ResponseEntity<List<CartCheckoutResponse>> getCartCheckout() {

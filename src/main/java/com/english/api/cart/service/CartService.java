@@ -1,8 +1,7 @@
 package com.english.api.cart.service;
 
-import com.english.api.cart.dto.response.CartPaginationResponse;
+import com.english.api.cart.dto.response.CartResponse;
 import com.english.api.cart.dto.response.CartCheckoutResponse;
-import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -23,9 +22,15 @@ public interface CartService {
     void removeFromCart(UUID courseId);
 
     /**
-     * Get user's cart with all published courses (paginated)
+     * Remove multiple courses from user's cart in batch
      */
-    CartPaginationResponse getMyCart(Pageable pageable);
+    @Transactional
+    void removeFromCart(List<UUID> courseIds);
+
+    /**
+     * Get user's cart with all published courses (no pagination needed since max 10 items)
+     */
+    CartResponse getMyCart();
 
     /**
      * Clear all items from user's cart
@@ -34,7 +39,7 @@ public interface CartService {
     void clearCart();
 
     /**
-     * Get all courses in user's cart for checkout
+     * Get all unpurchased courses in user's cart for checkout
      */
     List<CartCheckoutResponse> getCartCheckout();
 }

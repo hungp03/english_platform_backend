@@ -54,6 +54,11 @@ public class GlobalExceptionHandler {
         return buildResponse(ErrorCode.RESOURCE_ALREADY_EXISTS, ex.getMessage(), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(ResourceAlreadyOwnedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleResourceAlreadyOwnedException(ResourceAlreadyOwnedException ex) {
+        return buildResponse(ErrorCode.RESOURCE_ALREADY_OWNER, ex.getMessage(), HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationError(MethodArgumentNotValidException ex) {
         BindingResult result = ex.getBindingResult();

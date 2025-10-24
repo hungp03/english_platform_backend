@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -273,4 +275,34 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         ORDER BY o.createdAt DESC
         """)
     Page<Order> findByUserIdWithItemsAndPayments(@Param("userId") UUID userId, Pageable pageable);
+
+    /**
+     * Check if user has already purchased a specific course
+     * @return true if user has a paid order containing this course, false otherwise
+     */
+    @Query("""
+        SELECT COUNT(o) > 0 FROM Order o 
+        JOIN o.items oi 
+        WHERE o.user.id = :userId 
+        AND o.status = 'PAID' 
+        AND oi.entity = 'COURSE' 
+        AND oi.entityId = :courseId
+        """)
+    boolean hasUserPurchasedCourse(@Param("userId") UUID userId, @Param("courseId") UUID courseId);
+
+    /**
+     * Get all course IDs that user has already purchased (batch check)
+     * @param userId the user ID to check
+     * @param courseIds the list of course IDs to check
+     * @return set of course IDs that user has purchased
+     */
+    @Query("""
+        SELECT DISTINCT oi.entityId FROM Order o 
+        JOIN o.items oi 
+        WHERE o.user.id = :userId 
+        AND o.status = 'PAID' 
+        AND oi.entity = 'COURSE' 
+        AND oi.entityId IN :courseIds
+        """)
+    Set<UUID> findPurchasedCourseIds(@Param("userId") UUID userId, @Param("courseIds") List<UUID> courseIds);
 }

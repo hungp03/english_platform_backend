@@ -11,5 +11,6 @@ public record CourseInCartResponse(
     String language,
     Long priceCents,
     String currency,
-    String instructorName
+    String instructorName,
+    boolean isPurchased
 ) {}

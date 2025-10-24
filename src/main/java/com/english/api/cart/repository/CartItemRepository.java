@@ -30,6 +30,19 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     Page<CartItem> findByUserIdWithPublishedCourses(@Param("userId") UUID userId, Pageable pageable);
 
     /**
+     * Find all cart items for a specific user (no pagination)
+     */
+    @Query("""
+        SELECT ci FROM CartItem ci
+        JOIN FETCH ci.course c
+        LEFT JOIN FETCH c.createdBy
+        WHERE ci.user.id = :userId
+        AND c.status = 'PUBLISHED'
+        ORDER BY ci.addedAt DESC
+    """)
+    List<CartItem> findAllByUserIdWithPublishedCourses(@Param("userId") UUID userId);
+
+    /**
      * Count published courses in user's cart
      */
     @Query("""
@@ -81,6 +94,17 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     void deleteByUserIdAndCourseId(@Param("userId") UUID userId, @Param("courseId") UUID courseId);
 
     /**
+     * Delete multiple cart items by user and course IDs (batch delete)
+     */
+    @Modifying
+    @Query("""
+        DELETE FROM CartItem ci
+        WHERE ci.user.id = :userId
+        AND ci.course.id IN :courseIds
+    """)
+    void deleteByUserIdAndCourseIdIn(@Param("userId") UUID userId, @Param("courseIds") List<UUID> courseIds);
+
+    /**
      * Delete all cart items for a user
      */
     @Modifying
@@ -94,6 +118,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
 
     /**
      * Get all courses in user's cart for checkout (only essential fields)
+     * Excludes courses that user has already purchased
      */
     @Query("""
         SELECT new com.english.api.cart.dto.response.CartCheckoutResponse(
@@ -107,6 +132,14 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
         JOIN ci.course c
         WHERE ci.user.id = :userId
         AND c.status = 'PUBLISHED'
+        AND NOT EXISTS (
+            SELECT 1 FROM Order o
+            JOIN o.items oi
+            WHERE o.user.id = :userId
+            AND o.status = 'PAID'
+            AND oi.entity = 'COURSE'
+            AND oi.entityId = c.id
+        )
     """)
     List<CartCheckoutResponse> findCoursesForCheckoutByUserId(@Param("userId") UUID userId);
 }

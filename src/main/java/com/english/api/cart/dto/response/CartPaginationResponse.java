@@ -16,7 +16,9 @@ public record CartPaginationResponse(
     public record CartSummary(
         long totalPublishedCourses,
         Long totalPriceCents,
-        String currency
+        String currency,
+        int maxCartSize,
+        boolean isCartFull
     ) implements Serializable {
         @Serial
         private static final long serialVersionUID = 1L;
