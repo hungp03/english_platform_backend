@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán thành công</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #2196F3;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2196F3;
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .success-icon {
+            font-size: 48px;
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+
+        .order-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .order-info h3 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .items-list {
+            margin: 20px 0;
+        }
+
+        .item {
+            background-color: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .item-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .item-details {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .total-amount {
+            background-color: #2196F3;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .payment-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #2196F3;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .button:hover {
+            background-color: #1976D2;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .info-row {
+                flex-direction: column;
+            }
+
+            .info-label {
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">✅</div>
+            <h1>Thanh toán thành công!</h1>
+            <p>Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi</p>
+        </div>
+
+        <div class="order-info">
+            <h3>Thông tin đơn hàng</h3>
+            <div class="info-row">
+                <span class="info-label">Mã đơn hàng:</span>
+                <span class="info-value" th:text="${order.id}">ORD-123456</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Khách hàng:</span>
+                <span class="info-value" th:text="${order.user.fullName}">Nguyễn Văn A</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value" th:text="${order.user.email}">customer@example.com</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Ngày đặt hàng:</span>
+                <span class="info-value" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">28/10/2025
+                    14:30</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Ngày thanh toán:</span>
+                <span class="info-value" th:text="${#temporals.format(order.paidAt, 'dd/MM/yyyy HH:mm')}">28/10/2025
+                    14:35</span>
+            </div>
+        </div>
+
+        <div class="items-list">
+            <h3>Chi tiết đơn hàng</h3>
+            <div th:each="item : ${order.items}" class="item">
+                <div class="item-title" th:text="${item.title}">Khóa học JavaScript cơ bản</div>
+                <div class="item-details">
+                    <span>Số lượng: </span><span th:text="${item.quantity}">1</span> |
+                    <span>Đơn giá: </span><span
+                        th:text="${#numbers.formatDecimal(item.unitPriceCents, 0, 'COMMA', 0, 'POINT')} + ' ' + ${order.currency}">500,000
+                        VNĐ</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="total-amount">
+            <div>Tổng thanh toán: <span
+                    th:text="${#numbers.formatDecimal(order.totalCents, 0, 'COMMA', 0, 'POINT')} + ' ' + ${order.currency}">500,000
+                    VNĐ</span></div>
+        </div>
+
+        <div class="payment-info" th:if="${payment}">
+            <h3>Thông tin thanh toán</h3>
+            <div class="info-row">
+                <span class="info-label">Phương thức:</span>
+                <span class="info-value" th:text="${payment.provider}">VNPAY</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Mã giao dịch:</span>
+                <span class="info-value" th:text="${payment.providerTxn}">TXN123456789</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Trạng thái:</span>
+                <span class="info-value" style="color: #2196F3; font-weight: bold;">Thành công</span>
+            </div>
+        </div>
+
+
+
+        <div class="footer">
+            <p><strong>Lưu ý quan trọng:</strong></p>
+            <p>• Vui lòng lưu lại email này để làm bằng chứng thanh toán</p>
+            <p>• Bạn có thể truy cập khóa học ngay lập tức sau khi thanh toán thành công</p>
+            <p>• Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi</p>
+
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e9ecef;">
+
+            <p>Cảm ơn bạn đã chọn English Learning Platform!</p>
+            <p>📧 Email: support@englishlearning.com | 📞 Hotline: 1900-xxxx</p>
+            <p style="font-size: 12px; color: #999;">
+                Email này được gửi tự động, vui lòng không trả lời trực tiếp.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

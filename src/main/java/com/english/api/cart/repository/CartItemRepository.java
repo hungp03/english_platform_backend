@@ -78,11 +78,6 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     boolean existsByUserIdAndCourseId(@Param("userId") UUID userId, @Param("courseId") UUID courseId);
 
     /**
-     * Find a specific cart item by user and course
-     */
-    Optional<CartItem> findByUserIdAndCourseId(UUID userId, UUID courseId);
-
-    /**
      * Delete a cart item by user and course
      */
     @Modifying

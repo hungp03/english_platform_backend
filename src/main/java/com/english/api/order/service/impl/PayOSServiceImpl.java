@@ -11,6 +11,7 @@ import com.english.api.order.model.enums.PaymentStatus;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.repository.PaymentRepository;
 import com.english.api.order.service.PayOSPaymentService;
+import com.english.api.mail.service.MailService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class PayOSServiceImpl implements PayOSPaymentService {
     private final PaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
     private final PayOS payOS;
+    private final MailService mailService;
 
     @Value("${payos.success-url}")
     private String defaultSuccessUrl;
@@ -60,6 +62,18 @@ public class PayOSServiceImpl implements PayOSPaymentService {
                     }
                 });
 
+        String successUrl = String.format(
+                "%s?orderId=%s",
+                defaultSuccessUrl,
+                order.getId()
+        );
+
+        String cancelUrl = String.format(
+                "%s?orderId=%s",
+                defaultCancelUrl,
+                order.getId()
+        );
+
         try {
             // Map OrderItem -> ItemData
             List<ItemData> items = order.getItems().stream()
@@ -72,8 +86,8 @@ public class PayOSServiceImpl implements PayOSPaymentService {
                     .amount(Math.toIntExact(order.getTotalCents()))
                     .description("Thanh toán đơn hàng")
                     .items(items)
-                    .returnUrl(defaultSuccessUrl)
-                    .cancelUrl(defaultCancelUrl)
+                    .returnUrl(successUrl)
+                    .cancelUrl(cancelUrl)
                     .build();
 
             CheckoutResponseData checkout = payOS.createPaymentLink(paymentData);
@@ -105,8 +119,8 @@ public class PayOSServiceImpl implements PayOSPaymentService {
             WebhookData data = payOS.verifyPaymentWebhookData(webhookBody);
             log.info("PayOS webhook received for orderCode: {}", data.getOrderCode());
 
-            // Lấy order theo orderCode
-            Payment payment = paymentRepository.findByProviderTxn(data.getPaymentLinkId())
+            // Lấy payment với eager loading để tránh N+1 queries
+            Payment payment = paymentRepository.findByProviderTxnWithOrderDetails(data.getPaymentLinkId())
                     .orElseThrow(() -> new ResourceNotFoundException("Payment not found for PayOS link " + data.getPaymentLinkId()));
 
             Order order = payment.getOrder();
@@ -121,6 +135,19 @@ public class PayOSServiceImpl implements PayOSPaymentService {
                     order.setStatus(OrderStatus.PAID);
                     order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
                     orderRepository.save(order);
+                    
+                    // Gửi email thông báo thanh toán thành công
+                    try {
+                        mailService.sendPaymentSuccessEmail(
+                            order.getUser().getEmail(),
+                            order,
+                            payment,
+                            "payment-success-email"
+                        );
+                        log.info("Payment success email sent to: {}", order.getUser().getEmail());
+                    } catch (Exception e) {
+                        log.error("Failed to send payment success email to: {}", order.getUser().getEmail(), e);
+                    }
                 }
             }
 

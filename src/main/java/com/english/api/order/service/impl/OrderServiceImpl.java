@@ -1,8 +1,8 @@
 package com.english.api.order.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
+import com.english.api.cart.service.CartService;
 import com.english.api.common.dto.PaginationResponse;
-import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.common.exception.ResourceAlreadyOwnedException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
@@ -10,16 +10,17 @@ import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.service.CourseService;
 import com.english.api.order.dto.request.CreateOrderRequest;
 import com.english.api.order.dto.request.CreatePaymentRequest;
+import com.english.api.order.dto.request.OrderSource;
+import com.english.api.order.dto.response.OrderDetailResponse;
 import com.english.api.order.dto.response.OrderResponse;
+import com.english.api.order.dto.response.OrderSummaryResponse;
 import com.english.api.order.mapper.OrderMapper;
 import com.english.api.order.model.Order;
 import com.english.api.order.model.OrderItem;
-import com.english.api.order.dto.request.OrderSource;
-import com.english.api.order.model.enums.OrderStatus;
 import com.english.api.order.model.enums.OrderItemEntityType;
+import com.english.api.order.model.enums.OrderStatus;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.service.OrderService;
-import com.english.api.cart.service.CartService;
 import com.english.api.user.model.User;
 import com.english.api.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -56,25 +57,18 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
-        log.info("Creating new order with {} items", request.items().size());
-        
         // Get current authenticated user
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         User currentUser = userService.findById(currentUserId);
-        
         // Check if user has already purchased any of the courses in the order
         validateNoPurchasedCourses(currentUserId, request);
-        
         // Validate order items and calculate total
         Long totalCents = validateAndCalculateTotal(request);
-        
-        // Create order entity
         Order order = Order.builder()
                 .user(currentUser)
                 .status(OrderStatus.PENDING)
                 .totalCents(totalCents)
                 .build();
-        
         // Create order items with optimized entity validation and title fetching
         List<OrderItem> orderItems = new ArrayList<>();
         for (CreateOrderRequest.OrderItemRequest itemRequest : request.items()) {
@@ -89,105 +83,68 @@ public class OrderServiceImpl implements OrderService {
                     .build();
             orderItems.add(orderItem);
         }
-        
         order.setItems(orderItems);
-        
         // Save order
         Order savedOrder = orderRepository.save(order);
-        
         // If order is from cart, remove the purchased items from cart after successful order creation
         if (request.orderSource() == OrderSource.CART) {
-            try {
-                removeOrderedItemsFromCart(request.items());
-                log.info("Successfully removed ordered items from cart for user {} after creating order from cart", currentUserId);
-            } catch (Exception e) {
-                log.warn("Failed to remove items from cart for user {} after creating order: {}", currentUserId, e.getMessage());
-                // Don't fail the order creation if cart clearing fails
-            }
+            removeOrderedItemsFromCart(request.items());
         }
-        
-        log.info("Successfully created order with ID: {} from source: {}", savedOrder.getId(), request.orderSource());
         return orderMapper.toOrderResponse(savedOrder);
-    }
-
-    @Override
-    @Transactional
-    public OrderResponse processPayment(UUID orderId, CreatePaymentRequest paymentRequest) {
-        log.info("Processing payment for order ID: {}", orderId);
-        
-        Order order = findOrderById(orderId);
-        
-        // Validate order can accept payment
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new ResourceInvalidException("Order must be in PENDING status to process payment. Current status: " + order.getStatus());
-        }
-        
-        // Validate user authorization
-        validateOrderAccess(order);
-        
-        // Note: Actual payment processing will be handled by PaymentService
-        // This method prepares the order for payment processing
-        
-        log.info("Order {} is ready for payment processing", orderId);
-        return orderMapper.toOrderResponse(order);
     }
 
     @Override
     @Transactional
     public OrderResponse updateOrderStatus(UUID orderId, OrderStatus newStatus) {
         log.info("Updating order {} status to {}", orderId, newStatus);
-        
+
         Order order = findOrderById(orderId);
         OrderStatus currentStatus = order.getStatus();
-        
+
         // Validate status transition
         if (!isValidStatusTransition(currentStatus, newStatus)) {
             throw new ResourceInvalidException(
-                String.format("Invalid status transition from %s to %s", currentStatus, newStatus)
+                    String.format("Invalid status transition from %s to %s", currentStatus, newStatus)
             );
         }
-        
+
         // Update status
         order.setStatus(newStatus);
-        
+
         // Set paid timestamp if transitioning to PAID
         if (newStatus == OrderStatus.PAID && order.getPaidAt() == null) {
             order.setPaidAt(OffsetDateTime.now());
         }
-        
+
         Order savedOrder = orderRepository.save(order);
-        
+
         log.info("Successfully updated order {} status from {} to {}", orderId, currentStatus, newStatus);
         return orderMapper.toOrderResponse(savedOrder);
     }
 
     @Override
-    public PaginationResponse getOrdersByUser(UUID userId, Pageable pageable) {
-        log.debug("Retrieving orders for user: {}", userId);
-        
-        // Validate user can access these orders
+    public PaginationResponse getOrdersByUser(Pageable pageable) {
+        // Get current authenticated user ID from security context
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        if (!currentUserId.equals(userId)) {
-            // TODO: Add admin role check when role system is available
-            throw new AccessDeniedException("You can only access your own orders");
-        }
-        
-        Page<Order> orderPage = orderRepository.findByUserIdWithItemsAndPayments(userId, pageable);
-        
-        return PaginationResponse.from(orderPage, pageable);
+        // Use method without eager loading for better performance in listing
+        Page<Order> orderPage = orderRepository.findByUserIdOrderByCreatedAtDesc(currentUserId, pageable);
+        // Map entities to summary DTOs (without items details)
+        Page<OrderSummaryResponse> orderSummaryPage = orderPage.map(orderMapper::toOrderSummaryResponse);
+        return PaginationResponse.from(orderSummaryPage, pageable);
     }
 
+
     @Override
-    public PaginationResponse getOrders(Pageable pageable, OrderStatus status, 
-                                      OffsetDateTime startDate, OffsetDateTime endDate) {
-        log.debug("Retrieving orders with filters - status: {}, startDate: {}, endDate: {}", 
-                 status, startDate, endDate);
-        
+    public PaginationResponse getOrders(Pageable pageable, OrderStatus status,
+                                        OffsetDateTime startDate, OffsetDateTime endDate) {
+        log.debug("Retrieving orders with filters - status: {}, startDate: {}, endDate: {}",
+                status, startDate, endDate);
+
         // TODO: Add admin role check when role system is available
         // For now, allow access but this should be restricted to admins
-        
+
         Page<Order> orderPage;
-        
+
         // Apply filters based on provided parameters
         if (status != null && startDate != null && endDate != null) {
             orderPage = orderRepository.findByStatusAndCreatedAtBetween(status, startDate, endDate, pageable);
@@ -196,39 +153,64 @@ public class OrderServiceImpl implements OrderService {
         } else if (startDate != null && endDate != null) {
             orderPage = orderRepository.findByCreatedAtBetween(startDate, endDate, pageable);
         } else {
-            orderPage = orderRepository.findAllWithItems(pageable);
+            orderPage = orderRepository.findAllOrderByCreatedAtDesc(pageable);
         }
-        
-        return PaginationResponse.from(orderPage, pageable);
+
+        // Map entities to summary DTOs (without items details) for better performance
+        Page<OrderSummaryResponse> orderSummaryPage = orderPage.map(orderMapper::toOrderSummaryResponse);
+
+        return PaginationResponse.from(orderSummaryPage, pageable);
     }
 
     @Override
     public OrderResponse getOrderById(UUID orderId) {
-        log.debug("Retrieving order by ID: {}", orderId);
-        
-        Order order = findOrderById(orderId);
-        validateOrderAccess(order);
-        
+        log.debug("Retrieving order by ID with items: {}", orderId);
+
+        // Get current authenticated user ID
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+
+        // Use method that fetches items with user authorization built-in
+        Order order = orderRepository.findByIdAndUserIdWithItems(orderId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId + " or access denied"));
+
         return orderMapper.toOrderResponse(order);
+    }
+
+    @Override
+    public OrderDetailResponse getMyOrderDetailById(UUID orderId) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        // Get order with user and items in one query (with user authorization built-in)
+        Order orderWithItems = orderRepository.findByIdAndUserIdWithItems(orderId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId + " or access denied"));
+        // Get payments in separate query (with user authorization built-in)
+        Order orderWithPayments = orderRepository.findByIdAndUserIdWithPayments(orderId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId + " or access denied"));
+        // Merge the data: use orderWithItems as base and add payments
+        orderWithItems.setPayments(orderWithPayments.getPayments());
+        return orderMapper.toOrderDetailResponse(orderWithItems);
     }
 
     @Override
     @Transactional
     public OrderResponse cancelOrder(UUID orderId) {
         log.info("Cancelling order: {}", orderId);
-        
-        Order order = findOrderById(orderId);
-        validateOrderAccess(order);
-        
+
+        // Get current authenticated user ID
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+
+        // Find order with user authorization built-in
+        Order order = orderRepository.findByIdAndUserIdWithItems(orderId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId + " or access denied"));
+
         // Validate order can be cancelled
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new ResourceInvalidException("Only PENDING orders can be cancelled. Current status: " + order.getStatus());
         }
-        
+
         // Update status to cancelled
         order.setStatus(OrderStatus.CANCELLED);
         Order savedOrder = orderRepository.save(order);
-        
+
         log.info("Successfully cancelled order: {}", orderId);
         return orderMapper.toOrderResponse(savedOrder);
     }
@@ -238,7 +220,7 @@ public class OrderServiceImpl implements OrderService {
         if (currentStatus == newStatus) {
             return false; // No transition needed
         }
-        
+
         return switch (currentStatus) {
             case PENDING -> PENDING_TRANSITIONS.contains(newStatus);
             case PAID -> PAID_TRANSITIONS.contains(newStatus);
@@ -253,9 +235,9 @@ public class OrderServiceImpl implements OrderService {
         if (request.items() == null || request.items().isEmpty()) {
             throw new ResourceInvalidException("Order must contain at least one item");
         }
-        
+
         long totalCents = 0;
-        
+
         for (CreateOrderRequest.OrderItemRequest item : request.items()) {
             // Validate item fields only - entity existence will be validated during order creation
             if (item.entityType() == null) {
@@ -270,22 +252,21 @@ public class OrderServiceImpl implements OrderService {
             if (item.unitPriceCents() == null || item.unitPriceCents() <= 0) {
                 throw new ResourceInvalidException("Unit price must be positive for all items");
             }
-            
+
             // Skip entity existence validation here to avoid duplicate queries
             // Entity validation will be performed in createOrder() when fetching titles
-            
+
             // Calculate item total
             long itemTotal = item.quantity() * item.unitPriceCents();
             totalCents += itemTotal;
         }
-        
+
         if (totalCents <= 0) {
             throw new ResourceInvalidException("Order total must be positive");
         }
-        
+
         return totalCents;
     }
-
 
 
     /**
@@ -304,19 +285,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Validates that current user can access the order
-     */
-    private void validateOrderAccess(Order order) {
-        UUID currentUserId = SecurityUtil.getCurrentUserId();
-        
-        // Users can access their own orders, admins can access all orders
-        if (!order.getUser().getId().equals(currentUserId)) {
-            // TODO: Add admin role check when role system is available
-            throw new AccessDeniedException("You can only access your own orders");
-        }
-    }
-
-    /**
      * Optimized method that validates entity existence and gets title in a single database query
      */
     private String getEntityTitleOptimized(OrderItemEntityType entityType, UUID entityId) {
@@ -327,12 +295,10 @@ public class OrderServiceImpl implements OrderService {
                 yield courseInfo.title();
             }
             case SUBSCRIPTION -> {
-                // TODO: Implement subscription validation when subscription module is available
                 log.warn("SUBSCRIPTION validation not implemented yet for entity ID: {}", entityId);
                 throw new ResourceInvalidException("SUBSCRIPTION entities are not supported yet");
             }
             case BUNDLE -> {
-                // TODO: Implement bundle validation when bundle module is available
                 log.warn("BUNDLE validation not implemented yet for entity ID: {}", entityId);
                 throw new ResourceInvalidException("BUNDLE entities are not supported yet");
             }
@@ -344,19 +310,17 @@ public class OrderServiceImpl implements OrderService {
      */
     private void validateNoPurchasedCourses(UUID userId, CreateOrderRequest request) {
         log.debug("Validating no purchased courses for user: {}", userId);
-        
+
         for (CreateOrderRequest.OrderItemRequest item : request.items()) {
             // Only check for COURSE entities
             if (item.entityType() == OrderItemEntityType.COURSE) {
                 if (orderRepository.hasUserPurchasedCourse(userId, item.entityId())) {
                     throw new ResourceAlreadyOwnedException(
-                        String.format("You have already purchased the course with ID: %s. Please remove it from your order.", item.entityId())
+                            String.format("You have already purchased the course with ID: %s. Please remove it from your order.", item.entityId())
                     );
                 }
             }
         }
-        
-        log.debug("All courses in order are valid for purchase");
     }
 
     /**
@@ -364,23 +328,17 @@ public class OrderServiceImpl implements OrderService {
      * Only removes COURSE items as other entity types are not supported in cart yet
      */
     private void removeOrderedItemsFromCart(List<CreateOrderRequest.OrderItemRequest> items) {
-        log.debug("Removing ordered items from cart using batch delete");
-        
-        // Collect all course IDs to remove
         List<UUID> courseIdsToRemove = items.stream()
                 .filter(item -> item.entityType() == OrderItemEntityType.COURSE)
                 .map(CreateOrderRequest.OrderItemRequest::entityId)
                 .toList();
-        
+
         if (!courseIdsToRemove.isEmpty()) {
             try {
                 cartService.removeFromCart(courseIdsToRemove);
-                log.info("Successfully removed {} courses from cart in batch", courseIdsToRemove.size());
             } catch (Exception e) {
                 log.warn("Failed to batch remove courses from cart: {}", e.getMessage());
             }
-        } else {
-            log.debug("No course items to remove from cart");
         }
     }
 }

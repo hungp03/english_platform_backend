@@ -63,4 +63,14 @@ public class MailServiceImpl implements MailService {
         this.sendEmail(email, "Forgot password - English Pro", content, false, true);
     }
 
+    @Async
+    @Override
+    public void sendPaymentSuccessEmail(String email, Object order, Object payment, String templateName) {
+        Context context = new Context();
+        context.setVariable("order", order);
+        context.setVariable("payment", payment);
+        String content = this.templateEngine.process(templateName, context);
+        this.sendEmail(email, "Thanh toán thành công - English Pro", content, false, true);
+    }
+
 }
