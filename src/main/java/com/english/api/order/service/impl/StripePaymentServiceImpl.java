@@ -59,12 +59,10 @@ public class StripePaymentServiceImpl implements StripePaymentService {
     public StripeCheckoutResponse createCheckoutSession(StripeCheckoutRequest request) {
         Order order = orderRepository.findById(request.orderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + request.orderId()));
-
         // Validate order status
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new ResourceInvalidException("Order must be in PENDING status to create checkout session");
         }
-
         // Check if payment already exists
         paymentRepository.findTopByOrderIdAndProviderOrderByCreatedAtDesc(order.getId(), PaymentProvider.STRIPE)
                 .ifPresent(payment -> {
@@ -115,7 +113,6 @@ public class StripePaymentServiceImpl implements StripePaymentService {
                     .build();
             paymentRepository.save(payment);
             return new StripeCheckoutResponse(session.getId(), session.getUrl(), "CREATED");
-
         } catch (StripeException e) {
             throw new RuntimeException("Failed to create Stripe checkout session: " + e.getMessage());
         }
@@ -179,24 +176,12 @@ public class StripePaymentServiceImpl implements StripePaymentService {
             } else {
 //                "Payment already marked as successful"
             }
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to process successful checkout", e);
         }
     }
 
-    @Override
-    public JsonNode getCheckoutSession(String sessionId) {
-        try {
-            Session session = Session.retrieve(sessionId);
-            return objectMapper.readTree(session.toJson());
-        } catch (StripeException e) {
-            throw new RuntimeException("Failed to retrieve checkout session: " + e.getMessage());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse Stripe session to JSON", e);
-        }
-    }
-
+  
 
     /**
      * Build Stripe line item from order item

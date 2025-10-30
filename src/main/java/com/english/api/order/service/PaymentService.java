@@ -39,14 +39,6 @@ public interface PaymentService {
      */
     PaymentResponse getPaymentById(UUID paymentId);
 
-    /**
-     * Get payment by provider transaction ID
-     * @param provider the payment provider
-     * @param providerTxn the provider transaction ID
-     * @return the payment response
-     */
-    PaymentResponse getPaymentByProviderTxn(PaymentProvider provider, String providerTxn);
-
     CheckoutResponseData createPayOSCheckout(PayOSCheckoutRequest request);
 }
 

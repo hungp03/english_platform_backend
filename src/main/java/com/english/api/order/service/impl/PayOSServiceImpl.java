@@ -157,24 +157,7 @@ public class PayOSServiceImpl implements PayOSPaymentService {
         }
     }
 
-    @Transactional
-    @Override
-    public void cancelPayment(UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
-
-        Payment payment = paymentRepository.findTopByOrderIdAndProviderOrderByCreatedAtDesc(orderId, PaymentProvider.PAYOS)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment not found for order: " + orderId));
-
-        try {
-            payOS.cancelPaymentLink(Long.parseLong(payment.getProviderTxn()), "User canceled the order");
-            payment.setStatus(PaymentStatus.FAILED);
-            paymentRepository.save(payment);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to cancel PayOS payment link", e);
-        }
-    }
-
+    
     // Helper methods
     private ItemData mapToItemData(OrderItem item) {
         return ItemData.builder()

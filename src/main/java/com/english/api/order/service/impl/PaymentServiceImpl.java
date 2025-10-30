@@ -40,7 +40,6 @@ public class PaymentServiceImpl implements PaymentService {
         return stripePaymentService.createCheckoutSession(request);
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public List<PaymentResponse> getPaymentsByOrder(UUID orderId) {
@@ -55,15 +54,6 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponse getPaymentById(UUID paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with ID: " + paymentId));
-        return orderMapper.toPaymentResponse(payment);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public PaymentResponse getPaymentByProviderTxn(PaymentProvider provider, String providerTxn) {
-        Payment payment = paymentRepository.findByProviderAndProviderTxn(provider, providerTxn)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        String.format("Payment not found for provider %s with transaction %s", provider, providerTxn)));
         return orderMapper.toPaymentResponse(payment);
     }
 

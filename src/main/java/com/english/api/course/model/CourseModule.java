@@ -9,9 +9,17 @@ import java.util.UUID;
  * Created by hungpham on 10/1/2025
  */
 @Entity
-@Table(name = "course_modules", uniqueConstraints = {
+@Table(
+    name = "course_modules",
+    uniqueConstraints = {
         @UniqueConstraint(columnNames = {"course_id", "position"})
-})
+    },
+    indexes = {
+        @Index(name = "idx_course_modules_course_id", columnList = "course_id"),
+        @Index(name = "idx_course_modules_published", columnList = "published"),
+        @Index(name = "idx_course_modules_course_position", columnList = "course_id, position")
+    }
+)
 @Getter
 @Setter
 @Builder

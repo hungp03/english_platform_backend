@@ -57,7 +57,6 @@ public class OrderController {
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime endDate) {
-        
         PaginationResponse response = orderService.getOrders(pageable, status, startDate, endDate);
         return ResponseEntity.ok(response);
     }
@@ -78,7 +77,7 @@ public class OrderController {
      * Cancel an order
      */
     @PutMapping("/{id}/cancel")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable UUID id) {
         OrderResponse response = orderService.cancelOrder(id);
         return ResponseEntity.ok(response);
@@ -92,7 +91,6 @@ public class OrderController {
     public ResponseEntity<OrderResponse> updateOrderStatus(
             @PathVariable UUID id,
             @RequestParam OrderStatus status) {
-        
         OrderResponse response = orderService.updateOrderStatus(id, status);
         return ResponseEntity.ok(response);
     }

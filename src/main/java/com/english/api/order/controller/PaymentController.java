@@ -4,17 +4,15 @@ import com.english.api.order.dto.request.PayOSCheckoutRequest;
 import com.english.api.order.dto.request.StripeCheckoutRequest;
 import com.english.api.order.dto.response.PaymentResponse;
 import com.english.api.order.dto.response.StripeCheckoutResponse;
-import com.english.api.order.model.enums.PaymentProvider;
 import com.english.api.order.service.PayOSPaymentService;
 import com.english.api.order.service.PaymentService;
 import com.english.api.order.service.StripePaymentService;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.stripe.model.Event;
 import com.stripe.model.checkout.Session;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.type.CheckoutResponseData;
 import vn.payos.type.Webhook;
@@ -29,7 +27,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
-@Slf4j
 public class PaymentController {
 
     private final StripePaymentService stripePaymentService;
@@ -37,6 +34,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping("/stripe/checkout")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<StripeCheckoutResponse> createStripeCheckout(
             @Valid @RequestBody StripeCheckoutRequest request) {
         StripeCheckoutResponse response = paymentService.createStripeCheckout(request);
@@ -44,17 +42,14 @@ public class PaymentController {
     }
 
     @PostMapping("/payos/checkout")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CheckoutResponseData> createPayOSCheckout(
             @Valid @RequestBody PayOSCheckoutRequest request) {
         CheckoutResponseData response = paymentService.createPayOSCheckout(request);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/stripe/session/{sessionId}")
-    public ResponseEntity<JsonNode> getCheckoutSession(@PathVariable String sessionId) {
-        return ResponseEntity.ok(stripePaymentService.getCheckoutSession(sessionId));
-    }
-
+    
     @GetMapping("/order/{orderId}")
     public ResponseEntity<List<PaymentResponse>> getPaymentsByOrder(
             @PathVariable UUID orderId) {
@@ -65,14 +60,6 @@ public class PaymentController {
     @GetMapping("/{paymentId}")
     public ResponseEntity<PaymentResponse> getPaymentById(@PathVariable UUID paymentId) {
         PaymentResponse payment = paymentService.getPaymentById(paymentId);
-        return ResponseEntity.ok(payment);
-    }
-
-    @GetMapping("/provider/{provider}/transaction/{providerTxn}")
-    public ResponseEntity<PaymentResponse> getPaymentByProviderTxn(
-            @PathVariable PaymentProvider provider,
-            @PathVariable String providerTxn) {
-        PaymentResponse payment = paymentService.getPaymentByProviderTxn(provider, providerTxn);
         return ResponseEntity.ok(payment);
     }
 
@@ -96,7 +83,6 @@ public class PaymentController {
             }
             return ResponseEntity.ok().build();
         } catch (Exception e) {
-            log.error("Stripe webhook processing failed", e);
             return ResponseEntity.badRequest().body("Webhook processing failed");
         }
     }
@@ -107,7 +93,6 @@ public class PaymentController {
             payOSPaymentService.handleWebhook(webhook);
             return ResponseEntity.ok("Webhook processed");
         } catch (Exception e) {
-            log.error("PayOS webhook processing failed", e);
             return ResponseEntity.badRequest().body("Webhook failed: " + e.getMessage());
         }
     }

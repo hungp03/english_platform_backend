@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -26,22 +27,26 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getCurrentUser() {
         return ResponseEntity.ok(userService.getCurrentUser());
     }
 
     @PutMapping(value = "me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserUpdateResponse> updateCurrentUser(@Valid @ModelAttribute UpdateUserRequest request) throws IOException {
         return ResponseEntity.ok(userService.updateCurrentUser(request));
     }
 
     @PatchMapping("password")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody UpdatePasswordRequest request){
         userService.changePassword(request);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaginationResponse> getUsers(
             Pageable pageable,
             @RequestParam(defaultValue = "", required = false) String searchTerm) {
@@ -49,6 +54,7 @@ public class UserController {
     }
 
     @PatchMapping("/{userId}/toggle-status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> toggleUserStatus(
             @PathVariable UUID userId) {
         userService.toggleUserStatus(userId);

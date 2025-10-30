@@ -23,11 +23,6 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     @EntityGraph(attributePaths = "refunds")
     List<Payment> findByOrderIdOrderByCreatedAtDesc(UUID orderId);
     /**
-     * Find payment by provider transaction ID
-     */
-    Optional<Payment> findByProviderTxn(String providerTxn);
-
-    /**
      * Find payment by provider transaction ID with order, user, and items eagerly loaded
      */
     @EntityGraph(attributePaths = {"order", "order.user", "order.items"})

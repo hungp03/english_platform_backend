@@ -33,9 +33,4 @@ public interface StripePaymentService {
      * @param session the Stripe checkout session
      */
     void processSuccessfulCheckout(Session session);
-
-    /**
-     * Get checkout session by ID
-     */
-    JsonNode getCheckoutSession(String sessionId);
 }

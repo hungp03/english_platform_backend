@@ -1,5 +1,6 @@
 package com.english.api.order.config;
 
+import com.stripe.Stripe;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +16,7 @@ public class StripeConfig {
 
     @PostConstruct
     public void setup() {
-        com.stripe.Stripe.apiKey = secretKey;
+        Stripe.apiKey = secretKey;
     }
 }
 

@@ -9,7 +9,6 @@ import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.service.CourseService;
 import com.english.api.order.dto.request.CreateOrderRequest;
-import com.english.api.order.dto.request.CreatePaymentRequest;
 import com.english.api.order.dto.request.OrderSource;
 import com.english.api.order.dto.response.OrderDetailResponse;
 import com.english.api.order.dto.response.OrderResponse;
@@ -96,29 +95,21 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse updateOrderStatus(UUID orderId, OrderStatus newStatus) {
-        log.info("Updating order {} status to {}", orderId, newStatus);
-
         Order order = findOrderById(orderId);
         OrderStatus currentStatus = order.getStatus();
-
         // Validate status transition
         if (!isValidStatusTransition(currentStatus, newStatus)) {
             throw new ResourceInvalidException(
                     String.format("Invalid status transition from %s to %s", currentStatus, newStatus)
             );
         }
-
         // Update status
         order.setStatus(newStatus);
-
         // Set paid timestamp if transitioning to PAID
         if (newStatus == OrderStatus.PAID && order.getPaidAt() == null) {
             order.setPaidAt(OffsetDateTime.now());
         }
-
         Order savedOrder = orderRepository.save(order);
-
-        log.info("Successfully updated order {} status from {} to {}", orderId, currentStatus, newStatus);
         return orderMapper.toOrderResponse(savedOrder);
     }
 
@@ -137,14 +128,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public PaginationResponse getOrders(Pageable pageable, OrderStatus status,
                                         OffsetDateTime startDate, OffsetDateTime endDate) {
-        log.debug("Retrieving orders with filters - status: {}, startDate: {}, endDate: {}",
-                status, startDate, endDate);
-
-        // TODO: Add admin role check when role system is available
-        // For now, allow access but this should be restricted to admins
-
         Page<Order> orderPage;
-
         // Apply filters based on provided parameters
         if (status != null && startDate != null && endDate != null) {
             orderPage = orderRepository.findByStatusAndCreatedAtBetween(status, startDate, endDate, pageable);
@@ -155,18 +139,13 @@ public class OrderServiceImpl implements OrderService {
         } else {
             orderPage = orderRepository.findAllOrderByCreatedAtDesc(pageable);
         }
-
         // Map entities to summary DTOs (without items details) for better performance
         Page<OrderSummaryResponse> orderSummaryPage = orderPage.map(orderMapper::toOrderSummaryResponse);
-
         return PaginationResponse.from(orderSummaryPage, pageable);
     }
 
     @Override
     public OrderResponse getOrderById(UUID orderId) {
-        log.debug("Retrieving order by ID with items: {}", orderId);
-
-        // Get current authenticated user ID
         UUID currentUserId = SecurityUtil.getCurrentUserId();
 
         // Use method that fetches items with user authorization built-in
@@ -193,25 +172,17 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse cancelOrder(UUID orderId) {
-        log.info("Cancelling order: {}", orderId);
-
-        // Get current authenticated user ID
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-
         // Find order with user authorization built-in
         Order order = orderRepository.findByIdAndUserIdWithItems(orderId, currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId + " or access denied"));
-
         // Validate order can be cancelled
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new ResourceInvalidException("Only PENDING orders can be cancelled. Current status: " + order.getStatus());
         }
-
         // Update status to cancelled
         order.setStatus(OrderStatus.CANCELLED);
         Order savedOrder = orderRepository.save(order);
-
-        log.info("Successfully cancelled order: {}", orderId);
         return orderMapper.toOrderResponse(savedOrder);
     }
 
@@ -220,7 +191,6 @@ public class OrderServiceImpl implements OrderService {
         if (currentStatus == newStatus) {
             return false; // No transition needed
         }
-
         return switch (currentStatus) {
             case PENDING -> PENDING_TRANSITIONS.contains(newStatus);
             case PAID -> PAID_TRANSITIONS.contains(newStatus);
@@ -235,9 +205,7 @@ public class OrderServiceImpl implements OrderService {
         if (request.items() == null || request.items().isEmpty()) {
             throw new ResourceInvalidException("Order must contain at least one item");
         }
-
         long totalCents = 0;
-
         for (CreateOrderRequest.OrderItemRequest item : request.items()) {
             // Validate item fields only - entity existence will be validated during order creation
             if (item.entityType() == null) {
@@ -252,22 +220,17 @@ public class OrderServiceImpl implements OrderService {
             if (item.unitPriceCents() == null || item.unitPriceCents() <= 0) {
                 throw new ResourceInvalidException("Unit price must be positive for all items");
             }
-
             // Skip entity existence validation here to avoid duplicate queries
             // Entity validation will be performed in createOrder() when fetching titles
-
             // Calculate item total
             long itemTotal = item.quantity() * item.unitPriceCents();
             totalCents += itemTotal;
         }
-
         if (totalCents <= 0) {
             throw new ResourceInvalidException("Order total must be positive");
         }
-
         return totalCents;
     }
-
 
     /**
      * Validates and retrieves entity information in a single operation to optimize database queries
@@ -288,18 +251,15 @@ public class OrderServiceImpl implements OrderService {
      * Optimized method that validates entity existence and gets title in a single database query
      */
     private String getEntityTitleOptimized(OrderItemEntityType entityType, UUID entityId) {
-        log.debug("Validating and fetching entity title: type={}, id={}", entityType, entityId);
         return switch (entityType) {
             case COURSE -> {
                 CourseCheckoutResponse courseInfo = validateAndGetCourseInfo(entityId);
                 yield courseInfo.title();
             }
             case SUBSCRIPTION -> {
-                log.warn("SUBSCRIPTION validation not implemented yet for entity ID: {}", entityId);
                 throw new ResourceInvalidException("SUBSCRIPTION entities are not supported yet");
             }
             case BUNDLE -> {
-                log.warn("BUNDLE validation not implemented yet for entity ID: {}", entityId);
                 throw new ResourceInvalidException("BUNDLE entities are not supported yet");
             }
         };
@@ -309,8 +269,6 @@ public class OrderServiceImpl implements OrderService {
      * Validates that user hasn't already purchased any courses in the order
      */
     private void validateNoPurchasedCourses(UUID userId, CreateOrderRequest request) {
-        log.debug("Validating no purchased courses for user: {}", userId);
-
         for (CreateOrderRequest.OrderItemRequest item : request.items()) {
             // Only check for COURSE entities
             if (item.entityType() == OrderItemEntityType.COURSE) {

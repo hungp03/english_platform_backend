@@ -17,7 +17,14 @@ import java.util.UUID;
  * Created by hungpham on 10/1/2025
  */
 @Entity
-@Table(name = "media_assets")
+@Table(
+    name = "media_assets",
+    indexes = {
+        @Index(name = "idx_media_assets_owner_id", columnList = "owner_id"),
+        @Index(name = "idx_media_assets_mime_type", columnList = "mimeType"),
+        @Index(name = "idx_media_assets_created_at", columnList = "createdAt")
+    }
+)
 @Getter
 @Setter
 @Builder

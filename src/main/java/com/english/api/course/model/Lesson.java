@@ -17,8 +17,19 @@ import java.util.UUID;
  * Created by hungpham on 10/1/2025
  */
 @Entity
-@Table(name = "lessons",
-        uniqueConstraints = {@UniqueConstraint(columnNames = {"module_id", "position"})})
+@Table(
+    name = "lessons",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"module_id", "position"})
+    },
+    indexes = {
+        @Index(name = "idx_lessons_module_id", columnList = "module_id"),
+        @Index(name = "idx_lessons_published", columnList = "published"),
+        @Index(name = "idx_lessons_is_free", columnList = "is_free"),
+        @Index(name = "idx_lessons_kind", columnList = "kind"),
+        @Index(name = "idx_lessons_module_position", columnList = "module_id, position")
+    }
+)
 @Getter
 @Setter
 @Builder

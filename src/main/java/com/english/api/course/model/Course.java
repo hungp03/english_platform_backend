@@ -15,7 +15,17 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "courses")
+@Table(
+    name = "courses",
+    indexes = {
+        @Index(name = "idx_courses_slug", columnList = "slug"),
+        @Index(name = "idx_courses_status", columnList = "status"),
+        @Index(name = "idx_courses_created_by", columnList = "created_by"),
+        @Index(name = "idx_courses_status_published", columnList = "status, published_at"),
+        @Index(name = "idx_courses_created_at", columnList = "created_at"),
+        @Index(name = "idx_courses_is_deleted", columnList = "is_deleted")
+    }
+)
 @Getter
 @Setter
 @Builder

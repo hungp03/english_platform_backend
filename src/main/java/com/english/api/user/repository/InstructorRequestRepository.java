@@ -5,7 +5,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,10 +16,26 @@ import java.util.UUID;
 @Repository
 public interface InstructorRequestRepository extends JpaRepository<InstructorRequest, UUID>, JpaSpecificationExecutor<InstructorRequest> {
 
-    Optional<InstructorRequest> findByUserId(UUID userId);
+    @Query("""
+        SELECT ir FROM InstructorRequest ir
+        LEFT JOIN FETCH ir.user u
+        LEFT JOIN FETCH ir.reviewedBy rb
+        WHERE ir.user.id = :userId
+        ORDER BY ir.requestedAt DESC
+        """)
+    List<InstructorRequest> findByUserId(@Param("userId") UUID userId);
 
-    @Query("SELECT COUNT(ir) FROM InstructorRequest ir WHERE ir.user.id = :userId AND ir.status IN ('PENDING', 'APPROVED')")
-    int countActiveRequestsByUserId(@Param("userId") UUID userId);
+    @Query("""
+        SELECT ir FROM InstructorRequest ir
+        LEFT JOIN FETCH ir.user u
+        LEFT JOIN FETCH ir.reviewedBy rb
+        WHERE ir.user.id = :userId
+        ORDER BY ir.requestedAt DESC
+        """)
+    Optional<InstructorRequest> findLatestByUserId(@Param("userId") UUID userId);
+
+    @Query("SELECT COUNT(ir) FROM InstructorRequest ir WHERE ir.user.id = :userId AND ir.status = 'PENDING'")
+    int countPendingRequestsByUserId(@Param("userId") UUID userId);
 
     boolean existsByUserIdAndStatus(UUID userId, InstructorRequest.Status status);
 
