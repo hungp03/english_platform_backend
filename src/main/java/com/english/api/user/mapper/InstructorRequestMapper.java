@@ -10,7 +10,7 @@ import org.mapstruct.Mapping;
  * Mapper for InstructorRequest entity
  * Created by hungpham on 10/29/2025
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {CertificateProofMapper.class})
 public interface InstructorRequestMapper {
 
     @Mapping(source = "user.id", target = "userId")

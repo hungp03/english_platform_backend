@@ -17,9 +17,10 @@ import java.util.UUID;
 public interface InstructorRequestRepository extends JpaRepository<InstructorRequest, UUID>, JpaSpecificationExecutor<InstructorRequest> {
 
     @Query("""
-        SELECT ir FROM InstructorRequest ir
+        SELECT DISTINCT ir FROM InstructorRequest ir
         LEFT JOIN FETCH ir.user u
         LEFT JOIN FETCH ir.reviewedBy rb
+        LEFT JOIN FETCH ir.certificateProofs
         WHERE ir.user.id = :userId
         ORDER BY ir.requestedAt DESC
         """)
@@ -29,8 +30,10 @@ public interface InstructorRequestRepository extends JpaRepository<InstructorReq
         SELECT ir FROM InstructorRequest ir
         LEFT JOIN FETCH ir.user u
         LEFT JOIN FETCH ir.reviewedBy rb
+        LEFT JOIN FETCH ir.certificateProofs
         WHERE ir.user.id = :userId
         ORDER BY ir.requestedAt DESC
+        LIMIT 1
         """)
     Optional<InstructorRequest> findLatestByUserId(@Param("userId") UUID userId);
 
@@ -44,4 +47,20 @@ public interface InstructorRequestRepository extends JpaRepository<InstructorReq
 
     @Query("SELECT ir FROM InstructorRequest ir WHERE ir.status = :status ORDER BY ir.requestedAt DESC")
     Page<InstructorRequest> findByStatusOrderByRequestedAtDesc(@Param("status") InstructorRequest.Status status, Pageable pageable);
+
+    @Query("""
+        SELECT ir FROM InstructorRequest ir
+        LEFT JOIN FETCH ir.certificateProofs
+        WHERE ir.id = :requestId AND ir.user.id = :userId
+        """)
+    Optional<InstructorRequest> findByIdAndUserId(@Param("requestId") UUID requestId, @Param("userId") UUID userId);
+
+    @Query("""
+        SELECT ir FROM InstructorRequest ir
+        LEFT JOIN FETCH ir.user u
+        LEFT JOIN FETCH ir.reviewedBy rb
+        LEFT JOIN FETCH ir.certificateProofs
+        WHERE ir.id = :requestId
+        """)
+    Optional<InstructorRequest> findByIdWithDetails(@Param("requestId") UUID requestId);
 }

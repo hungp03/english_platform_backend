@@ -3,7 +3,9 @@ package com.english.api.user.controller;
 import com.english.api.user.dto.request.CreateInstructorRequest;
 import com.english.api.user.dto.request.ReviewInstructorRequest;
 import com.english.api.user.dto.request.UpdateInstructorRequest;
+import com.english.api.user.dto.request.UploadCertificateProofRequest;
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.user.dto.response.CertificateProofResponse;
 import com.english.api.user.dto.response.InstructorRequestResponse;
 import com.english.api.user.model.InstructorRequest;
 import com.english.api.user.service.InstructorService;
@@ -18,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -47,6 +50,13 @@ public class InstructorController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/me/all")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<List<InstructorRequestResponse>> getUserRequests() {
+        List<InstructorRequestResponse> response = instructorService.getUserRequests();
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/{requestId}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<InstructorRequestResponse> updatePendingRequest(
@@ -54,6 +64,32 @@ public class InstructorController {
             @Valid @RequestBody UpdateInstructorRequest request) {
         InstructorRequestResponse response = instructorService.updatePendingRequest(requestId, request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{requestId}/certificate-proofs")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<CertificateProofResponse> uploadCertificateProof(
+            @PathVariable UUID requestId,
+            @Valid @RequestBody UploadCertificateProofRequest request) {
+        CertificateProofResponse response = instructorService.uploadCertificateProof(requestId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{requestId}/certificate-proofs")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<List<CertificateProofResponse>> getCertificateProofs(
+            @PathVariable UUID requestId) {
+        List<CertificateProofResponse> response = instructorService.getCertificateProofs(requestId);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{requestId}/certificate-proofs/{proofId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> deleteCertificateProof(
+            @PathVariable UUID requestId,
+            @PathVariable UUID proofId) {
+        instructorService.deleteCertificateProof(requestId, proofId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/admin")

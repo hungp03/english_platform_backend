@@ -7,7 +7,12 @@ import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.user.dto.request.CreateInstructorRequest;
 import com.english.api.user.dto.request.ReviewInstructorRequest;
 import com.english.api.user.dto.request.UpdateInstructorRequest;
+import com.english.api.user.dto.request.UploadCertificateProofRequest;
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.user.dto.response.CertificateProofResponse;
+import com.english.api.user.mapper.CertificateProofMapper;
+import com.english.api.user.model.InstructorCertificateProof;
+import com.english.api.user.repository.InstructorCertificateProofRepository;
 import com.english.api.user.dto.response.InstructorRequestListResponse;
 import com.english.api.user.dto.response.InstructorRequestResponse;
 import com.english.api.user.mapper.InstructorRequestMapper;
@@ -20,6 +25,7 @@ import com.english.api.user.repository.InstructorRequestRepository;
 import com.english.api.user.repository.RoleRepository;
 import com.english.api.user.repository.UserRepository;
 import com.english.api.user.service.InstructorService;
+import com.english.api.common.service.MediaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -46,6 +52,9 @@ public class InstructorServiceImpl implements InstructorService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final InstructorRequestMapper instructorRequestMapper;
+    private final InstructorCertificateProofRepository certificateProofRepository;
+    private final CertificateProofMapper certificateProofMapper;
+    private final MediaService mediaService;
 
     @Override
     public InstructorRequestResponse createInstructorRequest(CreateInstructorRequest request) {
@@ -86,7 +95,7 @@ public class InstructorServiceImpl implements InstructorService {
     @Override
     @Transactional(readOnly = true)
     public InstructorRequestResponse getInstructorRequest(UUID requestId) {
-        InstructorRequest request = instructorRequestRepository.findById(requestId)
+        InstructorRequest request = instructorRequestRepository.findByIdWithDetails(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found with id: " + requestId));
 
         return instructorRequestMapper.toResponse(request);
@@ -116,7 +125,7 @@ public class InstructorServiceImpl implements InstructorService {
 
     @Override
     public InstructorRequestResponse reviewInstructorRequest(UUID requestId, ReviewInstructorRequest reviewRequest) {
-        InstructorRequest request = instructorRequestRepository.findById(requestId)
+        InstructorRequest request = instructorRequestRepository.findByIdWithDetails(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found with id: " + requestId));
 
         if (request.getStatus() != InstructorRequest.Status.PENDING) {
@@ -173,17 +182,23 @@ public class InstructorServiceImpl implements InstructorService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<InstructorRequestResponse> getUserRequests() {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        List<InstructorRequest> requests = instructorRequestRepository.findByUserId(userId);
+        return requests.stream()
+                .map(instructorRequestMapper::toResponse)
+                .toList();
+    }
+
+    @Override
     public InstructorRequestResponse updatePendingRequest(UUID requestId, UpdateInstructorRequest request) {
-        InstructorRequest instructorRequest = instructorRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found with id: " + requestId));
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        InstructorRequest instructorRequest = instructorRequestRepository.findByIdAndUserId(requestId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found or you don't have permission"));
 
         if (instructorRequest.getStatus() != InstructorRequest.Status.PENDING) {
             throw new ResourceInvalidException("Only pending requests can be updated");
-        }
-
-        UUID currentUserId = SecurityUtil.getCurrentUserId();
-        if (!instructorRequest.getUser().getId().equals(currentUserId)) {
-            throw new ResourceInvalidException("You can only update your own requests");
         }
 
         // Update fields if provided
@@ -207,6 +222,70 @@ public class InstructorServiceImpl implements InstructorService {
         log.info("Updated instructor request: {}", requestId);
 
         return instructorRequestMapper.toResponse(updatedRequest);
+    }
+
+    @Override
+    public CertificateProofResponse uploadCertificateProof(UUID requestId, UploadCertificateProofRequest request) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        InstructorRequest instructorRequest = instructorRequestRepository.findByIdAndUserId(requestId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found or you don't have permission"));
+
+        if (instructorRequest.getStatus() != InstructorRequest.Status.PENDING) {
+            throw new ResourceInvalidException("Can only upload proofs for pending requests");
+        }
+
+        InstructorCertificateProof proof = InstructorCertificateProof.builder()
+                .instructorRequest(instructorRequest)
+                .fileUrl(request.fileUrl())
+                .build();
+        
+        InstructorCertificateProof savedProof = certificateProofRepository.save(proof);
+        log.info("Uploaded certificate proof for request: {}", requestId);
+
+        return certificateProofMapper.toResponse(savedProof);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CertificateProofResponse> getCertificateProofs(UUID requestId) {
+        if (!instructorRequestRepository.existsById(requestId)) {
+            throw new ResourceNotFoundException("Instructor request not found with id: " + requestId);
+        }
+        List<InstructorCertificateProof> proofs = certificateProofRepository.findByRequestId(requestId);
+        return proofs.stream()
+                .map(certificateProofMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public void deleteCertificateProof(UUID requestId, UUID proofId) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        InstructorRequest instructorRequest = instructorRequestRepository.findByIdAndUserId(requestId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found or you don't have permission"));
+
+        if (instructorRequest.getStatus() != InstructorRequest.Status.PENDING) {
+            throw new ResourceInvalidException("Can only delete proofs from pending requests");
+        }
+
+        InstructorCertificateProof proof = certificateProofRepository.findById(proofId)
+                .orElseThrow(() -> new ResourceNotFoundException("Certificate proof not found with id: " + proofId));
+
+        if (!proof.getInstructorRequest().getId().equals(requestId)) {
+            throw new ResourceInvalidException("Proof does not belong to the specified request");
+        }
+
+        // Delete file from storage
+        String fileUrl = proof.getFileUrl();
+        try {
+            mediaService.deleteFileByUrl(fileUrl);
+            log.info("Deleted file from storage: {}", fileUrl);
+        } catch (Exception e) {
+            log.warn("Failed to delete file from storage: {}", fileUrl, e);
+            // Continue with database deletion even if file deletion fails
+        }
+
+        certificateProofRepository.delete(proof);
+        log.info("Deleted certificate proof: {} from request: {}", proofId, requestId);
     }
 
     @Override

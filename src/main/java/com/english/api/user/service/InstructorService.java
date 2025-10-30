@@ -4,10 +4,13 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.user.dto.request.CreateInstructorRequest;
 import com.english.api.user.dto.request.ReviewInstructorRequest;
 import com.english.api.user.dto.request.UpdateInstructorRequest;
+import com.english.api.user.dto.request.UploadCertificateProofRequest;
+import com.english.api.user.dto.response.CertificateProofResponse;
 import com.english.api.user.dto.response.InstructorRequestResponse;
 import com.english.api.user.model.InstructorRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -26,7 +29,15 @@ public interface InstructorService {
     
     InstructorRequestResponse getUserCurrentRequest();
     
+    List<InstructorRequestResponse> getUserRequests();
+    
     InstructorRequestResponse updatePendingRequest(UUID requestId, UpdateInstructorRequest request);
+    
+    CertificateProofResponse uploadCertificateProof(UUID requestId, UploadCertificateProofRequest request);
+    
+    List<CertificateProofResponse> getCertificateProofs(UUID requestId);
+    
+    void deleteCertificateProof(UUID requestId, UUID proofId);
     
     void deleteRequest(UUID requestId);
 }

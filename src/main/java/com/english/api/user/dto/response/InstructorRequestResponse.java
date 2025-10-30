@@ -3,6 +3,7 @@ package com.english.api.user.dto.response;
 import com.english.api.user.model.InstructorRequest;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -24,6 +25,7 @@ public record InstructorRequestResponse(
         Instant requestedAt,
         Instant reviewedAt,
         UUID reviewedBy,
-        String reviewedByName
+        String reviewedByName,
+        List<CertificateProofResponse> certificateProofs
 ) {
 }

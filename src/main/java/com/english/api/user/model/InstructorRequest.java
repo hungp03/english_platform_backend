@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import com.github.f4b6a3.uuid.UuidCreator;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -73,6 +75,10 @@ public class InstructorRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewed_by", referencedColumnName = "id")
     private User reviewedBy;
+
+    @OneToMany(mappedBy = "instructorRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<InstructorCertificateProof> certificateProofs = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
