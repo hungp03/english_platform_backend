@@ -42,6 +42,8 @@ public interface InstructorRequestRepository extends JpaRepository<InstructorReq
 
     boolean existsByUserIdAndStatus(UUID userId, InstructorRequest.Status status);
 
+    boolean existsByIdAndUserId(UUID id, UUID userId);
+
     @Query("SELECT ir FROM InstructorRequest ir ORDER BY ir.requestedAt DESC")
     Page<InstructorRequest> findAllRequests(Pageable pageable);
 

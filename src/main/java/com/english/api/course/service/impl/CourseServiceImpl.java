@@ -3,7 +3,6 @@ package com.english.api.course.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.AccessDeniedException;
-import com.english.api.common.exception.ResourceAlreadyExistsException;
 import com.english.api.common.exception.ResourceAlreadyOwnedException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.common.service.MediaService;

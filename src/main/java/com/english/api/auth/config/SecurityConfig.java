@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -26,6 +27,7 @@ import java.util.Arrays;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Value("${app.client-url}")
@@ -33,6 +35,7 @@ public class SecurityConfig {
 
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     private final String[] whiteList = {
             "/",
@@ -81,6 +84,7 @@ public class SecurityConfig {
                                            JwtBlacklistFilter jwtBlacklistFilter,
                                            AccountLockFilter accountLockFilter,
                                            CookieBearerTokenResolver cookieBearerTokenResolver) throws Exception {
+
         http.securityMatcher("/api/**")
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -94,11 +98,15 @@ public class SecurityConfig {
                 )
                 .addFilterAfter(jwtBlacklistFilter, BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(accountLockFilter, BearerTokenAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authenticationEntryPoint) // 401 JSON
+                        .accessDeniedHandler(customAccessDeniedHandler)      // 403 JSON
+                )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .bearerTokenResolver(cookieBearerTokenResolver)
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
-                        .authenticationEntryPoint(authenticationEntryPoint) // JSON khi 401
                 );
+
         return http.build();
     }
 

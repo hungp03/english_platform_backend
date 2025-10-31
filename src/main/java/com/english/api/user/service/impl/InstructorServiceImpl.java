@@ -26,6 +26,7 @@ import com.english.api.user.repository.RoleRepository;
 import com.english.api.user.repository.UserRepository;
 import com.english.api.user.service.InstructorService;
 import com.english.api.common.service.MediaService;
+import com.english.api.mail.service.MailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -55,6 +56,7 @@ public class InstructorServiceImpl implements InstructorService {
     private final InstructorCertificateProofRepository certificateProofRepository;
     private final CertificateProofMapper certificateProofMapper;
     private final MediaService mediaService;
+    private final MailService mailService;
 
     @Override
     public InstructorRequestResponse createInstructorRequest(CreateInstructorRequest request) {
@@ -124,6 +126,7 @@ public class InstructorServiceImpl implements InstructorService {
     }
 
     @Override
+    @Transactional
     public InstructorRequestResponse reviewInstructorRequest(UUID requestId, ReviewInstructorRequest reviewRequest) {
         InstructorRequest request = instructorRequestRepository.findByIdWithDetails(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found with id: " + requestId));
@@ -169,6 +172,18 @@ public class InstructorServiceImpl implements InstructorService {
         }
 
         InstructorRequest updatedRequest = instructorRequestRepository.save(request);
+        
+        // Send email notification to user
+        User requestUser = request.getUser();
+        boolean isApproved = reviewRequest.action() == ReviewInstructorRequest.ApprovalAction.APPROVE;
+        String userName = requestUser.getFullName() != null ? requestUser.getFullName() : requestUser.getEmail();
+        mailService.sendInstructorRequestReviewEmail(
+            requestUser.getEmail(), 
+            userName, 
+            isApproved, 
+            reviewRequest.adminNotes()
+        );
+        
         return instructorRequestMapper.toResponse(updatedRequest);
     }
 
@@ -332,10 +347,25 @@ public class InstructorServiceImpl implements InstructorService {
 
     @Override
     public void deleteRequest(UUID requestId) {
-        if (!instructorRequestRepository.existsById(requestId)) {
-            throw new ResourceNotFoundException("Instructor request not found with id: " + requestId);
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        
+        if (!instructorRequestRepository.existsByIdAndUserId(requestId, currentUserId)) {
+            throw new ResourceNotFoundException("Instructor request not found or you don't have permission");
         }
+
+        // Delete all certificate proof files from storage
+        List<InstructorCertificateProof> proofs = certificateProofRepository.findByRequestId(requestId);
+        for (InstructorCertificateProof proof : proofs) {
+            String fileUrl = proof.getFileUrl();
+            try {
+                mediaService.deleteFileByUrl(fileUrl);
+                log.info("Deleted file from storage: {}", fileUrl);
+            } catch (Exception e) {
+                log.warn("Failed to delete file from storage: {}", fileUrl, e);
+            }
+        }
+
         instructorRequestRepository.deleteById(requestId);
-        log.info("Deleted instructor request: {}", requestId);
+        log.info("Deleted instructor request: {} by owner", requestId);
     }
 }

@@ -9,7 +9,6 @@ import jakarta.validation.constraints.NotNull;
 public record ReviewInstructorRequest(
         @NotNull(message = "Action is required")
         ApprovalAction action,
-
         String adminNotes
 ) {
     public enum ApprovalAction {

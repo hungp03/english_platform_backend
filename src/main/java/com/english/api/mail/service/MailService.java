@@ -8,4 +8,5 @@ public interface MailService {
     void sendRegisterVerificationEmail(String email, String token, String templateName);
     void sendForgotPasswordEmail(String email, String otp, String templateName);
     void sendPaymentSuccessEmail(String email, Object order, Object payment, String templateName);
+    void sendInstructorRequestReviewEmail(String email, String userName, boolean isApproved, String adminNotes);
 }

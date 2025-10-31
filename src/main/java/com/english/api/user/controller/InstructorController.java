@@ -12,9 +12,9 @@ import com.english.api.user.service.InstructorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -112,14 +112,7 @@ public class InstructorController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaginationResponse> getAllInstructorRequests(
             @RequestParam(required = false) InstructorRequest.Status status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "requestedAt") String sortBy,
-            @RequestParam(defaultValue = "DESC") String sortDir) {
-
-        Sort.Direction direction = sortDir.equalsIgnoreCase("DESC") ?
-                Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+            @PageableDefault(size = 10, sort = "requestedAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         PaginationResponse response = instructorService.getAllInstructorRequests(status, pageable);
         return ResponseEntity.ok(response);
@@ -144,8 +137,8 @@ public class InstructorController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/admin/{requestId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{requestId}")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> deleteRequest(
             @PathVariable UUID requestId) {
         instructorService.deleteRequest(requestId);

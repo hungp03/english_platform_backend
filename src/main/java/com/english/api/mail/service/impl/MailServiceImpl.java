@@ -73,4 +73,32 @@ public class MailServiceImpl implements MailService {
         this.sendEmail(email, "Thanh toán thành công - English Pro", content, false, true);
     }
 
+    @Async
+    @Override
+    public void sendInstructorRequestReviewEmail(String email, String userName, boolean isApproved, String adminNotes) {
+        StringBuilder content = new StringBuilder();
+        content.append("Dear ").append(userName).append(",\n\n");
+        
+        if (isApproved) {
+            content.append("Congratulations! Your instructor request has been APPROVED.\n\n");
+            content.append("You now have instructor privileges on English Pro platform.\n");
+        } else {
+            content.append("We regret to inform you that your instructor request has been REJECTED.\n\n");
+        }
+        
+        if (adminNotes != null && !adminNotes.isEmpty()) {
+            content.append("\nAdmin Notes:\n");
+            content.append(adminNotes).append("\n");
+        }
+        
+        content.append("\nBest regards,\n");
+        content.append("English Pro Team");
+        
+        String subject = isApproved 
+            ? "Instructor Request Approved - English Pro" 
+            : "Instructor Request Rejected - English Pro";
+            
+        this.sendEmail(email, subject, content.toString(), false, false);
+    }
+
 }
