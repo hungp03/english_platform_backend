@@ -50,6 +50,8 @@ public interface InstructorRequestRepository extends JpaRepository<InstructorReq
 
     @Query("""
         SELECT ir FROM InstructorRequest ir
+        LEFT JOIN FETCH ir.user u
+        LEFT JOIN FETCH ir.reviewedBy rb
         LEFT JOIN FETCH ir.certificateProofs
         WHERE ir.id = :requestId AND ir.user.id = :userId
         """)

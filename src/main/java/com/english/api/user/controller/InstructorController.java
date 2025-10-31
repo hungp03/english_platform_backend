@@ -50,6 +50,14 @@ public class InstructorController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/me/{requestId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<InstructorRequestResponse> getUserRequestById(
+            @PathVariable UUID requestId) {
+        InstructorRequestResponse response = instructorService.getUserRequestById(requestId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/me/all")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<List<InstructorRequestResponse>> getUserRequests() {
@@ -68,11 +76,11 @@ public class InstructorController {
 
     @PostMapping("/{requestId}/certificate-proofs")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<CertificateProofResponse> uploadCertificateProof(
+    public ResponseEntity<List<CertificateProofResponse>> uploadCertificateProof(
             @PathVariable UUID requestId,
             @Valid @RequestBody UploadCertificateProofRequest request) {
-        CertificateProofResponse response = instructorService.uploadCertificateProof(requestId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        List<CertificateProofResponse> responses = instructorService.uploadCertificateProof(requestId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 
     @GetMapping("/{requestId}/certificate-proofs")
@@ -89,6 +97,14 @@ public class InstructorController {
             @PathVariable UUID requestId,
             @PathVariable UUID proofId) {
         instructorService.deleteCertificateProof(requestId, proofId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/certificate-proofs/{proofId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> deleteCertificateProofByOwner(
+            @PathVariable UUID proofId) {
+        instructorService.deleteCertificateProofByOwner(proofId);
         return ResponseEntity.noContent().build();
     }
 

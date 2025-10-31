@@ -2,8 +2,6 @@ package com.english.api.order.service;
 
 import com.english.api.order.dto.request.StripeCheckoutRequest;
 import com.english.api.order.dto.response.StripeCheckoutResponse;
-import com.english.api.order.model.Order;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.stripe.model.Event;
 import com.stripe.model.checkout.Session;
 

@@ -29,15 +29,19 @@ public interface InstructorService {
     
     InstructorRequestResponse getUserCurrentRequest();
     
+    InstructorRequestResponse getUserRequestById(UUID requestId);
+    
     List<InstructorRequestResponse> getUserRequests();
     
     InstructorRequestResponse updatePendingRequest(UUID requestId, UpdateInstructorRequest request);
     
-    CertificateProofResponse uploadCertificateProof(UUID requestId, UploadCertificateProofRequest request);
+    List<CertificateProofResponse> uploadCertificateProof(UUID requestId, UploadCertificateProofRequest request);
     
     List<CertificateProofResponse> getCertificateProofs(UUID requestId);
     
     void deleteCertificateProof(UUID requestId, UUID proofId);
+    
+    void deleteCertificateProofByOwner(UUID proofId);
     
     void deleteRequest(UUID requestId);
 }

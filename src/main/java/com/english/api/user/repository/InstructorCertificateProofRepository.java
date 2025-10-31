@@ -18,5 +18,13 @@ public interface InstructorCertificateProofRepository extends JpaRepository<Inst
     @Query("SELECT COUNT(cp) FROM InstructorCertificateProof cp WHERE cp.instructorRequest.id = :requestId")
     int countByRequestId(@Param("requestId") UUID requestId);
 
+    @Query("""
+        SELECT cp FROM InstructorCertificateProof cp
+        LEFT JOIN FETCH cp.instructorRequest ir
+        LEFT JOIN FETCH ir.user u
+        WHERE cp.id = :proofId
+        """)
+    java.util.Optional<InstructorCertificateProof> findByIdWithRequest(@Param("proofId") UUID proofId);
+
     void deleteByInstructorRequestId(UUID requestId);
 }

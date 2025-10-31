@@ -1,7 +1,6 @@
 package com.english.api.common.service.impl;
 
 import com.english.api.common.dto.MediaUploadResponse;
-import com.english.api.common.exception.CannotDeleteException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.service.MediaService;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +45,7 @@ public class MediaServiceImpl implements MediaService {
     );
 
     private static final Set<String> PROOF_MIME_TYPES = Set.of(
-            "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "application/pdf"
+            "image/png", "image/jpeg", "image/webp", "application/pdf"
     );
 
     private static final Map<String, FolderRule> FOLDER_RULES = Map.of(

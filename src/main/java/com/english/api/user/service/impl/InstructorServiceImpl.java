@@ -183,6 +183,15 @@ public class InstructorServiceImpl implements InstructorService {
 
     @Override
     @Transactional(readOnly = true)
+    public InstructorRequestResponse getUserRequestById(UUID requestId) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        InstructorRequest request = instructorRequestRepository.findByIdAndUserId(requestId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found with id: " + requestId + " for current user"));
+        return instructorRequestMapper.toResponse(request);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<InstructorRequestResponse> getUserRequests() {
         UUID userId = SecurityUtil.getCurrentUserId();
         List<InstructorRequest> requests = instructorRequestRepository.findByUserId(userId);
@@ -225,7 +234,7 @@ public class InstructorServiceImpl implements InstructorService {
     }
 
     @Override
-    public CertificateProofResponse uploadCertificateProof(UUID requestId, UploadCertificateProofRequest request) {
+    public List<CertificateProofResponse> uploadCertificateProof(UUID requestId, UploadCertificateProofRequest request) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         InstructorRequest instructorRequest = instructorRequestRepository.findByIdAndUserId(requestId, currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found or you don't have permission"));
@@ -234,15 +243,20 @@ public class InstructorServiceImpl implements InstructorService {
             throw new ResourceInvalidException("Can only upload proofs for pending requests");
         }
 
-        InstructorCertificateProof proof = InstructorCertificateProof.builder()
-                .instructorRequest(instructorRequest)
-                .fileUrl(request.fileUrl())
-                .build();
+        // Batch create certificate proofs for all file URLs
+        List<InstructorCertificateProof> proofs = request.fileUrls().stream()
+                .map(fileUrl -> InstructorCertificateProof.builder()
+                        .instructorRequest(instructorRequest)
+                        .fileUrl(fileUrl)
+                        .build())
+                .toList();
         
-        InstructorCertificateProof savedProof = certificateProofRepository.save(proof);
-        log.info("Uploaded certificate proof for request: {}", requestId);
+        List<InstructorCertificateProof> savedProofs = certificateProofRepository.saveAll(proofs);
+        log.info("Uploaded {} certificate proofs for request: {}", savedProofs.size(), requestId);
 
-        return certificateProofMapper.toResponse(savedProof);
+        return savedProofs.stream()
+                .map(certificateProofMapper::toResponse)
+                .toList();
     }
 
     @Override
@@ -284,8 +298,36 @@ public class InstructorServiceImpl implements InstructorService {
             // Continue with database deletion even if file deletion fails
         }
 
+        // Remove from parent collection to properly trigger orphan removal
+        instructorRequest.getCertificateProofs().remove(proof);
         certificateProofRepository.delete(proof);
         log.info("Deleted certificate proof: {} from request: {}", proofId, requestId);
+    }
+
+    @Override
+    public void deleteCertificateProofByOwner(UUID proofId) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        
+        InstructorCertificateProof proof = certificateProofRepository.findByIdWithRequest(proofId)
+                .orElseThrow(() -> new ResourceNotFoundException("Certificate proof not found with id: " + proofId));
+
+        if (!proof.getInstructorRequest().getUser().getId().equals(currentUserId)) {
+            throw new ResourceInvalidException("You don't have permission to delete this certificate proof");
+        }
+
+        String fileUrl = proof.getFileUrl();
+        try {
+            mediaService.deleteFileByUrl(fileUrl);
+            log.info("Deleted file from storage: {}", fileUrl);
+        } catch (Exception e) {
+            log.warn("Failed to delete file from storage: {}", fileUrl, e);
+        }
+
+        // Remove from parent collection to properly trigger orphan removal
+        InstructorRequest instructorRequest = proof.getInstructorRequest();
+        instructorRequest.getCertificateProofs().remove(proof);
+        certificateProofRepository.delete(proof);
+        log.info("Deleted certificate proof: {} by owner", proofId);
     }
 
     @Override

@@ -6,11 +6,7 @@ import com.english.api.user.dto.request.UpdateUserRequest;
 import com.english.api.user.dto.response.UserResponse;
 import com.english.api.user.dto.response.UserUpdateResponse;
 import com.english.api.user.model.User;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 

@@ -5,7 +5,6 @@ import com.english.api.cart.dto.response.CartItemResponse;
 import com.english.api.cart.dto.response.CartResponse;
 import com.english.api.cart.dto.response.CartCheckoutResponse;
 import com.english.api.cart.dto.response.CourseInCartResponse;
-import com.english.api.cart.mapper.CartItemMapper;
 import com.english.api.cart.model.CartItem;
 import com.english.api.cart.repository.CartItemRepository;
 import com.english.api.cart.service.CartService;
@@ -20,8 +19,6 @@ import com.english.api.course.repository.CourseRepository;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +34,6 @@ public class CartServiceImpl implements CartService {
 
     private final CartItemRepository cartItemRepository;
     private final CourseRepository courseRepository;
-    private final CartItemMapper cartItemMapper;
     private final OrderRepository orderRepository;
 
     @Transactional

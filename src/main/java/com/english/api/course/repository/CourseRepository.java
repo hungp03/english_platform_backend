@@ -2,11 +2,8 @@ package com.english.api.course.repository;
 
 import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.dto.response.CourseDetailResponse;
-import com.english.api.course.dto.response.CourseWithStatsResponse;
 import com.english.api.course.model.Course;
 import com.english.api.course.repository.custom.CourseRepositoryCustom;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
