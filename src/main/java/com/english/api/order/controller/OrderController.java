@@ -2,7 +2,9 @@ package com.english.api.order.controller;
 
 
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.order.dto.request.CancelOrderRequest;
 import com.english.api.order.dto.request.CreateOrderRequest;
+import com.english.api.order.dto.request.UpdateOrderStatusRequest;
 import com.english.api.order.dto.response.OrderDetailResponse;
 import com.english.api.order.dto.response.OrderResponse;
 import com.english.api.order.model.enums.OrderStatus;
@@ -48,6 +50,16 @@ public class OrderController {
     }
 
     /**
+     * Get order by ID with full details for admin (no user restriction)
+     */
+    @GetMapping("/{id}/details")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrderDetailResponse> getOrderDetailForAdmin(@PathVariable UUID id) {
+        OrderDetailResponse response = orderService.getOrderDetailByIdForAdmin(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * List orders with pagination and filtering
      */
     @GetMapping
@@ -76,22 +88,24 @@ public class OrderController {
     /**
      * Cancel an order
      */
-    @PutMapping("/{id}/cancel")
+    @PatchMapping("/{id}/cancel")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable UUID id) {
-        OrderResponse response = orderService.cancelOrder(id);
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @PathVariable UUID id,
+            @Valid @RequestBody CancelOrderRequest request) {
+        OrderResponse response = orderService.cancelOrder(id, request.cancelReason());
         return ResponseEntity.ok(response);
     }
 
     /**
      * Update order status (admin only)
      */
-    @PutMapping("/{id}/status")
+    @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrderResponse> updateOrderStatus(
             @PathVariable UUID id,
-            @RequestParam OrderStatus status) {
-        OrderResponse response = orderService.updateOrderStatus(id, status);
+            @Valid @RequestBody UpdateOrderStatusRequest request) {
+        OrderResponse response = orderService.updateOrderStatus(id, request.status(), request.cancelReason());
         return ResponseEntity.ok(response);
     }
 }

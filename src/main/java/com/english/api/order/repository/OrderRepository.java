@@ -66,7 +66,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     @Query("""
         SELECT o FROM Order o 
-        LEFT JOIN FETCH o.user 
         LEFT JOIN FETCH o.items 
         WHERE o.id = :orderId AND o.user.id = :userId
         """)
@@ -77,22 +76,43 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
      */
     @Query("""
         SELECT o FROM Order o 
-        LEFT JOIN FETCH o.user 
         LEFT JOIN FETCH o.payments 
         WHERE o.id = :orderId AND o.user.id = :userId
         """)
     Optional<Order> findByIdAndUserIdWithPayments(@Param("orderId") UUID orderId, @Param("userId") UUID userId);
 
     /**
-     * Check if user has already purchased a specific course
+     * Find order by ID with eager loading of items (for admin access, no user restriction)
      */
     @Query("""
-        SELECT COUNT(o) > 0 FROM Order o 
-        JOIN o.items oi 
-        WHERE o.user.id = :userId 
-        AND o.status = 'PAID' 
-        AND oi.entity = 'COURSE' 
-        AND oi.entityId = :courseId
+        SELECT o FROM Order o 
+        LEFT JOIN FETCH o.items 
+        WHERE o.id = :orderId
+        """)
+    Optional<Order> findByIdWithItems(@Param("orderId") UUID orderId);
+
+    /**
+     * Find order by ID with eager loading of payments (for admin access, no user restriction)
+     */
+    @Query("""
+        SELECT o FROM Order o 
+        LEFT JOIN FETCH o.payments 
+        WHERE o.id = :orderId
+        """)
+    Optional<Order> findByIdWithPayments(@Param("orderId") UUID orderId);
+
+    /**
+     * Check if user has already purchased a specific course
+     * Optimized with EXISTS subquery for better performance
+     */
+    @Query("""
+        SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM OrderItem oi 
+            WHERE oi.order.user.id = :userId 
+            AND oi.order.status = 'PAID' 
+            AND oi.entity = 'COURSE' 
+            AND oi.entityId = :courseId
+        ) THEN true ELSE false END
         """)
     boolean hasUserPurchasedCourse(@Param("userId") UUID userId, @Param("courseId") UUID courseId);
 

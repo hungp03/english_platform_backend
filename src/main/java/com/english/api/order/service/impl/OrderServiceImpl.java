@@ -94,7 +94,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderResponse updateOrderStatus(UUID orderId, OrderStatus newStatus) {
+    public OrderResponse updateOrderStatus(UUID orderId, OrderStatus newStatus, String cancelReason) {
         Order order = findOrderById(orderId);
         OrderStatus currentStatus = order.getStatus();
         // Validate status transition
@@ -108,6 +108,11 @@ public class OrderServiceImpl implements OrderService {
         // Set paid timestamp if transitioning to PAID
         if (newStatus == OrderStatus.PAID && order.getPaidAt() == null) {
             order.setPaidAt(OffsetDateTime.now());
+        }
+        // Set cancel reason and timestamp if transitioning to CANCELLED
+        if (newStatus == OrderStatus.CANCELLED) {
+            order.setCancelReason(cancelReason);
+            order.setCancelAt(OffsetDateTime.now());
         }
         Order savedOrder = orderRepository.save(order);
         return orderMapper.toOrderResponse(savedOrder);
@@ -170,8 +175,21 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public OrderDetailResponse getOrderDetailByIdForAdmin(UUID orderId) {
+        // Get order with items in one query (no user restriction for admin)
+        Order orderWithItems = orderRepository.findByIdWithItems(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+        // Get payments in separate query (no user restriction for admin)
+        Order orderWithPayments = orderRepository.findByIdWithPayments(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+        // Merge the data: use orderWithItems as base and add payments
+        orderWithItems.setPayments(orderWithPayments.getPayments());
+        return orderMapper.toOrderDetailResponse(orderWithItems);
+    }
+
+    @Override
     @Transactional
-    public OrderResponse cancelOrder(UUID orderId) {
+    public OrderResponse cancelOrder(UUID orderId, String cancelReason) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         // Find order with user authorization built-in
         Order order = orderRepository.findByIdAndUserIdWithItems(orderId, currentUserId)
@@ -182,6 +200,8 @@ public class OrderServiceImpl implements OrderService {
         }
         // Update status to cancelled
         order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelReason(cancelReason);
+        order.setCancelAt(OffsetDateTime.now());
         Order savedOrder = orderRepository.save(order);
         return orderMapper.toOrderResponse(savedOrder);
     }

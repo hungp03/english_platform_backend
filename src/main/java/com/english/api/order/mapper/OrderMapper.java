@@ -23,7 +23,6 @@ import java.util.List;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface OrderMapper {
 
-    @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "items", source = "items")
 //    @Mapping(target = "payments", ignore = true)
 //    @Mapping(target = "invoices", ignore = true)
@@ -31,7 +30,6 @@ public interface OrderMapper {
 
     List<OrderResponse> toOrderResponses(List<Order> orders);
 
-    @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "itemCount", expression = "java(order.getItems() != null ? order.getItems().size() : 0)")
     OrderSummaryResponse toOrderSummaryResponse(Order order);
 

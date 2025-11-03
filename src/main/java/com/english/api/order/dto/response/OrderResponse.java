@@ -9,12 +9,13 @@ import java.util.UUID;
 
 public record OrderResponse(
         UUID id,
-        UUID userId,
         OrderStatus status,
         CurrencyType currency,
         Long totalCents,
         OffsetDateTime createdAt,
         OffsetDateTime paidAt,
+        String cancelReason,
+        OffsetDateTime cancelAt,
         List<OrderItemResponse> items
 //        List<PaymentResponse> payments,
 //        List<InvoiceResponse> invoices

@@ -23,7 +23,7 @@ public interface OrderService {
      * Updates order status with proper state transition validation
      */
     @Transactional
-    OrderResponse updateOrderStatus(UUID orderId, OrderStatus newStatus);
+    OrderResponse updateOrderStatus(UUID orderId, OrderStatus newStatus, String cancelReason);
 
     /**
      * Retrieves orders for the current authenticated user with pagination
@@ -49,10 +49,15 @@ public interface OrderService {
     OrderDetailResponse getMyOrderDetailById(UUID orderId);
 
     /**
+     * Retrieves detailed order information by ID for admin (no user restriction)
+     */
+    OrderDetailResponse getOrderDetailByIdForAdmin(UUID orderId);
+
+    /**
      * Cancels an order with proper validation
      */
     @Transactional
-    OrderResponse cancelOrder(UUID orderId);
+    OrderResponse cancelOrder(UUID orderId, String cancelReason);
 
     /**
      * Validates order state transition

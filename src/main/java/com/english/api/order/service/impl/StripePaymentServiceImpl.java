@@ -2,6 +2,7 @@ package com.english.api.order.service.impl;
 
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
+import com.english.api.enrollment.service.EnrollmentService;
 import com.english.api.order.dto.request.StripeCheckoutRequest;
 import com.english.api.order.dto.response.StripeCheckoutResponse;
 import com.english.api.order.model.Order;
@@ -44,6 +45,7 @@ public class StripePaymentServiceImpl implements StripePaymentService {
     private final PaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
     private final MailService mailService;
+    private final EnrollmentService enrollmentService;
 
     @Value("${stripe.webhook-secret}")
     private String webhookSecret;
@@ -160,6 +162,8 @@ public class StripePaymentServiceImpl implements StripePaymentService {
                     order.setStatus(OrderStatus.PAID);
                     order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
                     orderRepository.save(order);
+                    // Create enrollments for purchased courses
+                    enrollmentService.createEnrollmentsAfterPayment(order);
                     
                     // Gửi email thông báo thanh toán thành công
                     try {

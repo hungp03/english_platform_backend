@@ -12,11 +12,12 @@ import java.util.UUID;
  */
 public record OrderSummaryResponse(
         UUID id,
-        UUID userId,
         OrderStatus status,
         CurrencyType currency,
         Long totalCents,
         OffsetDateTime createdAt,
         OffsetDateTime paidAt,
+        String cancelReason,
+        OffsetDateTime cancelAt,
         int itemCount
 ) {}

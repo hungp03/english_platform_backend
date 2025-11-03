@@ -2,6 +2,7 @@ package com.english.api.order.service.impl;
 
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
+import com.english.api.enrollment.service.EnrollmentService;
 import com.english.api.order.model.Order;
 import com.english.api.order.model.OrderItem;
 import com.english.api.order.model.Payment;
@@ -15,7 +16,6 @@ import com.english.api.mail.service.MailService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +29,6 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class PayOSServiceImpl implements PayOSPaymentService {
 
     private final OrderRepository orderRepository;
@@ -37,6 +36,7 @@ public class PayOSServiceImpl implements PayOSPaymentService {
     private final ObjectMapper objectMapper;
     private final PayOS payOS;
     private final MailService mailService;
+    private final EnrollmentService enrollmentService;
 
     @Value("${payos.success-url}")
     private String defaultSuccessUrl;
@@ -103,7 +103,6 @@ public class PayOSServiceImpl implements PayOSPaymentService {
                     .build();
             paymentRepository.save(payment);
 
-            log.info("Created PayOS link: {}", checkout.getCheckoutUrl());
             return checkout;
 
         } catch (Exception e) {
@@ -117,9 +116,6 @@ public class PayOSServiceImpl implements PayOSPaymentService {
     public void handleWebhook(Webhook webhookBody) {
         try {
             WebhookData data = payOS.verifyPaymentWebhookData(webhookBody);
-            log.info("PayOS webhook received for orderCode: {}", data.getOrderCode());
-
-            // Lấy payment với eager loading để tránh N+1 queries
             Payment payment = paymentRepository.findByProviderTxnWithOrderDetails(data.getPaymentLinkId())
                     .orElseThrow(() -> new ResourceNotFoundException("Payment not found for PayOS link " + data.getPaymentLinkId()));
 
@@ -136,6 +132,9 @@ public class PayOSServiceImpl implements PayOSPaymentService {
                     order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
                     orderRepository.save(order);
                     
+                    // Create enrollments for purchased courses
+                    enrollmentService.createEnrollmentsAfterPayment(order);
+                    
                     // Gửi email thông báo thanh toán thành công
                     try {
                         mailService.sendPaymentSuccessEmail(
@@ -144,15 +143,12 @@ public class PayOSServiceImpl implements PayOSPaymentService {
                             payment,
                             "payment-success-email"
                         );
-                        log.info("Payment success email sent to: {}", order.getUser().getEmail());
-                    } catch (Exception e) {
-                        log.error("Failed to send payment success email to: {}", order.getUser().getEmail(), e);
+                    } catch (Exception ignored) {
                     }
                 }
             }
 
         } catch (Exception e) {
-            log.error("Error handling PayOS webhook", e);
             throw new RuntimeException("Failed to process PayOS webhook: " + e.getMessage(), e);
         }
     }

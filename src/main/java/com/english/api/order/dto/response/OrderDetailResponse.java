@@ -19,6 +19,8 @@ public record OrderDetailResponse(
         Long totalCents,
         OffsetDateTime createdAt,
         OffsetDateTime paidAt,
+        String cancelReason,
+        OffsetDateTime cancelAt,
         List<OrderItemResponse> items,
         List<PaymentSummaryResponse> payments
 ) {}
