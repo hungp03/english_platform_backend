@@ -19,6 +19,8 @@ import com.english.api.course.service.CourseService;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @CachePut(value = "courses", key = "#result.id()")
     public CourseDetailResponse getPublishedBySlug(String slug) {
         return courseRepository.findDetailBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
@@ -105,6 +108,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Transactional
+    @CacheEvict(value = "courses", key = "#id")
     @Override
     public CourseResponse update(UUID id, CourseRequest req) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
@@ -145,6 +149,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "courses", key = "#id")
     public void delete(UUID id) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
 
@@ -160,6 +165,7 @@ public class CourseServiceImpl implements CourseService {
 
 
     @Transactional
+    @CacheEvict(value = "courses", key = "#id")
     @Override
     public CourseResponse changeStatus(UUID id, CourseStatus status) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();

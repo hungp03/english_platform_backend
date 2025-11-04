@@ -13,6 +13,8 @@ import com.english.api.course.repository.CourseModuleRepository;
 import com.english.api.course.repository.CourseRepository;
 import com.english.api.course.service.CourseModuleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,17 +62,22 @@ public class CourseModuleServiceImpl implements CourseModuleService {
         return mapper.toResponse(module);
     }
 
-
-
     @Override
     public List<CourseModuleResponse> list(UUID courseId) {
-        if (!courseRepository.existsById(courseId)) {
-            throw new ResourceNotFoundException("Course not found");
+        UUID ownerId = courseRepository.findOwnerIdById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+        
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        
+        if (!ownerId.equals(currentUserId)) {
+            throw new AccessDeniedException("You are not allowed to view this course modules.");
         }
+        
         return moduleRepository.findModulesWithLessonCount(courseId);
     }
 
     @Override
+    @Cacheable(value = "course_module", key = "#courseId")
     public List<CourseModuleResponse> listPublished(UUID courseId) {
         if (!courseRepository.existsById(courseId)) {
             throw new ResourceNotFoundException("Course not found");
@@ -80,12 +87,22 @@ public class CourseModuleServiceImpl implements CourseModuleService {
 
     @Override
     public CourseModuleResponse getById(UUID courseId, UUID moduleId) {
+        UUID ownerId = courseRepository.findOwnerIdById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+        
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        
+        if (!ownerId.equals(currentUserId)) {
+            throw new AccessDeniedException("You are not allowed to view this course module.");
+        }
+        
         return moduleRepository.findModuleWithLessonCount(courseId, moduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Module not found"));
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "course_module", key = "#courseId")
     public CourseModuleUpdateResponse update(UUID courseId, CourseModuleUpdateRequest request) {
         // Kiểm tra quyền sở hữu khóa học trước
         UUID currentUserId = SecurityUtil.getCurrentUserId();
@@ -106,7 +123,7 @@ public class CourseModuleServiceImpl implements CourseModuleService {
             );
         }
 
-        // 3Kiểm tra trùng vị trí trong cùng khóa học (trừ chính nó)
+        // Kiểm tra trùng vị trí trong cùng khóa học (trừ chính nó)
         boolean conflict = moduleRepository.existsByCourseIdAndPosition(courseId, request.position())
                            && !Objects.equals(module.getPosition(), request.position());
         if (conflict) {
@@ -124,11 +141,9 @@ public class CourseModuleServiceImpl implements CourseModuleService {
         return mapper.toUpdateResponse(module);
     }
 
-
-
-
     @Override
     @Transactional
+    @CacheEvict(value = "course_module", key = "#courseId")
     public void delete(UUID courseId, UUID moduleId) {
         // Kiểm tra quyền sở hữu
         UUID currentUserId = SecurityUtil.getCurrentUserId();
@@ -153,6 +168,7 @@ public class CourseModuleServiceImpl implements CourseModuleService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "course_module", key = "#courseId")
     public CourseModuleResponse publish(UUID courseId, UUID moduleId, boolean publish) {
         // Kiểm tra quyền sở hữu
         UUID currentUserId = SecurityUtil.getCurrentUserId();

@@ -1,5 +1,6 @@
 package com.english.api.course.dto.response;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -7,7 +8,8 @@ import java.util.UUID;
 /**
  * Created by hungpham on 10/2/2025
  */
-public class CourseResponse {
+public class CourseResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
     private UUID id;
     private String title;
     private String slug;

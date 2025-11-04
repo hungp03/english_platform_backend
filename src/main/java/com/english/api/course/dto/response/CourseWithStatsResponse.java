@@ -1,4 +1,5 @@
 package com.english.api.course.dto.response;
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -20,5 +21,5 @@ public record CourseWithStatsResponse(
     Long lessonCount,
     Instant createdAt,
     Instant updatedAt
-) {
+) implements Serializable {
 }

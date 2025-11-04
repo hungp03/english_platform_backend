@@ -3,6 +3,7 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -25,7 +26,9 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CourseModule {
+public class CourseModule implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     @Id
     private UUID id;
 

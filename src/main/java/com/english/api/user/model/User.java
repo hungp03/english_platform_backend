@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.github.f4b6a3.uuid.UuidCreator;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +26,8 @@ import java.util.UUID;
         @UniqueConstraint(columnNames = {"provider", "providerUid"})
     }
 )
-public class User {
+public class User implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     private UUID id;

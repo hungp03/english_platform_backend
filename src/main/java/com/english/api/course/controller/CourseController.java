@@ -14,6 +14,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -27,6 +28,7 @@ public class CourseController {
 
     // Get all courses (with pagination, keyword, status filter)
     @GetMapping
+    @PreAuthorize("or hasRole('ADMIN')")
     public ResponseEntity<PaginationResponse> getCourses(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,
@@ -38,6 +40,7 @@ public class CourseController {
 
     // Get only published courses (with pagination, keyword)
     @GetMapping("/published")
+    // @PreAuthorize("true")
     public ResponseEntity<PaginationResponse> getPublishedCourses(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,
@@ -47,7 +50,8 @@ public class CourseController {
     }
 
     @GetMapping("mine")
-    public ResponseEntity<PaginationResponse> getMineCourses(
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<PaginationResponse> getCoursesForInstructor(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
@@ -58,29 +62,34 @@ public class CourseController {
 
     // === Get course by id ===
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<CourseDetailResponse> getCourseById(@PathVariable UUID id) {
         return ResponseEntity.ok(courseService.getById(id));
     }
 
     // === Get published course by slug ===
     @GetMapping("/slug/{slug}")
+    // @PreAuthorize("true")
     public ResponseEntity<CourseDetailResponse> getPublishedCourseBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(courseService.getPublishedBySlug(slug));
     }
 
     // === Get course info for checkout ===
     @GetMapping("/{id}/checkout")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CourseCheckoutResponse> getCourseCheckoutInfo(@PathVariable UUID id) {
         return ResponseEntity.ok(courseService.getCheckoutInfoById(id));
     }
 
     // === Create new course ===
     @PostMapping
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(courseService.create(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<CourseResponse> updateCourse(
             @PathVariable UUID id,
             @Valid @RequestBody CourseRequest request
@@ -89,12 +98,14 @@ public class CourseController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<Void> deleteCourse(@PathVariable UUID id) {
         courseService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('INSTRUCTOR') or hasRole('ADMIN')")
     public ResponseEntity<CourseResponse> changeCourseStatus(
             @PathVariable UUID id,
             @RequestParam CourseStatus status

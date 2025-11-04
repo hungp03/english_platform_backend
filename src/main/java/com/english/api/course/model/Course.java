@@ -11,6 +11,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -32,7 +33,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @SQLRestriction("is_deleted = false")
-public class Course {
+public class Course implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     private UUID id;

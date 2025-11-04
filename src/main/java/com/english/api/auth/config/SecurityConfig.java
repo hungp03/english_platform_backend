@@ -91,6 +91,9 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(whiteList).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/courses/published").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/courses/slug/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/courses/*/modules/published").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/stripe/webhook").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/payos/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hello").hasRole("ADMIN")

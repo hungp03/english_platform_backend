@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.github.f4b6a3.uuid.UuidCreator;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -19,7 +20,8 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(name = "roles")
-public class Role {
+public class Role implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     private UUID id;

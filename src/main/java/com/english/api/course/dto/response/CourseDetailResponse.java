@@ -2,6 +2,7 @@ package com.english.api.course.dto.response;
 
 import com.english.api.course.model.enums.CourseStatus;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -24,5 +25,5 @@ public record CourseDetailResponse(
         Instant updatedAt,
         Long moduleCount,
         Long lessonCount
-) {
+) implements Serializable {
 }
