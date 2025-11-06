@@ -83,7 +83,6 @@ public class LessonServiceImpl implements LessonService {
         return lessonRepository.findPublishedSummaryByModuleId(moduleId);
     }
 
-
     // --- GET ---
     @Override
     public LessonResponse getById(UUID moduleId, UUID lessonId) {
@@ -146,8 +145,7 @@ public class LessonServiceImpl implements LessonService {
         return lessonMapper.toResponse(lesson);
     }
 
-//    -- ALTER TABLE IF EXISTS public.lesson_media DROP CONSTRAINT IF EXISTS fk_lesson_media_asset;
-//
+//    ALTER TABLE IF EXISTS public.lesson_media DROP CONSTRAINT IF EXISTS fk_lesson_media_asset;
 //    ALTER TABLE IF EXISTS public.lesson_media
 //    ADD CONSTRAINT fk_lesson_media_asset FOREIGN KEY (media_id)
 //    REFERENCES public.media_assets (id) MATCH SIMPLE

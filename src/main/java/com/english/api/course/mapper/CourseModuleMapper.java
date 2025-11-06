@@ -17,7 +17,7 @@ public interface CourseModuleMapper {
     CourseModuleUpdateResponse toUpdateResponse(CourseModule entity);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "course", ignore = true) // set trong service
+    @Mapping(target = "course", ignore = true) // set in service
     @Mapping(target = "position", ignore = true)
     CourseModule toEntity(CourseModuleRequest request);
 }

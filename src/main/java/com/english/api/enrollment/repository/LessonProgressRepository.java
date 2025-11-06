@@ -2,8 +2,12 @@ package com.english.api.enrollment.repository;
 
 import com.english.api.enrollment.model.LessonProgress;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -12,4 +16,18 @@ import java.util.UUID;
  */
 @Repository
 public interface LessonProgressRepository extends JpaRepository<LessonProgress, UUID> {
+    Optional<LessonProgress> findByUserIdAndLessonId(UUID userId, UUID lessonId);
+
+    @Modifying
+    @Query("UPDATE LessonProgress lp SET lp.completed = true, lp.lastSeenAt = CURRENT_TIMESTAMP " +
+           "WHERE lp.user.id = :userId AND lp.lesson.id = :lessonId")
+    int markAsCompleted(@Param("userId") UUID userId, @Param("lessonId") UUID lessonId);
+
+    @Query("""
+        SELECT COUNT(lp) FROM LessonProgress lp
+        WHERE lp.user.id = :userId
+        AND lp.lesson.module.course.id = :courseId
+        AND lp.completed = true
+        """)
+    long countCompletedLessonsByUserAndCourse(@Param("userId") UUID userId, @Param("courseId") UUID courseId);
 }

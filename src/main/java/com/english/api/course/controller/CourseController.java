@@ -28,7 +28,7 @@ public class CourseController {
 
     // Get all courses (with pagination, keyword, status filter)
     @GetMapping
-    @PreAuthorize("or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaginationResponse> getCourses(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,

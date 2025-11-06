@@ -66,7 +66,7 @@ public class Lesson {
     public void prePersist() {
         if (id == null) id = UuidCreator.getTimeOrderedEpoch();
         if (isFree == null) isFree = false;
-        if (published == null) published = false;
+        published = false;
     }
 
     public Optional<MediaAsset> getPrimaryMedia() {

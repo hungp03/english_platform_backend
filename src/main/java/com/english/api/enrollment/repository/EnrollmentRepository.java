@@ -1,14 +1,18 @@
 package com.english.api.enrollment.repository;
 
+import com.english.api.enrollment.dto.projection.EnrollmentProjection;
 import com.english.api.enrollment.model.Enrollment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -42,10 +46,55 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
      * Supports pagination
      */
     @Query("""
-        SELECT e FROM Enrollment e 
-        LEFT JOIN FETCH e.course 
-        WHERE e.user.id = :userId 
+        SELECT e FROM Enrollment e
+        LEFT JOIN FETCH e.course
+        WHERE e.user.id = :userId
         ORDER BY e.createdAt DESC
         """)
     Page<Enrollment> findByUserIdWithCourse(@Param("userId") UUID userId, Pageable pageable);
+
+    /**
+     * Update progress percentage for an enrollment
+     */
+    @Modifying
+    @Query("UPDATE Enrollment e SET e.progressPercent = :progressPercent WHERE e.user.id = :userId AND e.course.id = :courseId")
+    int updateProgressPercent(@Param("userId") UUID userId, @Param("courseId") UUID courseId, @Param("progressPercent") BigDecimal progressPercent);
+
+    /**
+     * Find enrollment by user and course with course details eagerly loaded
+     */
+    @Query("""
+        SELECT e FROM Enrollment e
+        LEFT JOIN FETCH e.course
+        WHERE e.user.id = :userId AND e.course.id = :courseId
+        """)
+    Optional<Enrollment> findByUserIdAndCourseIdWithCourse(@Param("userId") UUID userId, @Param("courseId") UUID courseId);
+
+    /**
+     * Find enrollment details by user and course slug (optimized projection)
+     * Returns only the necessary fields without loading user entity
+     */
+    @Query("""
+        SELECT e.id as enrollmentId, e.course.id as courseId, 
+               e.course.title as courseTitle, e.progressPercent as progressPercent
+        FROM Enrollment e
+        WHERE e.user.id = :userId AND e.course.slug = :courseSlug
+        """)
+    Optional<EnrollmentProjection> findEnrollmentProjectionByUserIdAndCourseSlug(@Param("userId") UUID userId, @Param("courseSlug") String courseSlug);
+
+    /**
+     * Check if user is enrolled in the course that contains the given module
+     * Optimized query using EXISTS for better performance (short-circuits on first match)
+     */
+    @Query("""
+        SELECT CASE WHEN EXISTS (
+            SELECT 1
+            FROM Enrollment e
+            WHERE e.user.id = :userId
+              AND e.course.id = (
+                  SELECT m.course.id FROM CourseModule m WHERE m.id = :moduleId
+              )
+        ) THEN true ELSE false END
+        """)
+    boolean isUserEnrolledInModuleCourse(@Param("userId") UUID userId, @Param("moduleId") UUID moduleId);
 }

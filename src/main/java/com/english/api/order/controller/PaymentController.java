@@ -51,6 +51,7 @@ public class PaymentController {
 
     
     @GetMapping("/order/{orderId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<PaymentResponse>> getPaymentsByOrder(
             @PathVariable UUID orderId) {
         List<PaymentResponse> payments = paymentService.getPaymentsByOrder(orderId);
@@ -58,6 +59,7 @@ public class PaymentController {
     }
 
     @GetMapping("/{paymentId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaymentResponse> getPaymentById(@PathVariable UUID paymentId) {
         PaymentResponse payment = paymentService.getPaymentById(paymentId);
         return ResponseEntity.ok(payment);

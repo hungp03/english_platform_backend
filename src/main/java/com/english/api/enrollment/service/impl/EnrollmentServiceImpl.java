@@ -2,9 +2,16 @@ package com.english.api.enrollment.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.course.dto.response.CourseModuleResponse;
 import com.english.api.course.model.Course;
+import com.english.api.course.repository.CourseModuleRepository;
 import com.english.api.course.repository.CourseRepository;
+import com.english.api.course.repository.LessonRepository;
+import com.english.api.enrollment.dto.projection.EnrollmentProjection;
+import com.english.api.enrollment.dto.response.EnrollmentDetailResponse;
 import com.english.api.enrollment.dto.response.EnrollmentResponse;
+import com.english.api.enrollment.dto.response.LessonWithProgressResponse;
 import com.english.api.enrollment.mapper.EnrollmentMapper;
 import com.english.api.enrollment.model.Enrollment;
 import com.english.api.enrollment.model.enums.EnrollmentStatus;
@@ -38,6 +45,8 @@ import java.util.stream.Collectors;
 public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final CourseRepository courseRepository;
+    private final CourseModuleRepository courseModuleRepository;
+    private final LessonRepository lessonRepository;
     private final EnrollmentMapper enrollmentMapper;
 
     @Override
@@ -139,5 +148,45 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 pageable.getPageNumber() + 1, enrollmentPage.getTotalPages());
         
         return PaginationResponse.from(responsePage, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EnrollmentDetailResponse getEnrollmentDetails(String courseSlug) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        log.debug("Fetching enrollment details for user {} and course slug {}", currentUserId, courseSlug);
+
+        // Use optimized projection query to avoid loading user entity
+        EnrollmentProjection enrollmentData = enrollmentRepository.findEnrollmentProjectionByUserIdAndCourseSlug(currentUserId, courseSlug)
+                .orElseThrow(() -> {
+                    log.warn("User {} attempted to access course {} without enrollment", currentUserId, courseSlug);
+                    return new AccessDeniedException("You are not enrolled in this course");
+                });
+        
+        // Get published modules with lesson count
+        List<CourseModuleResponse> publishedModules = courseModuleRepository.findPublishedModulesWithLessonCount(enrollmentData.getCourseId());
+        
+        log.info("Found {} published modules for course {} (slug: {}) and user {}", 
+                publishedModules.size(), enrollmentData.getCourseId(), courseSlug, currentUserId);
+
+        return new EnrollmentDetailResponse(
+                enrollmentData.getEnrollmentId(),
+                enrollmentData.getCourseId(),
+                enrollmentData.getCourseTitle(),
+                enrollmentData.getProgressPercent(),
+                publishedModules
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LessonWithProgressResponse> getPublishedLessonsWithProgress(UUID moduleId) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        // Check if user is enrolled in the course containing this module (single optimized query)
+        boolean isEnrolled = enrollmentRepository.isUserEnrolledInModuleCourse(currentUserId, moduleId);
+        if (!isEnrolled) {
+             throw new AccessDeniedException("You are not enrolled in this course or module does not exist");
+        }
+        return lessonRepository.findPublishedLessonsWithProgress(moduleId, currentUserId);
     }
 }

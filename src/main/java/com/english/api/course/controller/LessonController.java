@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,6 +45,7 @@ public class LessonController {
 
     // --- Create ---
     @PostMapping
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> create(
             @PathVariable UUID moduleId,
             @Valid @RequestBody LessonRequest request
@@ -53,6 +55,7 @@ public class LessonController {
 
     // --- Update ---
     @PutMapping("/{lessonId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> update(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId,
@@ -63,6 +66,7 @@ public class LessonController {
 
     // --- Delete ---
     @DeleteMapping("/{lessonId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<Void> delete(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId
@@ -73,6 +77,7 @@ public class LessonController {
 
     // --- Attach Asset ---
     @PostMapping("/{lessonId}/assets/{assetId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> attachAsset(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId,
@@ -83,6 +88,7 @@ public class LessonController {
 
     // --- Detach Asset ---
     @DeleteMapping("/{lessonId}/assets/{assetId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> detachAsset(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId,
@@ -93,6 +99,7 @@ public class LessonController {
 
     // --- Publish ---
     @PatchMapping("/{lessonId}/publish")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> publish(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId,
