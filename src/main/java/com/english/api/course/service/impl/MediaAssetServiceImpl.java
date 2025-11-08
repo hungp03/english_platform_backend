@@ -1,7 +1,6 @@
 package com.english.api.course.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
-import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.common.util.SlugUtil;
@@ -191,9 +190,9 @@ public class MediaAssetServiceImpl implements MediaAssetService {
                 .orElseThrow(() -> new ResourceNotFoundException("Video not found"));
 
         // Kiểm tra quyền sở hữu
-        if (!asset.ownerId().equals(userId)) {
-            throw new AccessDeniedException("You do not have access to this video");
-        }
+        // if (!asset.ownerId().equals(userId)) {
+        //     throw new AccessDeniedException("You do not have access to this video");
+        // }
 
         // Parse meta JSON để đọc trạng thái và duration
         ObjectNode meta = (ObjectNode) asset.meta();
@@ -218,9 +217,6 @@ public class MediaAssetServiceImpl implements MediaAssetService {
 
         String token = MediaTokenUtil.createSignedToken(payload, mediaSecret);
         String signedUrl = asset.url() + "?token=" + token;
-
-        log.info("Generated signed media URL: {} (duration={}s, expires in {}s, user={})",
-                signedUrl, duration, expireSeconds, userId);
         return signedUrl;
     }
 

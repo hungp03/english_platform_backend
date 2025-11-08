@@ -1,7 +1,5 @@
 package com.english.api.enrollment.dto.response;
 
-import com.english.api.course.dto.response.CourseModuleResponse;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -15,5 +13,6 @@ public record EnrollmentDetailResponse(
         UUID courseId,
         String courseName,
         BigDecimal progressPercent,
-        List<CourseModuleResponse> publishedModules
+        List<CourseModuleWithLessonsResponse> publishedModules,
+        UUID lastCompletedLessonId
 ) {}

@@ -1,6 +1,7 @@
 package com.english.api.enrollment.controller;
 
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.course.dto.response.LessonResponse;
 import com.english.api.enrollment.dto.response.EnrollmentDetailResponse;
 import com.english.api.enrollment.dto.response.LessonWithProgressResponse;
 import com.english.api.enrollment.service.EnrollmentService;
@@ -13,8 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -48,15 +47,14 @@ public class EnrollmentController {
         EnrollmentDetailResponse response = enrollmentService.getEnrollmentDetails(courseSlug);
         return ResponseEntity.ok(response);
     }
-
     /**
-     * Get published lessons with completion status for a specific module
-     * Shows which lessons the current user has completed
+     * Get lesson details with enrollment verification
+     * Returns lesson information if the user is enrolled in the course containing this lesson
      */
-    @GetMapping("/modules/{moduleId}/lessons")
+    @GetMapping("/lessons/{lessonId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<LessonWithProgressResponse>> getPublishedLessonsWithProgress(@PathVariable UUID moduleId) {
-        List<LessonWithProgressResponse> lessons = enrollmentService.getPublishedLessonsWithProgress(moduleId);
-        return ResponseEntity.ok(lessons);
+    public ResponseEntity<LessonResponse> getLessonWithEnrollmentCheck(@PathVariable UUID lessonId) {
+        LessonResponse lesson = enrollmentService.getLessonWithEnrollmentCheck(lessonId);
+        return ResponseEntity.ok(lesson);
     }
 }

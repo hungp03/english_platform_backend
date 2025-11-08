@@ -97,4 +97,20 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
         ) THEN true ELSE false END
         """)
     boolean isUserEnrolledInModuleCourse(@Param("userId") UUID userId, @Param("moduleId") UUID moduleId);
+
+    /**
+     * Check if user is enrolled in the course that contains the given lesson
+     * Optimized query using EXISTS for better performance (short-circuits on first match)
+     */
+    @Query("""
+        SELECT CASE WHEN EXISTS (
+            SELECT 1
+            FROM Enrollment e
+            WHERE e.user.id = :userId
+              AND e.course.id = (
+                  SELECT l.module.course.id FROM Lesson l WHERE l.id = :lessonId
+              )
+        ) THEN true ELSE false END
+        """)
+    boolean isUserEnrolledInLessonCourse(@Param("userId") UUID userId, @Param("lessonId") UUID lessonId);
 }

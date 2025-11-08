@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record LessonWithProgressResponse(
         UUID id,
+        UUID moduleId,
         String title,
         String kind,
         Integer estimatedMin,

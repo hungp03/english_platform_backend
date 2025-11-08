@@ -19,9 +19,9 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
     Optional<LessonProgress> findByUserIdAndLessonId(UUID userId, UUID lessonId);
 
     @Modifying
-    @Query("UPDATE LessonProgress lp SET lp.completed = true, lp.lastSeenAt = CURRENT_TIMESTAMP " +
+    @Query("UPDATE LessonProgress lp SET lp.completed = NOT lp.completed, lp.lastSeenAt = CURRENT_TIMESTAMP " +
            "WHERE lp.user.id = :userId AND lp.lesson.id = :lessonId")
-    int markAsCompleted(@Param("userId") UUID userId, @Param("lessonId") UUID lessonId);
+    int toggleCompleted(@Param("userId") UUID userId, @Param("lessonId") UUID lessonId);
 
     @Query("""
         SELECT COUNT(lp) FROM LessonProgress lp
@@ -30,4 +30,14 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
         AND lp.completed = true
         """)
     long countCompletedLessonsByUserAndCourse(@Param("userId") UUID userId, @Param("courseId") UUID courseId);
+
+    @Query("""
+        SELECT lp.lesson.id FROM LessonProgress lp
+        WHERE lp.user.id = :userId
+        AND lp.lesson.module.course.id = :courseId
+        AND lp.completed = true
+        ORDER BY lp.lastSeenAt DESC
+        LIMIT 1
+        """)
+    Optional<UUID> findLastCompletedLessonIdByUserAndCourse(@Param("userId") UUID userId, @Param("courseId") UUID courseId);
 }

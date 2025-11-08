@@ -18,10 +18,10 @@ public interface LessonProgressService {
 
     /**
      * Update enrollment progress percentage based on completed lessons
-     * Uses current authenticated user from SecurityUtil
      * Calculates: (completed lessons / total published lessons) * 100
      *
+     * @param userId the user ID
      * @param courseId the course ID
      */
-    void updateEnrollmentProgress(UUID courseId);
+    void updateEnrollmentProgress(UUID userId, UUID courseId);
 }

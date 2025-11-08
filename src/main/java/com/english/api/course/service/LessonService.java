@@ -17,7 +17,7 @@ public interface LessonService {
 
     List<LessonSummaryResponse> listPublished(UUID moduleId);
 
-    // --- Get by ID ---
+    // --- Get by ID (INSTRUCTOR)---
     LessonResponse getById(UUID moduleId, UUID lessonId);
 
     // --- Get Free Lesson ---

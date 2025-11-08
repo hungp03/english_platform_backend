@@ -51,7 +51,7 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
 
     @Query("""
         SELECT new com.english.api.enrollment.dto.response.LessonWithProgressResponse(
-            l.id, l.title, l.kind, l.estimatedMin, l.position, l.isFree, l.published,
+            l.id, l.module.id, l.title, l.kind, l.estimatedMin, l.position, l.isFree, l.published,
             CASE WHEN lp.completed = true THEN true ELSE false END)
         FROM Lesson l
         LEFT JOIN LessonProgress lp ON lp.lesson.id = l.id AND lp.user.id = :userId
@@ -59,4 +59,15 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
         ORDER BY l.position
         """)
     List<LessonWithProgressResponse> findPublishedLessonsWithProgress(@Param("moduleId") UUID moduleId, @Param("userId") UUID userId);
+
+    @Query("""
+        SELECT new com.english.api.enrollment.dto.response.LessonWithProgressResponse(
+            l.id, l.module.id, l.title, l.kind, l.estimatedMin, l.position, l.isFree, l.published,
+            CASE WHEN lp.completed = true THEN true ELSE false END)
+        FROM Lesson l
+        LEFT JOIN LessonProgress lp ON lp.lesson.id = l.id AND lp.user.id = :userId
+        WHERE l.module.course.id = :courseId AND l.module.published = true AND l.published = true
+        ORDER BY l.module.position, l.position
+        """)
+    List<LessonWithProgressResponse> findPublishedLessonsWithProgressByCourseId(@Param("courseId") UUID courseId, @Param("userId") UUID userId);
 }

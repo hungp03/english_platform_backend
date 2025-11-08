@@ -56,11 +56,11 @@ public class LessonProgressServiceImpl implements LessonProgressService {
             throw new AccessDeniedException("You must be enrolled in this course to mark lessons as completed");
         }
 
-        // Try to update existing record first (avoids SELECT query)
-        int updatedRows = lessonProgressRepository.markAsCompleted(userId, lessonId);
+        // Try to toggle existing record first (avoids SELECT query)
+        int updatedRows = lessonProgressRepository.toggleCompleted(userId, lessonId);
 
         if (updatedRows == 0) {
-            // No rows updated, create a new record
+            // No rows updated, create a new record (initial state: completed = true)
             LessonProgress newProgress = LessonProgress.builder()
                 .user(User.builder().id(userId).build())
                 .lesson(Lesson.builder().id(lessonId).build())
@@ -72,14 +72,13 @@ public class LessonProgressServiceImpl implements LessonProgressService {
         }
 
         // Update enrollment progress percentage asynchronously
-        self.updateEnrollmentProgress(courseId);
+        self.updateEnrollmentProgress(userId, courseId);
     }
 
     @Override
     @Async
     @Transactional
-    public void updateEnrollmentProgress(UUID courseId) {
-        UUID userId = SecurityUtil.getCurrentUserId();
+    public void updateEnrollmentProgress(UUID userId, UUID courseId) {
 
         // Get total published lessons in course
         long totalLessons = lessonRepository.countPublishedLessonsByCourseId(courseId);
