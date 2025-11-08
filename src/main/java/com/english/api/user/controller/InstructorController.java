@@ -1,5 +1,8 @@
 package com.english.api.user.controller;
 
+import com.english.api.auth.util.SecurityUtil;
+import com.english.api.course.dto.response.InstructorStatsResponse;
+import com.english.api.course.service.CourseService;
 import com.english.api.user.dto.request.CreateInstructorRequest;
 import com.english.api.user.dto.request.ReviewInstructorRequest;
 import com.english.api.user.dto.request.UpdateInstructorRequest;
@@ -34,6 +37,7 @@ import java.util.UUID;
 public class InstructorController {
 
     private final InstructorService instructorService;
+    private final CourseService courseService;
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")
@@ -143,5 +147,28 @@ public class InstructorController {
             @PathVariable UUID requestId) {
         instructorService.deleteRequest(requestId);
         return ResponseEntity.noContent().build();
+    }
+    
+    /**
+     * Get comprehensive statistics for the current instructor
+     * Returns: total courses, published courses, total students, and total revenue
+     */
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<InstructorStatsResponse> getMyStats() {
+        UUID instructorId = SecurityUtil.getCurrentUserId();
+        InstructorStatsResponse stats = courseService.getInstructorStats(instructorId);
+        return ResponseEntity.ok(stats);
+    }
+    
+    /**
+     * Get statistics for a specific instructor (admin only)
+     */
+    @GetMapping("/admin/{instructorId}/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<InstructorStatsResponse> getInstructorStats(
+            @PathVariable UUID instructorId) {
+        InstructorStatsResponse stats = courseService.getInstructorStats(instructorId);
+        return ResponseEntity.ok(stats);
     }
 }

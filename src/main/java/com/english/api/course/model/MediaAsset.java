@@ -8,6 +8,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +31,9 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MediaAsset {
+public class MediaAsset implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     @Id
     private UUID id;
 

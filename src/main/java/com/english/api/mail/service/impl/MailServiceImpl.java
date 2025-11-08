@@ -101,4 +101,15 @@ public class MailServiceImpl implements MailService {
         this.sendEmail(email, subject, content.toString(), false, false);
     }
 
+    @Async
+    @Override
+    public void sendInvoiceEmail(String email, Object order, Object payment, Object invoice) {
+        Context context = new Context();
+        context.setVariable("order", order);
+        context.setVariable("payment", payment);
+        context.setVariable("invoice", invoice);
+        String content = this.templateEngine.process("invoice-email", context);
+        this.sendEmail(email, "Hóa đơn thanh toán - English Pro", content, false, true);
+    }
+
 }

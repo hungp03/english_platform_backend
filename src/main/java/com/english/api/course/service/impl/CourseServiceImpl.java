@@ -11,6 +11,9 @@ import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.dto.response.CourseWithStatsResponse;
+import com.english.api.course.dto.response.GrowthPeriodResponse;
+import com.english.api.course.dto.response.InstructorStatsResponse;
+import com.english.api.course.dto.response.MonthlyGrowthResponse;
 import com.english.api.course.mapper.CourseMapper;
 import com.english.api.course.model.Course;
 import com.english.api.course.model.enums.CourseStatus;
@@ -25,7 +28,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.NumberFormat;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -230,5 +238,91 @@ public class CourseServiceImpl implements CourseService {
         
         return courseRepository.findCheckoutInfoById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+    }
+    
+    @Override
+    public InstructorStatsResponse getInstructorStats(UUID instructorId) {
+        Object[] result = courseRepository.getInstructorStats(instructorId);
+        
+        if (result == null || result.length == 0) {
+            // Return zero stats if no data found
+            return InstructorStatsResponse.builder()
+                    .totalCourses(0L)
+                    .publishedCourses(0L)
+                    .totalStudents(0L)
+                    .totalRevenueCents(0L)
+                    .formattedRevenue("0đ")
+                    .build();
+        }
+        
+        // PostgreSQL function returns a table (single row), so result[0] is the row data
+        // Cast the first element to Object[] to access individual columns
+        Object[] row = (Object[]) result[0];
+        
+        // Extract values from the row
+        Long totalCourses = row[0] != null ? ((Number) row[0]).longValue() : 0L;
+        Long publishedCourses = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+        Long totalStudents = row[2] != null ? ((Number) row[2]).longValue() : 0L;
+        Long totalRevenueCents = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+        
+        // Format revenue as Vietnamese currency
+        NumberFormat vndFormat = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
+        String formattedRevenue = vndFormat.format(totalRevenueCents) + "đ";
+        
+        return InstructorStatsResponse.builder()
+                .totalCourses(totalCourses)
+                .publishedCourses(publishedCourses)
+                .totalStudents(totalStudents)
+                .totalRevenueCents(totalRevenueCents)
+                .formattedRevenue(formattedRevenue)
+                .build();
+    }
+    
+    @Override
+    public MonthlyGrowthResponse getMonthlyGrowth(UUID instructorId, Integer year, Integer month) {
+        // Use optimized PostgreSQL function - single query instead of 10 queries
+        List<Object[]> results = courseRepository.getMonthlyGrowth(instructorId, year, month);
+        
+        List<GrowthPeriodResponse> periods = new ArrayList<>();
+        long totalRevenueCents = 0L;
+        long totalStudents = 0L;
+        NumberFormat vndFormat = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
+        
+        // Process results from PostgreSQL function
+        for (Object[] row : results) {
+            // Extract values: [period_start, period_end, revenue_cents, student_count]
+            Integer periodStart = ((Number) row[0]).intValue();
+            Integer periodEnd = ((Number) row[1]).intValue();
+            Long revenueCents = ((Number) row[2]).longValue();
+            Long studentCount = ((Number) row[3]).longValue();
+            
+            totalRevenueCents += revenueCents;
+            totalStudents += studentCount;
+            
+            LocalDate startDate = LocalDate.of(year, month, periodStart);
+            LocalDate endDate = LocalDate.of(year, month, periodEnd);
+            String periodLabel = periodStart + "-" + periodEnd;
+            String formattedRevenue = vndFormat.format(revenueCents) + "đ";
+            
+            periods.add(GrowthPeriodResponse.builder()
+                .periodLabel(periodLabel)
+                .startDate(startDate)
+                .endDate(endDate)
+                .revenueCents(revenueCents)
+                .formattedRevenue(formattedRevenue)
+                .studentCount(studentCount)
+                .build());
+        }
+        
+        String formattedTotalRevenue = vndFormat.format(totalRevenueCents) + "đ";
+        
+        return MonthlyGrowthResponse.builder()
+                .year(year)
+                .month(month)
+                .totalRevenueCents(totalRevenueCents)
+                .formattedTotalRevenue(formattedTotalRevenue)
+                .totalStudents(totalStudents)
+                .periods(periods)
+                .build();
     }
 }

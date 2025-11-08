@@ -5,6 +5,8 @@ import com.english.api.course.dto.request.CourseRequest;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
+import com.english.api.course.dto.response.InstructorStatsResponse;
+import com.english.api.course.dto.response.MonthlyGrowthResponse;
 import com.english.api.course.model.enums.CourseStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,4 +39,21 @@ public interface CourseService {
     PaginationResponse getPublishedCourses(Pageable pageable, String keyword, String[] skills);
 
     CourseCheckoutResponse getCheckoutInfoById(UUID id);
+    
+    /**
+     * Get comprehensive statistics for an instructor
+     * @param instructorId the instructor's user ID
+     * @return instructor statistics including courses, students, and revenue
+     */
+    InstructorStatsResponse getInstructorStats(UUID instructorId);
+    
+    /**
+     * Get monthly growth statistics for an instructor
+     * Revenue and student count broken down by weekly periods (7-day intervals)
+     * @param instructorId the instructor's user ID
+     * @param year the year (e.g., 2025)
+     * @param month the month (1-12)
+     * @return monthly growth statistics with weekly breakdowns
+     */
+    MonthlyGrowthResponse getMonthlyGrowth(UUID instructorId, Integer year, Integer month);
 }

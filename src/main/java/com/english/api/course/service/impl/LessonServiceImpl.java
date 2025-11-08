@@ -12,6 +12,8 @@ import com.english.api.course.model.enums.LessonMediaRole;
 import com.english.api.course.repository.*;
 import com.english.api.course.service.LessonService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,16 +87,54 @@ public class LessonServiceImpl implements LessonService {
 
     // --- GET ---
     @Override
+    @Cacheable(value = "lessons", key = "#lessonId")
     public LessonResponse getById(UUID moduleId, UUID lessonId) {
+        validateCourseOwnershipByLesson(lessonId);
+        
         Lesson lesson = lessonRepository.findById(lessonId)
                 .filter(l -> l.getModule().getId().equals(moduleId))
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
         return lessonMapper.toResponse(lesson);
     }
 
+    // --- GET FREE LESSON ---
+    @Override
+    @Cacheable(value = "lessons", key = "#lessonId")
+    public LessonResponse getFreeLesson(UUID moduleId, UUID lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .filter(l -> l.getModule().getId().equals(moduleId))
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
+
+        if (!Boolean.TRUE.equals(lesson.getPublished())) {
+            throw new ResourceNotFoundException("Lesson not found");
+        }
+
+        if (!Boolean.TRUE.equals(lesson.getIsFree())) {
+            throw new AccessDeniedException("This lesson is not free");
+        }
+
+        return lessonMapper.toResponse(lesson);
+    }
+
+    // --- GET PUBLISHED LESSON (ADMIN REVIEW) ---
+    @Override
+    @Cacheable(value = "lessons", key = "#lessonId")
+    public LessonResponse getPublishedLesson(UUID moduleId, UUID lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .filter(l -> l.getModule().getId().equals(moduleId))
+                .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
+
+        if (!Boolean.TRUE.equals(lesson.getPublished())) {
+            throw new ResourceNotFoundException("Lesson not found");
+        }
+
+        return lessonMapper.toResponse(lesson);
+    }
+
     // --- UPDATE ---
     @Override
     @Transactional
+    @CacheEvict(value = "lessons", key = "#lessonId")
     public LessonResponse update(UUID moduleId, UUID lessonId, LessonRequest request) {
         validateCourseOwnershipByLesson(lessonId);
 
@@ -184,6 +224,7 @@ public class LessonServiceImpl implements LessonService {
     // --- DELETE ---
     @Override
     @Transactional
+    @CacheEvict(value = "lessons", key = "#lessonId")
     public void delete(UUID moduleId, UUID lessonId) {
         validateCourseOwnershipByLesson(lessonId);
 
@@ -222,6 +263,7 @@ public class LessonServiceImpl implements LessonService {
 
     // --- ATTACH ASSET ---
     @Override
+    @CacheEvict(value = "lessons", key = "#lessonId")
     public LessonResponse attachAsset(UUID lessonId, UUID assetId) {
         validateCourseOwnershipByLesson(lessonId);
         Lesson lesson = lessonRepository.findById(lessonId)
@@ -246,6 +288,7 @@ public class LessonServiceImpl implements LessonService {
 
     // --- DETACH ASSET ---
     @Override
+    @CacheEvict(value = "lessons", key = "#lessonId")
     public LessonResponse detachAsset(UUID lessonId, UUID assetId) {
         validateCourseOwnershipByLesson(lessonId);
         Lesson lesson = lessonRepository.findById(lessonId)
@@ -277,6 +320,7 @@ public class LessonServiceImpl implements LessonService {
     // --- PUBLISH ---
     @Override
     @Transactional
+    @CacheEvict(value = "lessons", key = "#lessonId")
     public LessonResponse publish(UUID moduleId, UUID lessonId, boolean publish) {
         validateCourseOwnershipByLesson(lessonId);
         Lesson lesson = lessonRepository.findById(lessonId)

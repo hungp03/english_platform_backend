@@ -12,7 +12,7 @@ import com.english.api.order.model.enums.PaymentStatus;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.repository.PaymentRepository;
 import com.english.api.order.service.PayOSPaymentService;
-import com.english.api.mail.service.MailService;
+import com.english.api.order.service.InvoiceService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class PayOSServiceImpl implements PayOSPaymentService {
     private final PaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
     private final PayOS payOS;
-    private final MailService mailService;
+    private final InvoiceService invoiceService;
     private final EnrollmentService enrollmentService;
 
     @Value("${payos.success-url}")
@@ -135,16 +135,8 @@ public class PayOSServiceImpl implements PayOSPaymentService {
                     // Create enrollments for purchased courses
                     enrollmentService.createEnrollmentsAfterPayment(order);
                     
-                    // Gửi email thông báo thanh toán thành công
-                    try {
-                        mailService.sendPaymentSuccessEmail(
-                            order.getUser().getEmail(),
-                            order,
-                            payment,
-                            "payment-success-email"
-                        );
-                    } catch (Exception ignored) {
-                    }
+                    // Generate and send invoice asynchronously
+                    invoiceService.generateAndSendInvoiceAsync(order, payment);
                 }
             }
 

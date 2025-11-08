@@ -14,7 +14,7 @@ import com.english.api.order.model.enums.PaymentStatus;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.repository.PaymentRepository;
 import com.english.api.order.service.StripePaymentService;
-import com.english.api.mail.service.MailService;
+import com.english.api.order.service.InvoiceService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.exception.SignatureVerificationException;
@@ -44,7 +44,7 @@ public class StripePaymentServiceImpl implements StripePaymentService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
-    private final MailService mailService;
+    private final InvoiceService invoiceService;
     private final EnrollmentService enrollmentService;
 
     @Value("${stripe.webhook-secret}")
@@ -165,16 +165,8 @@ public class StripePaymentServiceImpl implements StripePaymentService {
                     // Create enrollments for purchased courses
                     enrollmentService.createEnrollmentsAfterPayment(order);
                     
-                    // Gửi email thông báo thanh toán thành công
-                    try {
-                        mailService.sendPaymentSuccessEmail(
-                            payment.getOrder().getUser().getEmail(),
-                            payment.getOrder(),
-                            payment,
-                            "payment-success-email"
-                        );
-                    } catch (Exception ignored) {
-                    }
+                    // Generate and send invoice asynchronously
+                    invoiceService.generateAndSendInvoiceAsync(order, payment);
                 }
 
             } else {

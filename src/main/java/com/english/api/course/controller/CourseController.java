@@ -1,10 +1,13 @@
 package com.english.api.course.controller;
 
+import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.request.CourseRequest;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.dto.response.CourseResponse;
+import com.english.api.course.dto.response.InstructorStatsResponse;
+import com.english.api.course.dto.response.MonthlyGrowthResponse;
 import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.course.service.CourseService;
 import jakarta.validation.Valid;
@@ -111,5 +114,36 @@ public class CourseController {
             @RequestParam CourseStatus status
     ) {
         return ResponseEntity.ok(courseService.changeStatus(id, status));
+    }
+
+    /**
+     * Get comprehensive statistics for the current instructor
+     * Returns: total courses, published courses, total students, and total revenue
+     */
+    @GetMapping("/instructor/stats")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<InstructorStatsResponse> getMyStats() {
+        UUID instructorId = SecurityUtil.getCurrentUserId();
+        InstructorStatsResponse stats = courseService.getInstructorStats(instructorId);
+        return ResponseEntity.ok(stats);
+    }
+    
+    /**
+     * Get monthly growth statistics for the current instructor
+     * Returns revenue and student count broken down by weekly periods (7-day intervals)
+     * Periods: 1-7, 8-14, 15-21, 22-28, 29-end of month
+     * 
+     * @param year Year (e.g., 2025)
+     * @param month Month (1-12)
+     */
+    @GetMapping("/instructor/growth")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<MonthlyGrowthResponse> getMonthlyGrowth(
+            @RequestParam Integer year,
+            @RequestParam Integer month
+    ) {
+        UUID instructorId = SecurityUtil.getCurrentUserId();
+        MonthlyGrowthResponse growth = courseService.getMonthlyGrowth(instructorId, year, month);
+        return ResponseEntity.ok(growth);
     }
 }

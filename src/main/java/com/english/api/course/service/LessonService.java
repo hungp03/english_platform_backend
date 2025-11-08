@@ -20,6 +20,12 @@ public interface LessonService {
     // --- Get by ID ---
     LessonResponse getById(UUID moduleId, UUID lessonId);
 
+    // --- Get Free Lesson ---
+    LessonResponse getFreeLesson(UUID moduleId, UUID lessonId);
+
+    // --- Get Published Lesson (Admin Review) ---
+    LessonResponse getPublishedLesson(UUID moduleId, UUID lessonId);
+
     // --- Update ---
     LessonResponse update(UUID moduleId, UUID lessonId, LessonRequest request);
 

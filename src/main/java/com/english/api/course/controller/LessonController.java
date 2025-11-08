@@ -25,6 +25,7 @@ public class LessonController {
 
     // --- List ---
     @GetMapping
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<List<LessonSummaryResponse>> list(@PathVariable UUID moduleId) {
         return ResponseEntity.ok(service.list(moduleId));
     }
@@ -36,11 +37,31 @@ public class LessonController {
 
     // --- Get by ID ---
     @GetMapping("/{lessonId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> getById(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId
     ) {
         return ResponseEntity.ok(service.getById(moduleId, lessonId));
+    }
+
+    // --- Get Free Lesson ---
+    @GetMapping("/{lessonId}/free")
+    public ResponseEntity<LessonResponse> getFreeLesson(
+            @PathVariable UUID moduleId,
+            @PathVariable UUID lessonId
+    ) {
+        return ResponseEntity.ok(service.getFreeLesson(moduleId, lessonId));
+    }
+
+    // --- Get Published Lesson (Admin Review) ---
+    @GetMapping("/{lessonId}/review")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<LessonResponse> getPublishedLesson(
+            @PathVariable UUID moduleId,
+            @PathVariable UUID lessonId
+    ) {
+        return ResponseEntity.ok(service.getPublishedLesson(moduleId, lessonId));
     }
 
     // --- Create ---
