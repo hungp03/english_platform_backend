@@ -1,5 +1,7 @@
 package com.english.api.course.dto.response;
 
+import lombok.Getter;
+
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
@@ -8,8 +10,10 @@ import java.util.UUID;
 /**
  * Created by hungpham on 10/2/2025
  */
+@Getter
 public class CourseResponse implements Serializable {
     private static final long serialVersionUID = 1L;
+    // Getters
     private UUID id;
     private String title;
     private String slug;
@@ -45,22 +49,6 @@ public class CourseResponse implements Serializable {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
-
-    // Getters
-    public UUID getId() { return id; }
-    public String getTitle() { return title; }
-    public String getSlug() { return slug; }
-    public String getDescription() { return description; }
-    public String getDetailedDescription() { return detailedDescription; }
-    public String getLanguage() { return language; }
-    public String getThumbnail() { return thumbnail; }
-    public List<String> getSkillFocus() { return skillFocus; }
-    public Long getPriceCents() { return priceCents; }
-    public String getCurrency() { return currency; }
-    public String getStatus() { return status; }
-    public Instant getPublishedAt() { return publishedAt; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
 
     // For compatibility with existing code that expects record-like access
     public UUID id() { return id; }

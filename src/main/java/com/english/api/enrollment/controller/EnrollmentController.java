@@ -3,7 +3,6 @@ package com.english.api.enrollment.controller;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.response.LessonResponse;
 import com.english.api.enrollment.dto.response.EnrollmentDetailResponse;
-import com.english.api.enrollment.dto.response.LessonWithProgressResponse;
 import com.english.api.enrollment.service.EnrollmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
