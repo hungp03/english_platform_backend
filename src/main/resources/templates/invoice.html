@@ -1,486 +1,215 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Hóa đơn - English Pro</title>
+    <title>Hóa Đơn</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
-            font-family: 'DejaVu Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f5f5f5;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
             padding: 20px;
-            color: #333;
         }
-
-        .container {
+        
+        .invoice-container {
             max-width: 800px;
             margin: 0 auto;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
         }
-
+        
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 30px 40px;
-            border-bottom: 2px solid #f0f0f0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
         }
-
-        .company-info {
-            display: flex;
-            gap: 15px;
-            align-items: flex-start;
-        }
-
-        .logo {
-            width: 60px;
-            height: 60px;
-            background-color: #2563eb;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .logo svg {
-            width: 32px;
-            height: 32px;
-            fill: white;
-        }
-
-        .company-details h1 {
+        
+        .header h1 {
             font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #1a1a1a;
-        }
-
-        .company-details p {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 3px;
-        }
-
-        .invoice-badge {
-            background-color: #eff6ff;
-            border: 2px solid #dbeafe;
-            border-radius: 8px;
-            padding: 15px 20px;
-            text-align: right;
-        }
-
-        .invoice-badge-title {
-            font-size: 12px;
-            color: #2563eb;
-            font-weight: 600;
             margin-bottom: 5px;
         }
-
-        .invoice-number {
-            font-size: 22px;
-            font-weight: 700;
-            color: #1e40af;
-            margin-bottom: 8px;
-        }
-
-        .invoice-date {
-            font-size: 12px;
+        
+        .header p {
+            font-size: 11px;
             color: #666;
-            line-height: 1.6;
         }
-
-        .main-content {
-            padding: 30px 40px;
-        }
-
-        .info-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            margin-bottom: 40px;
-        }
-
-        .info-block h2 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .info-item {
-            margin-bottom: 12px;
-        }
-
-        .info-label {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 3px;
-        }
-
-        .info-value {
-            font-size: 14px;
-            color: #1a1a1a;
-            font-weight: 500;
-        }
-
-        .status-badge {
-            display: inline-block;
-            background-color: #2563eb;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .course-section h2 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1a1a1a;
+        
+        .invoice-info {
             margin-bottom: 20px;
         }
-
-        .table-container {
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 30px;
-        }
-
-        table {
+        
+        .invoice-info table {
             width: 100%;
             border-collapse: collapse;
         }
-
-        thead {
-            background-color: #f9fafb;
+        
+        .invoice-info td {
+            padding: 5px;
+            vertical-align: top;
         }
-
-        th {
-            padding: 12px 16px;
-            text-align: left;
-            font-size: 13px;
-            font-weight: 600;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        
+        .invoice-info td:first-child {
+            width: 50%;
         }
-
-        th:last-child,
-        td:last-child {
-            text-align: right;
+        
+        .invoice-info p {
+            margin: 5px 0;
         }
-
-        tbody tr {
-            border-top: 1px solid #e5e5e5;
+        
+        .info-label {
+            font-weight: bold;
         }
-
-        td {
-            padding: 16px;
-            font-size: 14px;
-            color: #1a1a1a;
-        }
-
-        .course-name {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .course-description {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 2px;
-        }
-
-        .course-code {
-            font-size: 12px;
-            color: #999;
-        }
-
-        .payment-section {
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .payment-section {
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .payment-section h2 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .payment-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-bottom: 20px;
         }
-
-        .total-section {
-            display: flex;
-            justify-content: space-between;
-            padding-top: 20px;
-            border-top: 2px solid #e5e5e5;
+        
+        .items-table th {
+            background-color: #f0f0f0;
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
         }
-
-        .total-label {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 8px;
+        
+        .items-table td {
+            border: 1px solid #333;
+            padding: 8px;
         }
-
-        .total-amount {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1a1a1a;
-        }
-
-        .total-final {
+        
+        .items-table .text-right {
             text-align: right;
         }
-
-        .total-final .total-label {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1a1a1a;
-        }
-
-        .total-final .total-amount {
-            font-size: 28px;
-            font-weight: 700;
-            color: #10b981;
-        }
-
-        .status-success {
-            color: #10b981;
-            font-weight: 600;
-            font-size: 15px;
-        }
-
-        .footer {
-            background-color: #f9fafb;
-            padding: 30px 40px;
+        
+        .items-table .text-center {
             text-align: center;
-            border-top: 2px solid #e5e5e5;
         }
-
-        .footer-title {
-            font-size: 15px;
-            color: #1a1a1a;
-            margin-bottom: 8px;
-            font-weight: 500;
+        
+        .total-section {
+            float: right;
+            width: 300px;
+            margin-bottom: 30px;
         }
-
-        .footer-text {
-            font-size: 13px;
+        
+        .total-section table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .total-section td {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .total-section .total-label {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .total-section .total-value {
+            text-align: right;
+        }
+        
+        .total-section .grand-total {
+            font-size: 14px;
+            font-weight: bold;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+        }
+        
+        .footer {
+            clear: both;
+            margin-top: 40px;
+            text-align: center;
+            font-size: 11px;
             color: #666;
-            margin-bottom: 15px;
-            line-height: 1.6;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
         }
-
-        .footer-contact {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            font-size: 13px;
-            color: #666;
+        
+        .clearfix {
+            clear: both;
         }
-
-        .footer-contact a {
-            color: #2563eb;
-            text-decoration: none;
-        }
-
-        .footer-contact a:hover {
-            text-decoration: underline;
-        }
-
-        @media print {
-            body {
-                padding: 0;
-                background-color: #fff;
-            }
-
-            .container {
-                box-shadow: none;
-                border: none;
-            }
+        
+        .invoice-info + .invoice-info {
+            margin-top: 30px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
+    <div class="invoice-container">
         <div class="header">
-            <div class="company-info">
-                <div class="logo">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                    </svg>
-                </div>
-                <div class="company-details">
-                    <h1>English Pro</h1>
-                    <p>123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh</p>
-                    <p>SDT: 0901234567  |  Email: support@englishpro.vn</p>
-                    <p>Website: www.englishpro.vn</p>
-                </div>
-            </div>
-            <div class="invoice-badge">
-                <div class="invoice-badge-title">HÓA ĐƠN</div>
-                <div class="invoice-number" th:text="${invoiceNumber}">INV-2024-1001</div>
-                <div class="invoice-date">Ngày lập: <span th:text="${createdDate}">21/10/2024</span></div>
-                <div class="invoice-date">Ngày thanh toán: <span th:text="${paidDate}">21/10/2024</span></div>
-            </div>
+            <h1>HÓA ĐƠN THANH TOÁN</h1>
+            <p>INVOICE</p>
         </div>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Customer & Invoice Info -->
-            <div class="info-section">
-                <div class="info-block customer">
-                    <h2>Thông tin khách hàng</h2>
-                    <div class="info-item">
-                        <div class="info-label">Họ tên:</div>
-                        <div class="info-value" th:text="${customerName}">Nguyễn Văn A</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Email:</div>
-                        <div class="info-value" th:text="${customerEmail}">nguyenvana@example.com</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Mã khách hàng:</div>
-                        <div class="info-value" th:text="${customerId}">USR_001</div>
-                    </div>
-                </div>
-
-                <div class="info-block invoice">
-                    <h2>Thông tin hóa đơn</h2>
-                    <div class="info-item">
-                        <div class="info-label">Mã hóa đơn:</div>
-                        <div class="info-value" th:text="${invoiceNumber}">INV20241001001</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Đơn hàng liên quan:</div>
-                        <div class="info-value" th:text="${orderId}">M4B7C9</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Trạng thái:</div>
-                        <div class="info-value">
-                            <span class="status-badge">Đã thanh toán</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Course Details -->
-            <div class="course-section">
-                <h2>Chi tiết khóa học</h2>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Khóa học</th>
-                                <th>Số lượng</th>
-                                <th>Đơn giá</th>
-                                <th>Thành tiền</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:each="item : ${orderItems}">
-                                <td>
-                                    <div class="course-name" th:text="${item.title}">Complete TOEIC 650+</div>
-                                    <div class="course-code">Mã: <span th:text="${item.entityId}">TOEIC_650_001</span></div>
-                                </td>
-                                <td th:text="${item.quantity}">1</td>
-                                <td>
-                                    <span th:text="${#numbers.formatDecimal(item.unitPriceCents, 0, 'POINT', 0, 'COMMA')}">2.000.000</span>
-                                    <span th:text="${currency}">đ</span>
-                                </td>
-                                <td>
-                                    <span th:text="${#numbers.formatDecimal(item.totalPriceCents, 0, 'POINT', 0, 'COMMA')}">2.000.000</span>
-                                    <span th:text="${currency}">đ</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Payment Info -->
-            <div class="payment-section">
-                <h2>Thông tin thanh toán</h2>
-                <div class="payment-grid">
-                    <div class="info-item">
-                        <div class="info-label">Phương thức:</div>
-                        <div class="info-value" th:text="${paymentMethod}">MoMo</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Mã giao dịch:</div>
-                        <div class="info-value" th:text="${paymentTxn}">TXN_M4B7C9D2E</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Số tiền thanh toán:</div>
-                        <div class="info-value" th:text="${totalAmount}">2.000.000đ</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Thời gian thanh toán:</div>
-                        <div class="info-value" th:text="${paymentTime}">21/10/2024 00:35</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Trạng thái:</div>
-                        <div class="status-success">Thành công</div>
-                    </div>
-                </div>
-
-                <div class="total-section">
-                    <div class="total-left">
-                        <div class="total-label">Tạm tính:</div>
-                        <div class="total-amount" th:text="${totalAmount}">2.000.000đ</div>
-                    </div>
-                    <div class="total-final">
-                        <div class="total-label">Tổng cộng:</div>
-                        <div class="total-amount" th:text="${totalAmount}">2.000.000đ</div>
-                    </div>
-                </div>
-            </div>
+        
+        <div class="invoice-info">
+            <table>
+                <tr>
+                    <td>
+                        <p><span class="info-label">Số hóa đơn:</span> <span th:text="${invoiceNumber}"></span></p>
+                        <p><span class="info-label">Ngày tạo:</span> <span th:text="${createdDate}"></span></p>
+                        <p><span class="info-label">Ngày thanh toán:</span> <span th:text="${paidDate}"></span></p>
+                        <p><span class="info-label">Mã đơn hàng:</span> <span th:text="${orderId}"></span></p>
+                    </td>
+                    <td>
+                        <p><span class="info-label">Khách hàng:</span> <span th:text="${customerName}"></span></p>
+                        <p><span class="info-label">Email:</span> <span th:text="${customerEmail}"></span></p>
+                        <p><span class="info-label">Mã khách hàng:</span> <span th:text="${customerId}"></span></p>
+                    </td>
+                </tr>
+            </table>
         </div>
-
-        <!-- Footer -->
+        
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th class="text-center">STT</th>
+                    <th>Mô tả</th>
+                    <th class="text-center">Số lượng</th>
+                    <th class="text-right">Đơn giá</th>
+                    <th class="text-right">Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item, iterStat : ${orderItems}">
+                    <td class="text-center" th:text="${iterStat.count}"></td>
+                    <td th:text="${item.title}"></td>
+                    <td class="text-center" th:text="${item.quantity}"></td>
+                    <td class="text-right" th:text="${#numbers.formatDecimal(item.unitPriceCents, 0, 'POINT', 0, 'NONE')} + 'đ'"></td>
+                    <td class="text-right" th:text="${#numbers.formatDecimal(item.totalPriceCents, 0, 'POINT', 0, 'NONE')} + 'đ'"></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="total-section">
+            <table>
+                <tr class="grand-total">
+                    <td class="total-label">Tổng cộng (<span th:text="${currency}"></span>):</td>
+                    <td class="total-value" th:text="${totalAmount}"></td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="clearfix"></div>
+        
+        <div class="invoice-info">
+            <p><strong>Thông tin thanh toán:</strong></p>
+            <p><span class="info-label">Phương thức:</span> <span th:text="${paymentMethod}"></span></p>
+            <p><span class="info-label">Mã giao dịch:</span> <span th:text="${paymentTxn}"></span></p>
+            <p><span class="info-label">Thời gian thanh toán:</span> <span th:text="${paymentTime}"></span></p>
+        </div>
+        
         <div class="footer">
-            <div class="footer-title">Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của English Pro!</div>
-            <div class="footer-text">Đây là hóa đơn điện tử có giá trị pháp lý. Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ chúng tôi.</div>
-            <div class="footer-contact">
-                <span>Email: <a href="mailto:support@englishpro.vn">support@englishpro.vn</a></span>
-                <span>Hotline: <a href="tel:0901234567">0901234567</a></span>
-                <span>Website: <a href="http://www.englishpro.vn" target="_blank">www.englishpro.vn</a></span>
-            </div>
+            <p>Cảm ơn quý khách đã sử dụng dịch vụ!</p>
+            <p>Thank you for your business!</p>
         </div>
     </div>
 </body>

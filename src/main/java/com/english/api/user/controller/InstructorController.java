@@ -31,7 +31,7 @@ import java.util.UUID;
  * Created by hungpham on 10/29/2025
  */
 @RestController
-@RequestMapping("/api/instructor-requests")
+@RequestMapping("/api/instructors")
 @RequiredArgsConstructor
 @Slf4j
 public class InstructorController {
@@ -170,5 +170,18 @@ public class InstructorController {
             @PathVariable UUID instructorId) {
         InstructorStatsResponse stats = courseService.getInstructorStats(instructorId);
         return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Get list of all instructors with basic information
+     * Supports search by email or fullName
+     */
+    @GetMapping("/list-instructors")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PaginationResponse> getAllInstructors(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PaginationResponse instructors = instructorService.getAllInstructors(search, pageable);
+        return ResponseEntity.ok(instructors);
     }
 }

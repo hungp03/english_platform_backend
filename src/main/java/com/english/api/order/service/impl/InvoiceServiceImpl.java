@@ -138,19 +138,16 @@ public class InvoiceServiceImpl implements InvoiceService {
             builder.useFastMode();
             
             // Load fonts for Vietnamese character support
-            InputStream regularFont = getClass().getResourceAsStream("/fonts/DejaVuSans.ttf");
-            InputStream boldFont = getClass().getResourceAsStream("/fonts/DejaVuSans-Bold.ttf");
-            
-            if (regularFont != null) {
+            try {
                 builder.useFont(() -> getClass().getResourceAsStream("/fonts/DejaVuSans.ttf"), 
                         "DejaVu Sans", 400, 
-                        com.openhtmltopdf.pdfboxout.PdfRendererBuilder.FontStyle.NORMAL, false);
-            }
-            
-            if (boldFont != null) {
+                        com.openhtmltopdf.pdfboxout.PdfRendererBuilder.FontStyle.NORMAL, true);
+                
                 builder.useFont(() -> getClass().getResourceAsStream("/fonts/DejaVuSans-Bold.ttf"), 
                         "DejaVu Sans", 700, 
-                        com.openhtmltopdf.pdfboxout.PdfRendererBuilder.FontStyle.NORMAL, false);
+                        com.openhtmltopdf.pdfboxout.PdfRendererBuilder.FontStyle.NORMAL, true);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             
             builder.withHtmlContent(htmlContent, null);

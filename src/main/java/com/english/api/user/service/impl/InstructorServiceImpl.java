@@ -10,6 +10,7 @@ import com.english.api.user.dto.request.UpdateInstructorRequest;
 import com.english.api.user.dto.request.UploadCertificateProofRequest;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.user.dto.response.CertificateProofResponse;
+import com.english.api.user.dto.response.InstructorBasicInfoResponse;
 import com.english.api.user.mapper.CertificateProofMapper;
 import com.english.api.user.model.InstructorCertificateProof;
 import com.english.api.user.repository.InstructorCertificateProofRepository;
@@ -367,5 +368,17 @@ public class InstructorServiceImpl implements InstructorService {
 
         instructorRequestRepository.deleteById(requestId);
         log.info("Deleted instructor request: {} by owner", requestId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationResponse getAllInstructors(String search, Pageable pageable) {
+        Page<InstructorBasicInfoResponse> instructors;
+        if (search == null || search.trim().isEmpty()) {
+            instructors = instructorProfileRepository.findAllBasicInfo(pageable);
+        } else {
+            instructors = instructorProfileRepository.findAllBasicInfoWithSearch(search.trim(), pageable);
+        }
+        return PaginationResponse.from(instructors, pageable);
     }
 }

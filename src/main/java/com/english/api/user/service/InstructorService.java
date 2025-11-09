@@ -44,4 +44,6 @@ public interface InstructorService {
     void deleteCertificateProofByOwner(UUID proofId);
     
     void deleteRequest(UUID requestId);
+    
+    PaginationResponse getAllInstructors(String search, Pageable pageable);
 }
