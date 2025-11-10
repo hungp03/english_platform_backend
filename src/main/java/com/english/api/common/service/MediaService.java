@@ -12,6 +12,8 @@ import java.util.List;
 public interface MediaService {
     MediaUploadResponse uploadFile(MultipartFile file, String folder) throws IOException;
     List<MediaUploadResponse> uploadFiles(List<MultipartFile> files, String folder) throws IOException;
-//    void deleteFile(String key);
+    void deleteFile(String key);
     void deleteFileByUrl(String avatarUrl);
+    List<String> listFilesInFolder(String folderPath);
+    void deleteFolder(String folderPath);
 }

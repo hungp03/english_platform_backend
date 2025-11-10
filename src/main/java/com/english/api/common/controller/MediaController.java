@@ -50,10 +50,21 @@ public class MediaController {
     }
 
 
-//    @DeleteMapping("/{filename}")
-//    public ResponseEntity<Void> deleteFile(@PathVariable String filename) {
-//        mediaService.deleteFile(filename);
-//        return ResponseEntity.ok().build();
-//    }
+    @DeleteMapping("/delete")
+    public ResponseEntity<Void> deleteFile(@RequestParam("filename") String filename) {
+        mediaService.deleteFile(filename);
+        return ResponseEntity.ok().build();
+}
+    @GetMapping("/list")
+    public ResponseEntity<List<String>> listFilesInFolder(@RequestParam("folder") String folder) {
+        List<String> fileUrls = mediaService.listFilesInFolder(folder);
+        return ResponseEntity.ok(fileUrls);
+    }
+    
+    @DeleteMapping("/folder")
+    public ResponseEntity<Void> deleteFolder(@RequestParam("folder") String folder) {
+        mediaService.deleteFolder(folder);
+        return ResponseEntity.ok().build();
+    }
 
 }
