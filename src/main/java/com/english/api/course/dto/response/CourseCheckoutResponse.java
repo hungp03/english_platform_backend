@@ -1,5 +1,6 @@
 package com.english.api.course.dto.response;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -12,5 +13,5 @@ public record CourseCheckoutResponse(
     String thumbnail,
     Long priceCents,
     String currency
-) {
+) implements Serializable {
 }

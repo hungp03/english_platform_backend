@@ -4,22 +4,32 @@ import com.english.api.course.model.enums.LessonMediaRole;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
  * Created by hungpham on 10/10/2025
  */
 @Entity
-@Table(name = "lesson_media",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"lesson_id", "media_id"})
-        })
+@Table(
+    name = "lesson_media",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"lesson_id", "media_id"})
+    },
+    indexes = {
+        @Index(name = "idx_lesson_media_lesson_id", columnList = "lesson_id"),
+        @Index(name = "idx_lesson_media_media_id", columnList = "media_id"),
+        @Index(name = "idx_lesson_media_role", columnList = "role"),
+        @Index(name = "idx_lesson_media_lesson_role", columnList = "lesson_id, role")
+    }
+)
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LessonMedia {
+public class LessonMedia implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     private UUID id;

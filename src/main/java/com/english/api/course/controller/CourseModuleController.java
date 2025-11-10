@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,16 +25,19 @@ public class CourseModuleController {
     private final CourseModuleService service;
 
     @GetMapping
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<List<CourseModuleResponse>> list(@PathVariable UUID courseId) {
         return ResponseEntity.ok(service.list(courseId));
     }
 
     @GetMapping("/published")
+    // Public route
     public ResponseEntity<List<CourseModuleResponse>> listPublished(@PathVariable UUID courseId) {
         return ResponseEntity.ok(service.listPublished(courseId));
     }
 
     @GetMapping("/{moduleId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<CourseModuleResponse> getById(
             @PathVariable UUID courseId,
             @PathVariable UUID moduleId
@@ -42,6 +46,7 @@ public class CourseModuleController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<CourseModuleResponse> create(
             @PathVariable UUID courseId,
             @Valid @RequestBody CourseModuleRequest requests
@@ -51,6 +56,7 @@ public class CourseModuleController {
 
 
     @PutMapping
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<CourseModuleUpdateResponse> update(
             @PathVariable UUID courseId,
             @Valid @RequestBody CourseModuleUpdateRequest requests
@@ -60,6 +66,7 @@ public class CourseModuleController {
 
 
     @DeleteMapping("/{moduleId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<Void> delete(
             @PathVariable UUID courseId,
             @PathVariable UUID moduleId
@@ -69,6 +76,7 @@ public class CourseModuleController {
     }
 
     @PatchMapping("/{moduleId}/publish")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<CourseModuleResponse> publish(
             @PathVariable UUID courseId,
             @PathVariable UUID moduleId,

@@ -76,6 +76,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
               AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
+              AND (CAST(:status AS text) IS NOT NULL OR c.status != 'DRAFT')
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill
@@ -94,6 +95,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
               AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
+              AND (CAST(:status AS text) IS NOT NULL OR c.status != 'DRAFT')
               AND (:skillsCount = 0 OR
                    EXISTS (
                        SELECT 1 FROM unnest(c.skill_focus) AS skill

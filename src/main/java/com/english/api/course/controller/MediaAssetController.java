@@ -1,6 +1,5 @@
 package com.english.api.course.controller;
 
-import com.english.api.course.dto.request.MediaCallbackRequest;
 import com.english.api.course.dto.response.MediaAssetResponse;
 import com.english.api.course.service.MediaAssetService;
 import jakarta.servlet.http.HttpServletRequest;

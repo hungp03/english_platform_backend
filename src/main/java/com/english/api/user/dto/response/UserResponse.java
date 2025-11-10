@@ -1,7 +1,5 @@
 package com.english.api.user.dto.response;
 
-import com.english.api.auth.dto.response.UserLoginResponse;
-
 import java.util.List;
 import java.util.UUID;
 

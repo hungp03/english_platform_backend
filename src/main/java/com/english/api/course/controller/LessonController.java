@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class LessonController {
 
     // --- List ---
     @GetMapping
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<List<LessonSummaryResponse>> list(@PathVariable UUID moduleId) {
         return ResponseEntity.ok(service.list(moduleId));
     }
@@ -35,6 +37,7 @@ public class LessonController {
 
     // --- Get by ID ---
     @GetMapping("/{lessonId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> getById(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId
@@ -42,8 +45,28 @@ public class LessonController {
         return ResponseEntity.ok(service.getById(moduleId, lessonId));
     }
 
+    // --- Get Free Lesson ---
+    @GetMapping("/{lessonId}/free")
+    public ResponseEntity<LessonResponse> getFreeLesson(
+            @PathVariable UUID moduleId,
+            @PathVariable UUID lessonId
+    ) {
+        return ResponseEntity.ok(service.getFreeLesson(moduleId, lessonId));
+    }
+
+    // --- Get Published Lesson (Admin Review) ---
+    @GetMapping("/{lessonId}/review")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<LessonResponse> getPublishedLesson(
+            @PathVariable UUID moduleId,
+            @PathVariable UUID lessonId
+    ) {
+        return ResponseEntity.ok(service.getPublishedLesson(moduleId, lessonId));
+    }
+
     // --- Create ---
     @PostMapping
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> create(
             @PathVariable UUID moduleId,
             @Valid @RequestBody LessonRequest request
@@ -53,6 +76,7 @@ public class LessonController {
 
     // --- Update ---
     @PutMapping("/{lessonId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> update(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId,
@@ -63,6 +87,7 @@ public class LessonController {
 
     // --- Delete ---
     @DeleteMapping("/{lessonId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<Void> delete(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId
@@ -73,6 +98,7 @@ public class LessonController {
 
     // --- Attach Asset ---
     @PostMapping("/{lessonId}/assets/{assetId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> attachAsset(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId,
@@ -83,6 +109,7 @@ public class LessonController {
 
     // --- Detach Asset ---
     @DeleteMapping("/{lessonId}/assets/{assetId}")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> detachAsset(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId,
@@ -93,6 +120,7 @@ public class LessonController {
 
     // --- Publish ---
     @PatchMapping("/{lessonId}/publish")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<LessonResponse> publish(
             @PathVariable UUID moduleId,
             @PathVariable UUID lessonId,

@@ -1,5 +1,6 @@
 package com.english.api.course.dto.response;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -9,5 +10,5 @@ public record CourseModuleUpdateResponse(
         UUID id,
         String title,
         Integer position
-        ) {
+        ) implements Serializable {
 }

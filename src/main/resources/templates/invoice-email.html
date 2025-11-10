@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hóa đơn thanh toán - English Pro</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table cellpadding="0" cellspacing="0" border="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #2563eb; padding: 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px;">English Pro</h1>
+                            <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px;">Hóa đơn thanh toán</p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #333333; margin: 0 0 20px 0;">
+                                Xin chào <strong th:text="${order.user.fullName}">Khách hàng</strong>,
+                            </p>
+
+                            <p style="font-size: 14px; color: #666666; line-height: 1.6; margin: 0 0 20px 0;">
+                                Cảm ơn bạn đã thanh toán thành công đơn hàng tại English Pro. 
+                                Hóa đơn của bạn đã được tạo và đính kèm trong email này.
+                            </p>
+
+                            <!-- Invoice Info -->
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0; background-color: #f9fafb; border-radius: 8px; padding: 20px;">
+                                <tr>
+                                    <td style="padding: 8px 0;">
+                                        <span style="color: #666666; font-size: 14px;">Mã hóa đơn:</span>
+                                        <strong style="color: #333333; font-size: 14px; float: right;" th:text="${invoice.number}">INV-2024-001</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; border-top: 1px solid #e5e5e5;">
+                                        <span style="color: #666666; font-size: 14px;">Mã đơn hàng:</span>
+                                        <strong style="color: #333333; font-size: 14px; float: right;" th:text="${order.id}">ORDER-001</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; border-top: 1px solid #e5e5e5;">
+                                        <span style="color: #666666; font-size: 14px;">Phương thức thanh toán:</span>
+                                        <strong style="color: #333333; font-size: 14px; float: right;" th:text="${payment.provider}">STRIPE</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; border-top: 1px solid #e5e5e5;">
+                                        <span style="color: #666666; font-size: 14px;">Tổng tiền:</span>
+                                        <strong style="color: #10b981; font-size: 18px; float: right;">
+                                            <span th:text="${#numbers.formatDecimal(order.totalCents, 0, 'POINT', 0, 'COMMA')}">2.000.000</span>
+                                            <span th:text="${order.currency}">VND</span>
+                                        </strong>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="font-size: 14px; color: #666666; line-height: 1.6; margin: 20px 0;">
+                                Hóa đơn chi tiết đã được đính kèm dưới dạng file PDF. 
+                                Bạn cũng có thể tải xuống hóa đơn từ tài khoản của mình trên nền tảng.
+                            </p>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a th:href="${invoice.fileUrl}" 
+                                   style="display: inline-block; padding: 12px 30px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: 500;">
+                                    Tải xuống hóa đơn
+                                </a>
+                            </div>
+
+                            <p style="font-size: 14px; color: #666666; line-height: 1.6; margin: 20px 0 0 0;">
+                                Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email 
+                                <a href="mailto:support@englishpro.vn" style="color: #2563eb; text-decoration: none;">support@englishpro.vn</a> 
+                                hoặc hotline <a href="tel:0901234567" style="color: #2563eb; text-decoration: none;">0901234567</a>.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e5e5;">
+                            <p style="color: #666666; font-size: 13px; margin: 0 0 10px 0;">
+                                Trân trọng,<br>
+                                <strong>English Pro Team</strong>
+                            </p>
+                            <p style="color: #999999; font-size: 12px; margin: 0;">
+                                123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh<br>
+                                Website: <a href="http://www.englishpro.vn" style="color: #2563eb; text-decoration: none;">www.englishpro.vn</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

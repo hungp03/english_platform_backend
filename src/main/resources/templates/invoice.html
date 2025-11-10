@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Hóa Đơn</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 20px;
+        }
+        
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .invoice-info {
+            margin-bottom: 20px;
+        }
+        
+        .invoice-info table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .invoice-info td {
+            padding: 5px;
+            vertical-align: top;
+        }
+        
+        .invoice-info td:first-child {
+            width: 50%;
+        }
+        
+        .invoice-info p {
+            margin: 5px 0;
+        }
+        
+        .info-label {
+            font-weight: bold;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .items-table th {
+            background-color: #f0f0f0;
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        .items-table td {
+            border: 1px solid #333;
+            padding: 8px;
+        }
+        
+        .items-table .text-right {
+            text-align: right;
+        }
+        
+        .items-table .text-center {
+            text-align: center;
+        }
+        
+        .total-section {
+            float: right;
+            width: 300px;
+            margin-bottom: 30px;
+        }
+        
+        .total-section table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .total-section td {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .total-section .total-label {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .total-section .total-value {
+            text-align: right;
+        }
+        
+        .total-section .grand-total {
+            font-size: 14px;
+            font-weight: bold;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+        }
+        
+        .footer {
+            clear: both;
+            margin-top: 40px;
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        
+        .clearfix {
+            clear: both;
+        }
+        
+        .invoice-info + .invoice-info {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <div class="header">
+            <h1>HÓA ĐƠN THANH TOÁN</h1>
+            <p>INVOICE</p>
+        </div>
+        
+        <div class="invoice-info">
+            <table>
+                <tr>
+                    <td>
+                        <p><span class="info-label">Số hóa đơn:</span> <span th:text="${invoiceNumber}"></span></p>
+                        <p><span class="info-label">Ngày tạo:</span> <span th:text="${createdDate}"></span></p>
+                        <p><span class="info-label">Ngày thanh toán:</span> <span th:text="${paidDate}"></span></p>
+                        <p><span class="info-label">Mã đơn hàng:</span> <span th:text="${orderId}"></span></p>
+                    </td>
+                    <td>
+                        <p><span class="info-label">Khách hàng:</span> <span th:text="${customerName}"></span></p>
+                        <p><span class="info-label">Email:</span> <span th:text="${customerEmail}"></span></p>
+                        <p><span class="info-label">Mã khách hàng:</span> <span th:text="${customerId}"></span></p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th class="text-center">STT</th>
+                    <th>Mô tả</th>
+                    <th class="text-center">Số lượng</th>
+                    <th class="text-right">Đơn giá</th>
+                    <th class="text-right">Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item, iterStat : ${orderItems}">
+                    <td class="text-center" th:text="${iterStat.count}"></td>
+                    <td th:text="${item.title}"></td>
+                    <td class="text-center" th:text="${item.quantity}"></td>
+                    <td class="text-right" th:text="${#numbers.formatDecimal(item.unitPriceCents, 0, 'POINT', 0, 'NONE')} + 'đ'"></td>
+                    <td class="text-right" th:text="${#numbers.formatDecimal(item.totalPriceCents, 0, 'POINT', 0, 'NONE')} + 'đ'"></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="total-section">
+            <table>
+                <tr class="grand-total">
+                    <td class="total-label">Tổng cộng (<span th:text="${currency}"></span>):</td>
+                    <td class="total-value" th:text="${totalAmount}"></td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="clearfix"></div>
+        
+        <div class="invoice-info">
+            <p><strong>Thông tin thanh toán:</strong></p>
+            <p><span class="info-label">Phương thức:</span> <span th:text="${paymentMethod}"></span></p>
+            <p><span class="info-label">Mã giao dịch:</span> <span th:text="${paymentTxn}"></span></p>
+            <p><span class="info-label">Thời gian thanh toán:</span> <span th:text="${paymentTime}"></span></p>
+        </div>
+        
+        <div class="footer">
+            <p>Cảm ơn quý khách đã sử dụng dịch vụ!</p>
+            <p>Thank you for your business!</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -8,6 +8,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,13 +18,22 @@ import java.util.UUID;
  * Created by hungpham on 10/1/2025
  */
 @Entity
-@Table(name = "media_assets")
+@Table(
+    name = "media_assets",
+    indexes = {
+        @Index(name = "idx_media_assets_owner_id", columnList = "owner_id"),
+        @Index(name = "idx_media_assets_mime_type", columnList = "mimeType"),
+        @Index(name = "idx_media_assets_created_at", columnList = "createdAt")
+    }
+)
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MediaAsset {
+public class MediaAsset implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     @Id
     private UUID id;
 

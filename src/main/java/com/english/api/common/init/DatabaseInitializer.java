@@ -61,6 +61,8 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .orElseThrow(() -> new IllegalStateException("ADMIN role not found"));
             Role userRole = roleRepository.findByCode("USER")
                     .orElseThrow(() -> new IllegalStateException("USER role not found"));
+            Role instructorRole = roleRepository.findByCode("INSTRUCTOR")
+                    .orElseThrow(() -> new IllegalStateException("INSTRUCTOR role not found"));
 
             BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
 
@@ -75,7 +77,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .isActive(true)
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
-                    .roles(Set.of(adminRole, userRole)) // ADMIN & USER
+                    .roles(Set.of(adminRole, userRole, instructorRole))
                     .build();
 
             User normalUser = User.builder()

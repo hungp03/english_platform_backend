@@ -1,35 +1,31 @@
 package com.english.api.user.dto.response;
 
+import com.english.api.user.model.InstructorRequest;
+
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
-public record InstructorRequestListResponse(
-    List<InstructorRequestItem> content,
-    int page,
-    int size,
-    long totalElements,
-    int totalPages,
-    boolean first,
-    boolean last,
-    boolean empty
-) {
+/**
+ * Response DTO for InstructorRequest list (admin view)
+ * Created by hungpham on 10/29/2025
+ */
+public class InstructorRequestListResponse {
+
     public record InstructorRequestItem(
-        UUID id,
-        UserSimpleResponse user,
-        String status,
-        String bio,
-        String expertise,
-        Integer experienceYears,
-        Instant requestedAt,
-        Instant reviewedAt
+            UUID id,
+            UserSimpleResponse user,
+            InstructorRequest.Status status,
+            Instant requestedAt,
+            Instant reviewedAt,
+            String reviewedByName
     ) {
     }
 
     public record UserSimpleResponse(
-        UUID id,
-        String fullName,
-        String email
+            UUID id,
+            String fullName,
+            String email,
+            String avatarUrl
     ) {
     }
 }

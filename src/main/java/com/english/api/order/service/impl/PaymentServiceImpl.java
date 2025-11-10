@@ -3,12 +3,10 @@ package com.english.api.order.service.impl;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.order.dto.request.PayOSCheckoutRequest;
 import com.english.api.order.dto.request.StripeCheckoutRequest;
-import com.english.api.order.dto.response.PayOSCheckoutResponse;
 import com.english.api.order.dto.response.PaymentResponse;
 import com.english.api.order.dto.response.StripeCheckoutResponse;
 import com.english.api.order.mapper.OrderMapper;
 import com.english.api.order.model.Payment;
-import com.english.api.order.model.enums.PaymentProvider;
 import com.english.api.order.repository.PaymentRepository;
 import com.english.api.order.service.PayOSPaymentService;
 import com.english.api.order.service.PaymentService;
@@ -40,7 +38,6 @@ public class PaymentServiceImpl implements PaymentService {
         return stripePaymentService.createCheckoutSession(request);
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public List<PaymentResponse> getPaymentsByOrder(UUID orderId) {
@@ -55,15 +52,6 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponse getPaymentById(UUID paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found with ID: " + paymentId));
-        return orderMapper.toPaymentResponse(payment);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public PaymentResponse getPaymentByProviderTxn(PaymentProvider provider, String providerTxn) {
-        Payment payment = paymentRepository.findByProviderAndProviderTxn(provider, providerTxn)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        String.format("Payment not found for provider %s with transaction %s", provider, providerTxn)));
         return orderMapper.toPaymentResponse(payment);
     }
 

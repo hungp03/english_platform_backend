@@ -11,18 +11,30 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "courses")
+@Table(
+    name = "courses",
+    indexes = {
+        @Index(name = "idx_courses_slug", columnList = "slug"),
+        @Index(name = "idx_courses_status", columnList = "status"),
+        @Index(name = "idx_courses_created_by", columnList = "created_by"),
+        @Index(name = "idx_courses_status_published", columnList = "status, published_at"),
+        @Index(name = "idx_courses_created_at", columnList = "created_at"),
+        @Index(name = "idx_courses_is_deleted", columnList = "is_deleted")
+    }
+)
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @SQLRestriction("is_deleted = false")
-public class Course {
+public class Course implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     private UUID id;

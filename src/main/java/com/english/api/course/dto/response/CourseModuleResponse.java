@@ -1,5 +1,6 @@
 package com.english.api.course.dto.response;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -11,6 +12,6 @@ public record CourseModuleResponse(
         Integer position,
         Boolean published,
         Long lessonCount
-) {}
+) implements Serializable {}
 
 

@@ -56,6 +56,12 @@ public class Order {
     @Column(name = "paid_at")
     private OffsetDateTime paidAt;
 
+    @Column(name = "cancel_reason", columnDefinition = "TEXT")
+    private String cancelReason;
+
+    @Column(name = "cancel_at")
+    private OffsetDateTime cancelAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items;
 

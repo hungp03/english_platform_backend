@@ -74,10 +74,17 @@ public class RedisConfig {
 
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
 
-        cacheConfigurations.put("userStatus", RedisCacheConfiguration.defaultCacheConfig()
+        cacheConfigurations.put("user_status", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(15))
                 .disableCachingNullValues());
 
+        cacheConfigurations.put("courses", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1))
+                .disableCachingNullValues());
+
+        cacheConfigurations.put("course_module", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1))
+                .disableCachingNullValues());
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)

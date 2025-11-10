@@ -2,6 +2,7 @@ package com.english.api.order.service.impl;
 
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
+import com.english.api.enrollment.service.EnrollmentService;
 import com.english.api.order.dto.request.StripeCheckoutRequest;
 import com.english.api.order.dto.response.StripeCheckoutResponse;
 import com.english.api.order.model.Order;
@@ -13,6 +14,7 @@ import com.english.api.order.model.enums.PaymentStatus;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.repository.PaymentRepository;
 import com.english.api.order.service.StripePaymentService;
+import com.english.api.order.service.InvoiceService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.exception.SignatureVerificationException;
@@ -42,6 +44,8 @@ public class StripePaymentServiceImpl implements StripePaymentService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
+    private final InvoiceService invoiceService;
+    private final EnrollmentService enrollmentService;
 
     @Value("${stripe.webhook-secret}")
     private String webhookSecret;
@@ -57,12 +61,10 @@ public class StripePaymentServiceImpl implements StripePaymentService {
     public StripeCheckoutResponse createCheckoutSession(StripeCheckoutRequest request) {
         Order order = orderRepository.findById(request.orderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + request.orderId()));
-
         // Validate order status
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new ResourceInvalidException("Order must be in PENDING status to create checkout session");
         }
-
         // Check if payment already exists
         paymentRepository.findTopByOrderIdAndProviderOrderByCreatedAtDesc(order.getId(), PaymentProvider.STRIPE)
                 .ifPresent(payment -> {
@@ -70,7 +72,16 @@ public class StripePaymentServiceImpl implements StripePaymentService {
                         throw new ResourceInvalidException("Order already has a successful payment");
                     }
                 });
-
+        String successUrl = String.format(
+                "%s?orderId=%s&session_id={CHECKOUT_SESSION_ID}",
+                defaultSuccessUrl,
+                order.getId()
+        );
+        String cancelUrl = String.format(
+                "%s?orderId=%s&session_id={CHECKOUT_SESSION_ID}",
+                defaultCancelUrl,
+                order.getId()
+        );
         try {
             // Build line items from order items
             List<SessionCreateParams.LineItem> lineItems = order.getItems().stream()
@@ -81,11 +92,10 @@ public class StripePaymentServiceImpl implements StripePaymentService {
             SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
                     .addAllLineItem(lineItems)
                     .setMode(SessionCreateParams.Mode.PAYMENT)
-                    .setSuccessUrl(defaultSuccessUrl)
-                    .setCancelUrl(defaultCancelUrl)
+                    .setSuccessUrl(successUrl)
+                    .setCancelUrl(cancelUrl)
                     .putMetadata("orderId", order.getId().toString())
                     .putMetadata("userId", order.getUser().getId().toString());
-
             // Add customer email if provided
             if (request.customerEmail() != null && !request.customerEmail().isEmpty()) {
                 paramsBuilder.setCustomerEmail(request.customerEmail());
@@ -104,9 +114,7 @@ public class StripePaymentServiceImpl implements StripePaymentService {
                     .rawPayload(serializeToJson(session))
                     .build();
             paymentRepository.save(payment);
-
             return new StripeCheckoutResponse(session.getId(), session.getUrl(), "CREATED");
-
         } catch (StripeException e) {
             throw new RuntimeException("Failed to create Stripe checkout session: " + e.getMessage());
         }
@@ -137,8 +145,8 @@ public class StripePaymentServiceImpl implements StripePaymentService {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
 
-            // Find payment
-            Payment payment = paymentRepository.findByProviderAndProviderTxn(
+            // Find payment with eager loading để tránh N+1 queries
+            Payment payment = paymentRepository.findByProviderAndProviderTxnWithOrderDetails(
                             PaymentProvider.STRIPE, session.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Payment not found for session: " + session.getId()));
 
@@ -154,29 +162,22 @@ public class StripePaymentServiceImpl implements StripePaymentService {
                     order.setStatus(OrderStatus.PAID);
                     order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
                     orderRepository.save(order);
+                    // Create enrollments for purchased courses
+                    enrollmentService.createEnrollmentsAfterPayment(order);
+                    
+                    // Generate and send invoice asynchronously
+                    invoiceService.generateAndSendInvoiceAsync(order, payment);
                 }
 
             } else {
 //                "Payment already marked as successful"
             }
-
         } catch (Exception e) {
             throw new RuntimeException("Failed to process successful checkout", e);
         }
     }
 
-    @Override
-    public JsonNode getCheckoutSession(String sessionId) {
-        try {
-            Session session = Session.retrieve(sessionId);
-            return objectMapper.readTree(session.toJson());
-        } catch (StripeException e) {
-            throw new RuntimeException("Failed to retrieve checkout session: " + e.getMessage());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse Stripe session to JSON", e);
-        }
-    }
-
+  
 
     /**
      * Build Stripe line item from order item

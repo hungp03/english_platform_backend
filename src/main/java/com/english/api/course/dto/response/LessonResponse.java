@@ -2,6 +2,7 @@ package com.english.api.course.dto.response;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,4 +21,4 @@ public record LessonResponse(
         JsonNode content,
         UUID primaryMediaId,
         List<UUID> attachmentIds
-) {}
+) implements Serializable {}

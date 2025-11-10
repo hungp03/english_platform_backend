@@ -1,0 +1,176 @@
+package com.english.api.order.service.impl;
+
+import com.english.api.mail.service.MailService;
+import com.english.api.order.model.Invoice;
+import com.english.api.order.model.Order;
+import com.english.api.order.model.Payment;
+import com.english.api.order.repository.InvoiceRepository;
+import com.english.api.order.service.InvoiceService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.text.NumberFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class InvoiceServiceImpl implements InvoiceService {
+
+    private final InvoiceRepository invoiceRepository;
+    private final S3AsyncClient s3Client;
+    private final MailService mailService;
+    private final SpringTemplateEngine templateEngine;
+    private final ObjectMapper objectMapper;
+
+    @Value("${cloud.public-url}")
+    private String publicUrl;
+
+    @Value("${cloud.bucket}")
+    private String bucket;
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final NumberFormat VND_FORMAT = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
+
+    @Async
+    @Transactional
+    @Override
+    public void generateAndSendInvoiceAsync(Order order, Payment payment) {
+        try {
+            // Generate invoice number
+            String invoiceNumber = generateInvoiceNumber(order);
+
+            // Generate PDF
+            byte[] pdfBytes = generateInvoicePdf(order, payment, invoiceNumber);
+
+            // Upload to S3
+            String filename = invoiceNumber + ".pdf";
+            String key = "invoices/" + filename;
+            
+            PutObjectRequest putRequest = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .contentType("application/pdf")
+                    .build();
+
+            s3Client.putObject(putRequest, AsyncRequestBody.fromBytes(pdfBytes)).join();
+
+            String fileUrl = String.join("/", publicUrl.replaceAll("/+$", ""), key);
+
+            // Save invoice record
+            Map<String, Object> invoiceData = buildInvoiceData(order, payment, invoiceNumber);
+            Invoice invoice = Invoice.builder()
+                    .order(order)
+                    .number(invoiceNumber)
+                    .totalCents(order.getTotalCents())
+                    .currency(order.getCurrency())
+                    .data(objectMapper.writeValueAsString(invoiceData))
+                    .fileUrl(fileUrl)
+                    .build();
+            invoiceRepository.save(invoice);
+
+            // Send email with invoice attachment
+            mailService.sendInvoiceEmail(
+                    order.getUser().getEmail(),
+                    order,
+                    payment,
+                    invoice
+            );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String generateInvoiceNumber(Order order) {
+        String timestamp = order.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        return "INV" + timestamp + order.getId().toString().substring(0, 8).toUpperCase();
+    }
+
+    private byte[] generateInvoicePdf(Order order, Payment payment, String invoiceNumber) throws Exception {
+        // Prepare context with data
+        Context context = new Context();
+        context.setVariable("invoiceNumber", invoiceNumber);
+        context.setVariable("createdDate", order.getCreatedAt().format(DATE_FORMATTER));
+        context.setVariable("paidDate", order.getPaidAt() != null ? order.getPaidAt().format(DATE_FORMATTER) : "");
+        
+        // Customer info
+        context.setVariable("customerName", order.getUser().getFullName());
+        context.setVariable("customerEmail", order.getUser().getEmail());
+        context.setVariable("customerId", order.getUser().getId().toString().substring(0, 8).toUpperCase());
+        
+        // Order info
+        context.setVariable("orderId", order.getId().toString().substring(0, 8).toUpperCase());
+        context.setVariable("orderItems", order.getItems());
+        
+        // Payment info
+        context.setVariable("paymentMethod", payment.getProvider().name());
+        context.setVariable("paymentTxn", payment.getProviderTxn());
+        context.setVariable("paymentTime", payment.getConfirmedAt() != null ? 
+                payment.getConfirmedAt().format(DATETIME_FORMATTER) : "");
+        
+        // Amount formatting
+        context.setVariable("currency", order.getCurrency().name());
+        context.setVariable("totalAmount", formatCurrency(order.getTotalCents()));
+        context.setVariable("totalAmountCents", order.getTotalCents());
+        
+        // Process template to HTML
+        String htmlContent = templateEngine.process("invoice", context);
+
+        // Convert HTML to PDF using OpenHTMLtoPDF with PDFBox
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.useFastMode();
+            
+            // Load fonts for Vietnamese character support
+            try {
+                builder.useFont(() -> getClass().getResourceAsStream("/fonts/DejaVuSans.ttf"), 
+                        "DejaVu Sans", 400, 
+                        com.openhtmltopdf.pdfboxout.PdfRendererBuilder.FontStyle.NORMAL, true);
+                
+                builder.useFont(() -> getClass().getResourceAsStream("/fonts/DejaVuSans-Bold.ttf"), 
+                        "DejaVu Sans", 700, 
+                        com.openhtmltopdf.pdfboxout.PdfRendererBuilder.FontStyle.NORMAL, true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
+            builder.withHtmlContent(htmlContent, null);
+            builder.toStream(os);
+            builder.run();
+            
+            return os.toByteArray();
+        }
+    }
+
+    private Map<String, Object> buildInvoiceData(Order order, Payment payment, String invoiceNumber) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("invoiceNumber", invoiceNumber);
+        data.put("orderId", order.getId().toString());
+        data.put("paymentId", payment.getId().toString());
+        data.put("customerEmail", order.getUser().getEmail());
+        data.put("totalCents", order.getTotalCents());
+        data.put("currency", order.getCurrency().name());
+        data.put("paymentProvider", payment.getProvider().name());
+        return data;
+    }
+
+    private String formatCurrency(Long cents) {
+        return VND_FORMAT.format(cents) + "đ";
+    }
+}

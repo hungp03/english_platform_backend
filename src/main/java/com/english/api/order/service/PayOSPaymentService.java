@@ -17,7 +17,4 @@ public interface PayOSPaymentService {
     // Xử lý webhook callback
     @Transactional
     void handleWebhook(vn.payos.type.Webhook webhookBody);
-
-    @Transactional
-    void cancelPayment(UUID orderId);
 }

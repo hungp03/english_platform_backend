@@ -1,7 +1,6 @@
 package com.english.api.common.service.impl;
 
 import com.english.api.common.dto.MediaUploadResponse;
-import com.english.api.common.exception.CannotDeleteException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.service.MediaService;
 import lombok.RequiredArgsConstructor;
@@ -37,18 +36,25 @@ public class MediaServiceImpl implements MediaService {
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp",
             "audio/mpeg", "audio/wav", "audio/ogg", "audio/x-wav", "audio/mp4", "audio/webm",
-            "application/pdf"
-    );
+            "application/pdf");
 
     // Chỉ các loại ảnh (dùng cho folder users)
     private static final Set<String> IMAGE_MIME_TYPES = Set.of(
-            "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp"
+            "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp");
+
+    private static final Set<String> PROOF_MIME_TYPES = Set.of(
+            "image/png", "image/jpeg", "image/webp", "application/pdf");
+
+    private static final Set<String> INVOICE_MIME_TYPES = Set.of(
+            "application/pdf"
     );
 
     private static final Map<String, FolderRule> FOLDER_RULES = Map.of(
             "users", new FolderRule(2 * 1024 * 1024, IMAGE_MIME_TYPES), // 2MB, chỉ ảnh
-            "forums", new FolderRule(50 * 1024 * 1024, ALLOWED_MIME_TYPES),// 50MB, tất cả loại hợp lệ
-            "course_thumbnail", new FolderRule(5 * 1024 * 1024, IMAGE_MIME_TYPES) // 5MB, chỉ ảnh
+            "certificate_proofs", new FolderRule(5 * 1024 * 1024, PROOF_MIME_TYPES),
+            "forums", new FolderRule(50 * 1024 * 1024, ALLOWED_MIME_TYPES), // 50MB, tất cả loại hợp lệ
+            "course_thumbnail", new FolderRule(2 * 1024 * 1024, IMAGE_MIME_TYPES) ,// 2MB, chỉ ảnh
+            "invoices", new FolderRule(2 * 1024 * 1024, INVOICE_MIME_TYPES)
     );
 
     // Inner class chứa rule cho từng folder
@@ -61,7 +67,6 @@ public class MediaServiceImpl implements MediaService {
             this.allowedTypes = allowedTypes;
         }
     }
-
 
     @Override
     public MediaUploadResponse uploadFile(MultipartFile file, String folder) throws IOException {
@@ -87,36 +92,30 @@ public class MediaServiceImpl implements MediaService {
             throw new ResourceInvalidException("Unknown content type.");
         }
 
-
         // Xác định quy tắc theo thư mục upload
         FolderRule rule = FOLDER_RULES.entrySet().stream()
                 .filter(e -> folder.startsWith(e.getKey()))
                 .map(Map.Entry::getValue)
                 .findFirst()
-                .orElseThrow(() ->
-                        new ResourceInvalidException("Unknown or unauthorized upload folder: " + folder)
-                );
+                .orElseThrow(() -> new ResourceInvalidException("Unknown or unauthorized upload folder: " + folder));
 
         // Kiểm tra loại MIME
         if (!rule.allowedTypes.contains(contentType)) {
             throw new ResourceInvalidException(String.format(
-                    "File type '%s' is not allowed in folder '%s'.", contentType, folder
-            ));
+                    "File type '%s' is not allowed in folder '%s'.", contentType, folder));
         }
 
         // Kiểm tra dung lượng tối đa
         if (file.getSize() > rule.maxSize) {
             throw new ResourceInvalidException(String.format(
                     "File size exceeds the limit for folder '%s' (%.2f MB max).",
-                    folder, rule.maxSize / 1024.0 / 1024.0
-            ));
+                    folder, rule.maxSize / 1024.0 / 1024.0));
         }
 
         // Kiểm tra phần mở rộng file
         if (!originalFilename.matches("(?i).+\\.(png|jpe?g|gif|webp|bmp|mp3|wav|ogg|mp4|webm|pdf)$")) {
             throw new ResourceInvalidException("Unsupported file extension.");
         }
-
 
         // Upload lên S3
         String extension = "";
@@ -127,8 +126,7 @@ public class MediaServiceImpl implements MediaService {
         String filename = UUID.randomUUID() + extension;
         String key = String.format("%s/%s",
                 folder.replaceAll("^/+", "").replaceAll("/+$", ""),
-                filename
-        );
+                filename);
 
         PutObjectRequest req = PutObjectRequest.builder()
                 .bucket(bucket)
@@ -136,8 +134,8 @@ public class MediaServiceImpl implements MediaService {
                 .contentType(contentType)
                 .build();
 
-        CompletableFuture<PutObjectResponse> future =
-                s3Client.putObject(req, AsyncRequestBody.fromBytes(file.getBytes()));
+        CompletableFuture<PutObjectResponse> future = s3Client.putObject(req,
+                AsyncRequestBody.fromBytes(file.getBytes()));
 
         future.join();
 
@@ -147,8 +145,7 @@ public class MediaServiceImpl implements MediaService {
                 filename,
                 url,
                 file.getSize(),
-                contentType
-        );
+                contentType);
     }
 
     @Override
@@ -170,33 +167,37 @@ public class MediaServiceImpl implements MediaService {
                 .collect(Collectors.toList());
     }
 
-//    @Override
-//    public void deleteFile(String key) {
-//        try {
-//            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
-//                    .bucket(bucket)
-//                    .key(key)
-//                    .build();
-//
-//            CompletableFuture<DeleteObjectResponse> future = s3Client.deleteObject(deleteRequest);
-//
-//            // Chờ hoàn tất (vì đang dùng Tomcat → blocking model)
-//            future.join();
-//
-//        } catch (CompletionException e) {
-//            // bắt lỗi từ future
-//            if (e.getCause() instanceof S3Exception) {
-//                throw new CannotDeleteException("Failed to delete file from S3: " + e.getCause().getMessage());
-//            }
-//            throw new CannotDeleteException("Failed to delete file from S3");
-//        } catch (S3Exception e) {
-//            throw new CannotDeleteException("Failed to delete file from S3: " + e.getMessage());
-//        }
-//    }
+    // @Override
+    // public void deleteFile(String key) {
+    // try {
+    // DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+    // .bucket(bucket)
+    // .key(key)
+    // .build();
+    //
+    // CompletableFuture<DeleteObjectResponse> future =
+    // s3Client.deleteObject(deleteRequest);
+    //
+    // // Chờ hoàn tất (vì đang dùng Tomcat → blocking model)
+    // future.join();
+    //
+    // } catch (CompletionException e) {
+    // // bắt lỗi từ future
+    // if (e.getCause() instanceof S3Exception) {
+    // throw new CannotDeleteException("Failed to delete file from S3: " +
+    // e.getCause().getMessage());
+    // }
+    // throw new CannotDeleteException("Failed to delete file from S3");
+    // } catch (S3Exception e) {
+    // throw new CannotDeleteException("Failed to delete file from S3: " +
+    // e.getMessage());
+    // }
+    // }
 
     @Override
     public void deleteFileByUrl(String fileUrl) {
-        if (fileUrl == null || fileUrl.isBlank()) return;
+        if (fileUrl == null || fileUrl.isBlank())
+            return;
         try {
             URI uri = URI.create(fileUrl);
 
@@ -212,6 +213,5 @@ public class MediaServiceImpl implements MediaService {
             e.printStackTrace();
         }
     }
-
 
 }

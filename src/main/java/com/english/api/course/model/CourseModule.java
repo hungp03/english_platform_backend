@@ -3,21 +3,32 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
  * Created by hungpham on 10/1/2025
  */
 @Entity
-@Table(name = "course_modules", uniqueConstraints = {
+@Table(
+    name = "course_modules",
+    uniqueConstraints = {
         @UniqueConstraint(columnNames = {"course_id", "position"})
-})
+    },
+    indexes = {
+        @Index(name = "idx_course_modules_course_id", columnList = "course_id"),
+        @Index(name = "idx_course_modules_published", columnList = "published"),
+        @Index(name = "idx_course_modules_course_position", columnList = "course_id, position")
+    }
+)
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CourseModule {
+public class CourseModule implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     @Id
     private UUID id;
 

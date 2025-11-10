@@ -5,6 +5,8 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -36,8 +38,12 @@ public class Invoice {
     @Column(nullable = false)
     private CurrencyType currency = CurrencyType.VND;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
     private String data;
+
+    @Column(name = "file_url")
+    private String fileUrl;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
