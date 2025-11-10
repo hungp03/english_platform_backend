@@ -47,4 +47,9 @@ public class AdminQuestionController {
     public ResponseEntity<PaginationResponse> listByQuiz(@PathVariable UUID quizId, Pageable pageable) {
         return ResponseEntity.ok(service.listByQuiz(quizId, pageable));
     }
+
+    @GetMapping("/by-section/{sectionId}")
+    public ResponseEntity<PaginationResponse> listBySection(@PathVariable UUID sectionId, Pageable pageable) {
+        return ResponseEntity.ok(service.listBySection(sectionId, pageable));
+    }
 }

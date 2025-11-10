@@ -11,8 +11,9 @@ public record QuizUpdateRequest(
         @Size(max = 255) String title,
         @Size(max = 2000) String description,
         QuizStatus status,
-        QuizSkill skill,
+        // QuizSkill skill,
         UUID quizTypeId,
+        UUID quizSectionId,
         String contextText,
         String questionText,
         String explanation

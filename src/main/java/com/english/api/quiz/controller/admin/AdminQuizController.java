@@ -50,12 +50,14 @@ public class AdminQuizController {
             Pageable pageable,
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(required = false) UUID quizTypeId,
+            @RequestParam(required = false) UUID quizSectionId,
             @RequestParam(required = false) QuizStatus status,
             @RequestParam(required = false) QuizSkill skill
     ) {
         return ResponseEntity.ok(service.search(
                 (keyword == null || keyword.isBlank()) ? null : keyword,
                 quizTypeId,
+                quizSectionId,
                 status,
                 skill,
                 pageable

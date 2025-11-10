@@ -13,8 +13,9 @@ public record QuizCreateRequest(
         @NotBlank @Size(max = 255) String title,
         @Size(max = 2000) String description,
         @NotNull QuizStatus status,
-        @NotNull QuizSkill skill,
+        // @NotNull QuizSkill skill,
         @NotNull UUID quizTypeId,
+        UUID quizSectionId,
         String contextText,
         String questionText, 
         String explanation 

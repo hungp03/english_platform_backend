@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record QuizTypeResponse(
         UUID id,
-        String code,
+        // String code,
         String name,
         String description,
         Instant createdAt,

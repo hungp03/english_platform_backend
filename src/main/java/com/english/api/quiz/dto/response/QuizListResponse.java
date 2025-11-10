@@ -6,10 +6,9 @@ import java.util.UUID;
 import com.english.api.quiz.enums.QuizSkill;
 import com.english.api.quiz.enums.QuizStatus;
 
-public record QuizResponse(
+public record QuizListResponse(
         UUID id,
         String title,
-        String description,
         QuizStatus status,
         QuizSkill skill,
         // String skill,
@@ -18,8 +17,5 @@ public record QuizResponse(
         String quizSectionName,
         String quizTypeName,
         Instant createdAt,
-        Instant updatedAt,
-        String contextText,
-        String questionText,
-        String explanation
+        Instant updatedAt
 ) {}

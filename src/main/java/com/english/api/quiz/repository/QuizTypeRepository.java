@@ -7,6 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface QuizTypeRepository extends JpaRepository<QuizType, UUID> {
-    Optional<QuizType> findByCodeIgnoreCase(String code);
-    boolean existsByCodeIgnoreCase(String code);
+    // Optional<QuizType> findByCodeIgnoreCase(String code);
+    // boolean existsByCodeIgnoreCase(String code);
 }

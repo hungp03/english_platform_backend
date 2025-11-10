@@ -1,13 +1,14 @@
+
 package com.english.api.quiz.model;
 
 import jakarta.persistence.*;
-import lombok.*;
-import com.github.f4b6a3.uuid.UuidCreator;
-
 import java.time.Instant;
 import java.util.UUID;
-import java.util.Set;
-import java.util.HashSet;
+
+import com.english.api.quiz.enums.QuizSkill;
+
+import lombok.*;
+import com.github.f4b6a3.uuid.UuidCreator;
 
 @Getter
 @Setter
@@ -15,21 +16,25 @@ import java.util.HashSet;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "quiz_types")
-public class QuizType {
+@Table(name = "quiz_sections")
+public class QuizSection {
 
     @Id
     private UUID id;
 
-
     @Column(nullable = false, length = 255)
     private String name;
 
-    @Column(length = 512)
+    @Column(length = 1000)
     private String description;
 
-    @OneToMany(mappedBy = "quizType", fetch = FetchType.LAZY)
-    private Set<Quiz> quizzes = new HashSet<>();
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private QuizSkill skill;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quiz_type_id", nullable = false)
+    private QuizType quizType;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
