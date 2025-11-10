@@ -1,6 +1,7 @@
 package com.english.api.common.service.impl;
 
 import com.english.api.common.dto.MediaUploadResponse;
+import com.english.api.common.exception.CannotDeleteException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.service.MediaService;
 import lombok.RequiredArgsConstructor;
