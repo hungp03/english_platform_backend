@@ -36,15 +36,37 @@ public class ForumCategoryServiceImpl implements ForumCategoryService {
     return toDto(repo.save(cat));
   }
 
+  // @Override
+  // @Transactional
+  // public ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest req) {
+  //   var cat = repo.findById(id).orElseThrow();
+  //   if (req.name() != null) cat.setName(req.name());
+  //   if (req.slug() != null) cat.setSlug(SlugUtil.slugify(req.slug()));
+  //   if (req.description() != null) cat.setDescription(req.description());
+  //   return toDto(repo.save(cat));
+  // }
   @Override
-  @Transactional
-  public ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest req) {
+@Transactional
+public ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest req) {
     var cat = repo.findById(id).orElseThrow();
-    if (req.name() != null) cat.setName(req.name());
-    if (req.slug() != null) cat.setSlug(SlugUtil.slugify(req.slug()));
-    if (req.description() != null) cat.setDescription(req.description());
+
+    if (req.name() != null) {
+        cat.setName(req.name());
+        if (req.slug() == null || req.slug().isBlank()) {
+            cat.setSlug(SlugUtil.slugify(req.name()));
+        }
+    }
+
+    if (req.slug() != null && !req.slug().isBlank()) {
+        cat.setSlug(SlugUtil.slugify(req.slug()));
+    }
+
+    if (req.description() != null) {
+        cat.setDescription(req.description());
+    }
+
     return toDto(repo.save(cat));
-  }
+}
 
   @Override
   @Transactional

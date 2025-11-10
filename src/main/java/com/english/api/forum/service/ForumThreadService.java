@@ -15,4 +15,5 @@ public interface ForumThreadService {
   ForumThreadResponse adminLock(UUID id, boolean lock);
   ForumThreadResponse lockByOwner(UUID id, boolean lock);
   void delete(UUID id);
+  PaginationResponse listByAuthor(UUID authorId, Pageable pageable);
 }

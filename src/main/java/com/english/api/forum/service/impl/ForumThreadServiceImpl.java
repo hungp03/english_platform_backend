@@ -114,6 +114,17 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     threadRepo.deleteById(id);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public PaginationResponse listByAuthor(UUID authorId, Pageable pageable) {
+      // UUID uid = SecurityUtil.getCurrentUserId();
+      Page<ForumThread> page = threadRepo.findByAuthorIdOrderByCreatedAtDesc(authorId, pageable);
+      var mapped = page.getContent().stream()
+          .map(this::toListDto) // đã có sẵn trong class
+          .toList();
+      return PaginationResponse.from(new PageImpl<>(mapped, pageable, page.getTotalElements()), pageable);
+  }
+
   private ForumThreadResponse toDto(ForumThread t) {
     var tcs = threadCatRepo.findByThread(t);
     var cats = tcs.stream()

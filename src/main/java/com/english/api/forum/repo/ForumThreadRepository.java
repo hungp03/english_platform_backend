@@ -27,4 +27,6 @@ public interface ForumThreadRepository extends JpaRepository<ForumThread, UUID> 
                            @Param("categoryId") UUID categoryId,
                            @Param("locked") Boolean locked,
                            Pageable pageable);
+  
+  Page<ForumThread> findByAuthorIdOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
 }

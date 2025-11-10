@@ -1,5 +1,6 @@
 package com.english.api.forum.controller;
 
+import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.forum.dto.request.ForumPostCreateRequest;
 import com.english.api.forum.dto.request.ForumReportCreateRequest;
@@ -11,6 +12,8 @@ import com.english.api.forum.entity.ReportTargetType;
 import com.english.api.forum.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -80,5 +83,16 @@ public class AppForumController {
   public ResponseEntity<Void> deleteOwnPost(@PathVariable java.util.UUID id) {
     postService.deleteByOwner(id);
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/me/threads")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<PaginationResponse> myThreads(
+          @RequestParam(defaultValue = "1") int page,
+          @RequestParam(defaultValue = "20") int pageSize
+  ) {
+      PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
+      UUID uid = SecurityUtil.getCurrentUserId();
+      return ResponseEntity.ok(threadService.listByAuthor(uid, pageable));
   }
 }
