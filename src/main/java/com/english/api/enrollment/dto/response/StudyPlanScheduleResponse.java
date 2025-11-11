@@ -10,5 +10,7 @@ public record StudyPlanScheduleResponse(
     OffsetDateTime startTime,
     Integer durationMin,
     String taskDesc,
-    StudyPlanSchedule.TaskStatus status
+    StudyPlanSchedule.TaskStatus status,
+    Boolean syncToCalendar,
+    String googleCalendarEventId
 ) {}

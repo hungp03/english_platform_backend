@@ -16,6 +16,7 @@ import com.english.api.enrollment.model.StudyPlan;
 import com.english.api.enrollment.model.StudyPlanSchedule;
 import com.english.api.enrollment.repository.StudyPlanRepository;
 import com.english.api.enrollment.repository.StudyPlanScheduleRepository;
+import com.english.api.enrollment.service.GoogleCalendarService;
 import com.english.api.enrollment.service.StudyPlanService;
 import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class StudyPlanServiceImpl implements StudyPlanService {
     private final StudyPlanRepository studyPlanRepository;
     private final StudyPlanScheduleRepository studyPlanScheduleRepository;
     private final StudyPlanMapper studyPlanMapper;
+    private final GoogleCalendarService googleCalendarService;
 
     @Override
     @Transactional
@@ -59,6 +61,9 @@ public class StudyPlanServiceImpl implements StudyPlanService {
 
         StudyPlan saved = studyPlanRepository.save(studyPlan);
         log.info("Created study plan with id: {} for user: {}", saved.getId(), currentUserId);
+
+        // Sync schedules with Google Calendar
+        syncSchedulesToGoogleCalendar(saved.getSchedules(), currentUserId);
 
         return studyPlanMapper.toResponse(saved);
     }
@@ -97,6 +102,9 @@ public class StudyPlanServiceImpl implements StudyPlanService {
                     if (scheduleReq.status() != null) {
                         existingSchedule.setStatus(scheduleReq.status());
                     }
+                    if (scheduleReq.syncToCalendar() != null) {
+                        existingSchedule.setSyncToCalendar(scheduleReq.syncToCalendar());
+                    }
                 } else {
                     StudyPlanSchedule newSchedule = studyPlanMapper.toScheduleEntity(scheduleReq, studyPlan);
                     studyPlan.getSchedules().add(newSchedule);
@@ -107,6 +115,9 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         StudyPlan updated = studyPlanRepository.save(studyPlan);
         log.info("Updated study plan: {} for user: {}", id, currentUserId);
 
+        // Sync all schedules with Google Calendar
+        syncSchedulesToGoogleCalendar(updated.getSchedules(), currentUserId);
+
         return studyPlanMapper.toDetailResponse(updated);
     }
 
@@ -116,8 +127,14 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         log.debug("Deleting study plan: {} for user: {}", id, currentUserId);
 
-        if (!studyPlanRepository.existsByIdAndUserId(id, currentUserId)) {
-            throw new ResourceNotFoundException("Study plan not found or you don't have permission");
+        StudyPlan studyPlan = studyPlanRepository.findByIdAndUserIdWithSchedules(id, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Study plan not found or you don't have permission"));
+
+        // Delete all associated Google Calendar events
+        for (StudyPlanSchedule schedule : studyPlan.getSchedules()) {
+            if (schedule.getGoogleCalendarEventId() != null) {
+                googleCalendarService.deleteCalendarEvent(schedule.getGoogleCalendarEventId(), currentUserId);
+            }
         }
 
         studyPlanRepository.deleteById(id);
@@ -163,9 +180,12 @@ public class StudyPlanServiceImpl implements StudyPlanService {
 
         StudyPlanSchedule schedule = studyPlanMapper.toScheduleEntity(request, studyPlan);
         studyPlan.getSchedules().add(schedule);
-        
+
         StudyPlanSchedule saved = studyPlanScheduleRepository.save(schedule);
         log.info("Added schedule {} to plan {} for user {}", saved.getId(), planId, currentUserId);
+
+        // Sync to Google Calendar
+        syncScheduleToGoogleCalendar(saved, currentUserId);
 
         return studyPlanMapper.toScheduleResponse(saved);
     }
@@ -190,9 +210,15 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         if (request.status() != null) {
             schedule.setStatus(request.status());
         }
+        if (request.syncToCalendar() != null) {
+            schedule.setSyncToCalendar(request.syncToCalendar());
+        }
 
         studyPlanScheduleRepository.save(schedule);
         log.info("Updated schedule {} in plan {} for user {}", scheduleId, planId, currentUserId);
+
+        // Sync to Google Calendar
+        syncScheduleToGoogleCalendar(schedule, currentUserId);
 
         return studyPlanMapper.toDetailResponse(studyPlan);
     }
@@ -206,12 +232,17 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         StudyPlan studyPlan = studyPlanRepository.findByIdAndUserIdWithSchedules(planId, currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Study plan not found or you don't have permission"));
 
-        boolean removed = studyPlan.getSchedules().removeIf(s -> s.getId().equals(scheduleId));
-        
-        if (!removed) {
-            throw new ResourceNotFoundException("Schedule not found in this plan");
+        StudyPlanSchedule scheduleToDelete = studyPlan.getSchedules().stream()
+                .filter(s -> s.getId().equals(scheduleId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found in this plan"));
+
+        // Delete from Google Calendar if exists
+        if (scheduleToDelete.getGoogleCalendarEventId() != null) {
+            googleCalendarService.deleteCalendarEvent(scheduleToDelete.getGoogleCalendarEventId(), currentUserId);
         }
 
+        studyPlan.getSchedules().remove(scheduleToDelete);
         studyPlanScheduleRepository.deleteById(scheduleId);
         log.info("Deleted schedule {} from plan {} for user {}", scheduleId, planId, currentUserId);
     }
@@ -239,5 +270,49 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         studyPlanScheduleRepository.save(schedule);
         log.info("Toggled schedule {} status to {} in plan {} for user {}",
                 scheduleId, newStatus, planId, currentUserId);
+    }
+
+    private void syncSchedulesToGoogleCalendar(List<StudyPlanSchedule> schedules, UUID userId) {
+        if (!googleCalendarService.isCalendarIntegrationEnabled(userId)) {
+            log.debug("Google Calendar integration not enabled for user {}", userId);
+            return;
+        }
+
+        for (StudyPlanSchedule schedule : schedules) {
+            syncScheduleToGoogleCalendar(schedule, userId);
+        }
+    }
+
+    private void syncScheduleToGoogleCalendar(StudyPlanSchedule schedule, UUID userId) {
+        if (!googleCalendarService.isCalendarIntegrationEnabled(userId)) {
+            log.debug("Google Calendar integration not enabled for user {}", userId);
+            return;
+        }
+
+        try {
+            // Check if user wants to sync this schedule to calendar
+            if (Boolean.TRUE.equals(schedule.getSyncToCalendar())) {
+                if (schedule.getGoogleCalendarEventId() == null) {
+                    // Create new event
+                    String eventId = googleCalendarService.createCalendarEvent(schedule, userId);
+                    if (eventId != null) {
+                        schedule.setGoogleCalendarEventId(eventId);
+                        studyPlanScheduleRepository.save(schedule);
+                    }
+                } else {
+                    // Update existing event
+                    googleCalendarService.updateCalendarEvent(schedule, userId);
+                }
+            } else {
+                // User doesn't want to sync, delete calendar event if it exists
+                if (schedule.getGoogleCalendarEventId() != null) {
+                    googleCalendarService.deleteCalendarEvent(schedule.getGoogleCalendarEventId(), userId);
+                    schedule.setGoogleCalendarEventId(null);
+                    studyPlanScheduleRepository.save(schedule);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error syncing schedule {} to Google Calendar", schedule.getId(), e);
+        }
     }
 }

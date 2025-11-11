@@ -26,14 +26,18 @@ public interface StudyPlanMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "googleCalendarEventId", ignore = true)
     @Mapping(target = "plan", source = "plan")
     @Mapping(target = "status", expression = "java(request.status() != null ? request.status() : com.english.api.enrollment.model.StudyPlanSchedule.TaskStatus.PENDING)")
+    @Mapping(target = "syncToCalendar", expression = "java(request.syncToCalendar() != null ? request.syncToCalendar() : false)")
     StudyPlanSchedule toScheduleEntity(StudyPlanScheduleRequest request, StudyPlan plan);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "googleCalendarEventId", ignore = true)
     @Mapping(target = "plan", source = "plan")
     @Mapping(target = "status", expression = "java(request.status() != null ? request.status() : com.english.api.enrollment.model.StudyPlanSchedule.TaskStatus.PENDING)")
+    @Mapping(target = "syncToCalendar", expression = "java(request.syncToCalendar() != null ? request.syncToCalendar() : false)")
     StudyPlanSchedule toScheduleEntity(CreateStudyPlanScheduleRequest request, StudyPlan plan);
 }

@@ -54,6 +54,7 @@ spring:
               - email
               - profile
               - openid
+              - https://www.googleapis.com/auth/calendar.events
         provider:
           google:
             authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
@@ -71,6 +72,7 @@ jwt:
     refresh-token: ${JWT_REFRESHTOKEN_EXP} #s
 server:
   port: ${PORT:8080}
+  forward-headers-strategy: framework
 
 springdoc:
   api-docs:
@@ -108,10 +110,9 @@ stripe:
   success-url: ${STRIPE_SUCCESS_URL}
   cancel-url: ${STRIPE_CANCEL_URL}
 
-
-
-#logging:
-#  level:
+logging:
+ level:
+  org.springframework.security: DEBUG
 #    org.springframework.orm.jpa: DEBUG
 #    org.springframework.transaction: DEBUG
 #    org.hibernate.SQL: DEBUG

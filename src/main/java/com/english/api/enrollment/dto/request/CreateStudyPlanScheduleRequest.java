@@ -17,5 +17,7 @@ public record CreateStudyPlanScheduleRequest(
     @NotNull(message = "Task description is required")
     String taskDesc,
 
-    StudyPlanSchedule.TaskStatus status
+    StudyPlanSchedule.TaskStatus status,
+
+    Boolean syncToCalendar
 ) {}

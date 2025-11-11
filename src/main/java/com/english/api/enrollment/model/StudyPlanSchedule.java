@@ -46,6 +46,13 @@ public class StudyPlanSchedule {
     @Builder.Default
     private TaskStatus status = TaskStatus.PENDING;
 
+    @Column(name = "sync_to_calendar", nullable = false)
+    @Builder.Default
+    private Boolean syncToCalendar = false;
+
+    @Column(name = "google_calendar_event_id")
+    private String googleCalendarEventId;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -69,6 +76,9 @@ public class StudyPlanSchedule {
         }
         if (status == null) {
             status = TaskStatus.PENDING;
+        }
+        if (syncToCalendar == null) {
+            syncToCalendar = false;
         }
     }
 
