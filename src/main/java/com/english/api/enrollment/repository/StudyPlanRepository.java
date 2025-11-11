@@ -20,7 +20,19 @@ public interface StudyPlanRepository extends JpaRepository<StudyPlan, UUID> {
         ORDER BY sp.createdAt DESC
         """)
     Page<StudyPlan> findByUserIdOrderByCreatedAtDesc(@Param("userId") UUID userId, Pageable pageable);
-    
+
+    @Query(value = """
+        SELECT sp FROM StudyPlan sp
+        LEFT JOIN FETCH sp.schedules
+        WHERE sp.user.id = :userId
+        ORDER BY sp.createdAt DESC
+        """,
+        countQuery = """
+        SELECT COUNT(sp) FROM StudyPlan sp
+        WHERE sp.user.id = :userId
+        """)
+    Page<StudyPlan> findByUserIdWithSchedulesOrderByCreatedAtDesc(@Param("userId") UUID userId, Pageable pageable);
+
     @Query("""
         SELECT sp FROM StudyPlan sp
         LEFT JOIN FETCH sp.schedules

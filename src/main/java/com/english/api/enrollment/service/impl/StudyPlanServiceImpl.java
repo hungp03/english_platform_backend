@@ -65,7 +65,7 @@ public class StudyPlanServiceImpl implements StudyPlanService {
 
     @Override
     @Transactional
-    public StudyPlanResponse updateStudyPlan(UUID id, UpdateStudyPlanRequest request) {
+    public StudyPlanDetailResponse updateStudyPlan(UUID id, UpdateStudyPlanRequest request) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         log.debug("Updating study plan: {} for user: {}", id, currentUserId);
 
@@ -107,7 +107,7 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         StudyPlan updated = studyPlanRepository.save(studyPlan);
         log.info("Updated study plan: {} for user: {}", id, currentUserId);
 
-        return studyPlanMapper.toResponse(updated);
+        return studyPlanMapper.toDetailResponse(updated);
     }
 
     @Override
@@ -140,15 +140,15 @@ public class StudyPlanServiceImpl implements StudyPlanService {
     @Transactional(readOnly = true)
     public PaginationResponse getMyStudyPlans(Pageable pageable) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        log.debug("Fetching study plans for user: {} with pagination", currentUserId);
+        log.debug("Fetching study plans with schedules for user: {} with pagination", currentUserId);
 
-        Page<StudyPlan> studyPlanPage = studyPlanRepository.findByUserIdOrderByCreatedAtDesc(currentUserId, pageable);
-        Page<StudyPlanResponse> responsePage = studyPlanPage.map(studyPlanMapper::toResponse);
-        
-        log.info("Found {} study plans for user {} (page {}/{})", 
-                studyPlanPage.getNumberOfElements(), currentUserId, 
+        Page<StudyPlan> studyPlanPage = studyPlanRepository.findByUserIdWithSchedulesOrderByCreatedAtDesc(currentUserId, pageable);
+        Page<StudyPlanDetailResponse> responsePage = studyPlanPage.map(studyPlanMapper::toDetailResponse);
+
+        log.info("Found {} study plans for user {} (page {}/{})",
+                studyPlanPage.getNumberOfElements(), currentUserId,
                 pageable.getPageNumber() + 1, studyPlanPage.getTotalPages());
-        
+
         return PaginationResponse.from(responsePage, pageable);
     }
 
@@ -172,7 +172,7 @@ public class StudyPlanServiceImpl implements StudyPlanService {
 
     @Override
     @Transactional
-    public StudyPlanScheduleResponse updateSchedule(UUID planId, UUID scheduleId, UpdateStudyPlanScheduleRequest request) {
+    public StudyPlanDetailResponse updateSchedule(UUID planId, UUID scheduleId, UpdateStudyPlanScheduleRequest request) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         log.debug("Updating schedule: {} in plan: {} for user: {}", scheduleId, planId, currentUserId);
 
@@ -191,10 +191,10 @@ public class StudyPlanServiceImpl implements StudyPlanService {
             schedule.setStatus(request.status());
         }
 
-        StudyPlanSchedule updated = studyPlanScheduleRepository.save(schedule);
+        studyPlanScheduleRepository.save(schedule);
         log.info("Updated schedule {} in plan {} for user {}", scheduleId, planId, currentUserId);
 
-        return studyPlanMapper.toScheduleResponse(updated);
+        return studyPlanMapper.toDetailResponse(studyPlan);
     }
 
     @Override
@@ -218,7 +218,7 @@ public class StudyPlanServiceImpl implements StudyPlanService {
 
     @Override
     @Transactional
-    public StudyPlanScheduleResponse markScheduleComplete(UUID planId, UUID scheduleId) {
+    public void markScheduleComplete(UUID planId, UUID scheduleId) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         log.debug("Toggling schedule status: {} in plan: {} for user: {}", scheduleId, planId, currentUserId);
 
@@ -233,13 +233,11 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         StudyPlanSchedule.TaskStatus newStatus = schedule.getStatus() == StudyPlanSchedule.TaskStatus.COMPLETED
                 ? StudyPlanSchedule.TaskStatus.PENDING
                 : StudyPlanSchedule.TaskStatus.COMPLETED;
-        
-        schedule.setStatus(newStatus);
-        
-        StudyPlanSchedule updated = studyPlanScheduleRepository.save(schedule);
-        log.info("Toggled schedule {} status to {} in plan {} for user {}", 
-                scheduleId, newStatus, planId, currentUserId);
 
-        return studyPlanMapper.toScheduleResponse(updated);
+        schedule.setStatus(newStatus);
+
+        studyPlanScheduleRepository.save(schedule);
+        log.info("Toggled schedule {} status to {} in plan {} for user {}",
+                scheduleId, newStatus, planId, currentUserId);
     }
 }

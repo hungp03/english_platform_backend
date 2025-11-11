@@ -49,7 +49,8 @@ public class StudyPlanController {
 
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<StudyPlanResponse> updateStudyPlan(
+    public ResponseEntity<StudyPlanDetailResponse
+    > updateStudyPlan(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateStudyPlanRequest request
     ) {
@@ -75,7 +76,7 @@ public class StudyPlanController {
 
     @PutMapping("/{planId}/schedules/{scheduleId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<StudyPlanScheduleResponse> updateSchedule(
+    public ResponseEntity<StudyPlanDetailResponse> updateSchedule(
             @PathVariable UUID planId,
             @PathVariable UUID scheduleId,
             @Valid @RequestBody UpdateStudyPlanScheduleRequest request
@@ -95,10 +96,11 @@ public class StudyPlanController {
 
     @PatchMapping("/{planId}/schedules/{scheduleId}/mark-complete")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<StudyPlanScheduleResponse> markScheduleComplete(
+    public ResponseEntity<Void> markScheduleComplete(
             @PathVariable UUID planId,
             @PathVariable UUID scheduleId
     ) {
-        return ResponseEntity.ok(studyPlanService.markScheduleComplete(planId, scheduleId));
+        studyPlanService.markScheduleComplete(planId, scheduleId);
+        return ResponseEntity.noContent().build();
     }
 }

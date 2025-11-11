@@ -10,7 +10,5 @@ public record StudyPlanScheduleResponse(
     OffsetDateTime startTime,
     Integer durationMin,
     String taskDesc,
-    StudyPlanSchedule.TaskStatus status,
-    OffsetDateTime createdAt,
-    OffsetDateTime updatedAt
+    StudyPlanSchedule.TaskStatus status
 ) {}

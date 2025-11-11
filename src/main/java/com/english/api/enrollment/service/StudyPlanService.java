@@ -14,13 +14,13 @@ import java.util.UUID;
 
 public interface StudyPlanService {
     StudyPlanResponse createStudyPlan(CreateStudyPlanRequest request);
-    StudyPlanResponse updateStudyPlan(UUID id, UpdateStudyPlanRequest request);
+    StudyPlanDetailResponse updateStudyPlan(UUID id, UpdateStudyPlanRequest request);
     void deleteStudyPlan(UUID id);
     StudyPlanDetailResponse getStudyPlanById(UUID id);
     PaginationResponse getMyStudyPlans(Pageable pageable);
     
     StudyPlanScheduleResponse addSchedule(UUID planId, CreateStudyPlanScheduleRequest request);
-    StudyPlanScheduleResponse updateSchedule(UUID planId, UUID scheduleId, UpdateStudyPlanScheduleRequest request);
+    StudyPlanDetailResponse updateSchedule(UUID planId, UUID scheduleId, UpdateStudyPlanScheduleRequest request);
     void deleteSchedule(UUID planId, UUID scheduleId);
-    StudyPlanScheduleResponse markScheduleComplete(UUID planId, UUID scheduleId); // Toggles between PENDING and COMPLETED
+    void markScheduleComplete(UUID planId, UUID scheduleId); // Toggles between PENDING and COMPLETED
 }
