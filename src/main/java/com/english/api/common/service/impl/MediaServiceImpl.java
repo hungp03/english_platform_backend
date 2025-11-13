@@ -1,6 +1,7 @@
 package com.english.api.common.service.impl;
 
 import com.english.api.common.dto.MediaUploadResponse;
+import com.english.api.common.exception.CannotDeleteException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.service.MediaService;
 import lombok.RequiredArgsConstructor;
@@ -167,33 +168,6 @@ public class MediaServiceImpl implements MediaService {
                 .collect(Collectors.toList());
     }
 
-    // @Override
-    // public void deleteFile(String key) {
-    // try {
-    // DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
-    // .bucket(bucket)
-    // .key(key)
-    // .build();
-    //
-    // CompletableFuture<DeleteObjectResponse> future =
-    // s3Client.deleteObject(deleteRequest);
-    //
-    // // Chờ hoàn tất (vì đang dùng Tomcat → blocking model)
-    // future.join();
-    //
-    // } catch (CompletionException e) {
-    // // bắt lỗi từ future
-    // if (e.getCause() instanceof S3Exception) {
-    // throw new CannotDeleteException("Failed to delete file from S3: " +
-    // e.getCause().getMessage());
-    // }
-    // throw new CannotDeleteException("Failed to delete file from S3");
-    // } catch (S3Exception e) {
-    // throw new CannotDeleteException("Failed to delete file from S3: " +
-    // e.getMessage());
-    // }
-    // }
-
     @Override
     public void deleteFileByUrl(String fileUrl) {
         if (fileUrl == null || fileUrl.isBlank())
@@ -213,5 +187,205 @@ public class MediaServiceImpl implements MediaService {
             e.printStackTrace();
         }
     }
+
+    @Override
+    public void deleteFile(String key) {
+        System.out.println("=== DELETE FILE DEBUG ===");
+        System.out.println("Bucket: " + bucket);
+        System.out.println("Key to delete: [" + key + "]");
+
+        try {
+            // Bước 1: List tất cả versions của file
+            ListObjectVersionsRequest listRequest = ListObjectVersionsRequest.builder()
+                    .bucket(bucket)
+                    .prefix(key)
+                    .build();
+
+            CompletableFuture<ListObjectVersionsResponse> listFuture = s3Client.listObjectVersions(listRequest);
+            ListObjectVersionsResponse listResponse = listFuture.join();
+
+            System.out.println("Found " + listResponse.versions().size() + " versions");
+            System.out.println("Found " + listResponse.deleteMarkers().size() + " delete markers");
+
+            // Bước 2: Xóa tất cả versions
+            List<CompletableFuture<DeleteObjectResponse>> deleteFutures = new ArrayList<>();
+
+            // Xóa các versions thực tế
+            for (ObjectVersion version : listResponse.versions()) {
+                if (version.key().equals(key)) {
+                    System.out.println("Deleting version: " + version.versionId());
+
+                    DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(key)
+                            .versionId(version.versionId())
+                            .build();
+
+                    deleteFutures.add(s3Client.deleteObject(deleteRequest));
+                }
+            }
+
+            // Xóa các delete markers
+            for (DeleteMarkerEntry marker : listResponse.deleteMarkers()) {
+                if (marker.key().equals(key)) {
+                    System.out.println("Deleting marker: " + marker.versionId());
+
+                    DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(key)
+                            .versionId(marker.versionId())
+                            .build();
+
+                    deleteFutures.add(s3Client.deleteObject(deleteRequest));
+                }
+            }
+
+            // Chờ tất cả delete hoàn thành
+            CompletableFuture.allOf(deleteFutures.toArray(new CompletableFuture[0])).join();
+
+            System.out.println("✓ Successfully deleted all versions and markers for: " + key);
+
+        } catch (CompletionException e) {
+            System.err.println("CompletionException: " + e.getMessage());
+            e.printStackTrace();
+            if (e.getCause() instanceof S3Exception) {
+                S3Exception s3Ex = (S3Exception) e.getCause();
+                System.err.println("S3 Error Code: " + s3Ex.awsErrorDetails().errorCode());
+                System.err.println("S3 Error Message: " + s3Ex.awsErrorDetails().errorMessage());
+                throw new CannotDeleteException(
+                        "Failed to delete file from S3: " + s3Ex.awsErrorDetails().errorMessage());
+            }
+            throw new CannotDeleteException("Failed to delete file from S3: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            throw new CannotDeleteException("Failed to delete file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<String> listFilesInFolder(String folderPath) {
+        System.out.println("=== LIST FILES IN FOLDER ===");
+        System.out.println("Folder path: " + folderPath);
+        
+        // Chuẩn hóa folder path
+        String prefix = folderPath.replaceAll("^/+", "").replaceAll("/+$", "") + "/";
+        System.out.println("Normalized prefix: " + prefix);
+        
+        try {
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    .bucket(bucket)
+                    .prefix(prefix)
+                    .maxKeys(1000) // Giới hạn 1000 files, có thể tăng hoặc phân trang
+                    .build();
+            
+            CompletableFuture<ListObjectsV2Response> future = s3Client.listObjectsV2(listRequest);
+            ListObjectsV2Response response = future.join();
+            
+            List<String> fileUrls = response.contents().stream()
+                    .filter(s3Object -> !s3Object.key().endsWith("/")) // Lọc bỏ folder rỗng
+                    .map(s3Object -> {
+                        String url = String.join("/", publicUrl.replaceAll("/+$", ""), s3Object.key());
+                        System.out.println("Found file: " + s3Object.key() + " -> " + url);
+                        return url;
+                    })
+                    .collect(Collectors.toList());
+            
+            System.out.println("Total files found: " + fileUrls.size());
+            return fileUrls;
+            
+        } catch (CompletionException e) {
+            System.err.println("Failed to list files: " + e.getMessage());
+            e.printStackTrace();
+            if (e.getCause() instanceof S3Exception) {
+                S3Exception s3Ex = (S3Exception) e.getCause();
+                throw new ResourceInvalidException("Failed to list files: " + s3Ex.awsErrorDetails().errorMessage());
+            }
+            throw new ResourceInvalidException("Failed to list files in folder");
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            throw new ResourceInvalidException("Failed to list files in folder");
+        }
+    }
+
+    @Override
+    public void deleteFolder(String folderPath) {
+        System.out.println("=== DELETE FOLDER ===");
+        System.out.println("Folder path: " + folderPath);
+        
+        // Chuẩn hóa folder path
+        String prefix = folderPath.replaceAll("^/+", "").replaceAll("/+$", "") + "/";
+        System.out.println("Normalized prefix: " + prefix);
+        
+        try {
+            // Bước 1: List tất cả files và versions trong folder
+            ListObjectVersionsRequest listRequest = ListObjectVersionsRequest.builder()
+                    .bucket(bucket)
+                    .prefix(prefix)
+                    .maxKeys(1000)
+                    .build();
+            
+            CompletableFuture<ListObjectVersionsResponse> listFuture = s3Client.listObjectVersions(listRequest);
+            ListObjectVersionsResponse listResponse = listFuture.join();
+            
+            System.out.println("Found " + listResponse.versions().size() + " file versions");
+            System.out.println("Found " + listResponse.deleteMarkers().size() + " delete markers");
+            
+            if (listResponse.versions().isEmpty() && listResponse.deleteMarkers().isEmpty()) {
+                System.out.println("Folder is empty or does not exist");
+                return;
+            }
+            
+            // Bước 2: Xóa tất cả versions và delete markers
+            List<CompletableFuture<DeleteObjectResponse>> deleteFutures = new ArrayList<>();
+            
+            // Xóa các file versions
+            for (ObjectVersion version : listResponse.versions()) {
+                System.out.println("Deleting: " + version.key() + " (version: " + version.versionId() + ")");
+                
+                DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(version.key())
+                        .versionId(version.versionId())
+                        .build();
+                
+                deleteFutures.add(s3Client.deleteObject(deleteRequest));
+            }
+            
+            // Xóa các delete markers
+            for (DeleteMarkerEntry marker : listResponse.deleteMarkers()) {
+                System.out.println("Deleting marker: " + marker.key() + " (version: " + marker.versionId() + ")");
+                
+                DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(marker.key())
+                        .versionId(marker.versionId())
+                        .build();
+                
+                deleteFutures.add(s3Client.deleteObject(deleteRequest));
+            }
+            
+            // Chờ tất cả delete hoàn thành
+            CompletableFuture.allOf(deleteFutures.toArray(new CompletableFuture[0])).join();
+            
+            System.out.println("✓ Successfully deleted folder and all contents: " + folderPath);
+            System.out.println("Total items deleted: " + deleteFutures.size());
+            
+        } catch (CompletionException e) {
+            System.err.println("Failed to delete folder: " + e.getMessage());
+            e.printStackTrace();
+            if (e.getCause() instanceof S3Exception) {
+                S3Exception s3Ex = (S3Exception) e.getCause();
+                throw new CannotDeleteException("Failed to delete folder: " + s3Ex.awsErrorDetails().errorMessage());
+            }
+            throw new CannotDeleteException("Failed to delete folder");
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            throw new CannotDeleteException("Failed to delete folder: " + e.getMessage());
+        }
+    }
+
 
 }

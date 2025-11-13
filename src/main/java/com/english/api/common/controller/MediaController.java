@@ -5,6 +5,8 @@ import com.english.api.common.service.MediaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -50,10 +52,21 @@ public class MediaController {
     }
 
 
-//    @DeleteMapping("/{filename}")
-//    public ResponseEntity<Void> deleteFile(@PathVariable String filename) {
-//        mediaService.deleteFile(filename);
-//        return ResponseEntity.ok().build();
-//    }
+    @DeleteMapping("/delete")
+    public ResponseEntity<Void> deleteFile(@RequestParam("filename") String filename) {
+        mediaService.deleteFile(filename);
+        return ResponseEntity.ok().build();
+}
+    @GetMapping("/list")
+    public ResponseEntity<List<String>> listFilesInFolder(@RequestParam("folder") String folder) {
+        List<String> fileUrls = mediaService.listFilesInFolder(folder);
+        return ResponseEntity.ok(fileUrls);
+    }
+    
+    @DeleteMapping("/folder")
+    public ResponseEntity<Void> deleteFolder(@RequestParam("folder") String folder) {
+        mediaService.deleteFolder(folder);
+        return ResponseEntity.ok().build();
+    }
 
 }

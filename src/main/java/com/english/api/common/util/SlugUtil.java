@@ -35,5 +35,4 @@ public final class SlugUtil {
         if (slug == null || slug.isEmpty()) return false;
         return slug.matches("^[a-z0-9]+(-[a-z0-9]+)*$");
     }
-    
 }
