@@ -32,7 +32,7 @@ public final class SlugUtil {
     }
 
     public static boolean isSeoFriendly(String slug) {
-        if (slug == null || slug.isEmpty()) return true;
-        return !slug.matches("^[a-z0-9]+(-[a-z0-9]+)*$");
+        if (slug == null || slug.isEmpty()) return false;
+        return slug.matches("^[a-z0-9]+(-[a-z0-9]+)*$");
     }
 }

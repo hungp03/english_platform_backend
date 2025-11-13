@@ -20,7 +20,6 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;

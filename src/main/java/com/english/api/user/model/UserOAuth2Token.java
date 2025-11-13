@@ -1,48 +1,45 @@
-package com.english.api.enrollment.model;
+package com.english.api.user.model;
 
-import com.english.api.user.model.User;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(
-    name = "study_plans",
-    indexes = {
-        @Index(name = "idx_study_plans_user", columnList = "user_id")
-    }
-)
+@Table(name = "user_oauth2_tokens")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StudyPlan {
+public class UserOAuth2Token {
 
     @Id
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    @Column(nullable = false, columnDefinition = "text")
-    private String title;
+    @Column(name = "access_token", columnDefinition = "text", nullable = false)
+    private String accessToken;
+
+    @Column(name = "refresh_token", columnDefinition = "text")
+    private String refreshToken;
+
+    @Column(name = "token_expires_at")
+    private OffsetDateTime tokenExpiresAt;
+
+    @Column(name = "provider", nullable = false)
+    private String provider;
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
-
-    @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<StudyPlanSchedule> schedules = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
