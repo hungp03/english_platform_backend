@@ -25,10 +25,9 @@ public class PublicInstructorController {
     private final InstructorProfileRepository instructorProfileRepository;
     private final CourseService courseService;
 
-        @GetMapping("/{userId}")
+    @GetMapping("/{userId}")
     public ResponseEntity<PublicInstructorResponse> getPublicInstructorOverview(
-            @PathVariable UUID userId
-    ) {
+            @PathVariable UUID userId) {
         var profile = instructorProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Instructor profile not found"));
 
@@ -43,8 +42,7 @@ public class PublicInstructorController {
                 profile.getExperienceYears(),
                 profile.getQualification(),
                 profile.getCreatedAt(),
-                profile.getUpdatedAt()
-        );
+                profile.getUpdatedAt());
 
         InstructorStatsResponse stats = courseService.getInstructorStats(userId);
         return ResponseEntity.ok(new PublicInstructorResponse(profileDto, stats));
@@ -60,8 +58,7 @@ public class PublicInstructorController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "12") int pageSize,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String[] skills
-    ) {
+            @RequestParam(required = false) String[] skills) {
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ResponseEntity.ok(courseService.getPublishedByInstructor(userId, pageable, keyword, skills));
     }

@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface ForumThreadService {
-  PaginationResponse listPublic(String keyword, UUID categoryId, Boolean locked, Pageable pageable);
+  PaginationResponse listPublic(String keyword, java.util.UUID categoryId, Boolean locked, Pageable pageable);
   ForumThreadResponse getBySlug(String slug);
   void increaseView(UUID threadId);
   ForumThreadResponse create(ForumThreadCreateRequest req);
