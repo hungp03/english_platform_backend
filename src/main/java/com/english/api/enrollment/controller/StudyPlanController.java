@@ -1,6 +1,7 @@
 package com.english.api.enrollment.controller;
 
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.enrollment.dto.request.AIStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanScheduleRequest;
 import com.english.api.enrollment.dto.request.UpdateStudyPlanRequest;
@@ -102,5 +103,11 @@ public class StudyPlanController {
     ) {
         studyPlanService.markScheduleComplete(planId, scheduleId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/generate-ai-plan")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Object> generateAIPlan(@Valid @RequestBody AIStudyPlanRequest request) {
+        return ResponseEntity.ok(studyPlanService.generateAIPlan(request));
     }
 }

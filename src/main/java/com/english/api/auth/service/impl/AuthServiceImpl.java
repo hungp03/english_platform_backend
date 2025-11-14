@@ -1,9 +1,11 @@
 package com.english.api.auth.service.impl;
 
 import com.english.api.auth.dto.request.AuthRequest;
+import com.english.api.auth.dto.request.LinkGoogleAccountRequest;
 import com.english.api.auth.dto.request.RegisterRequest;
 import com.english.api.auth.dto.request.ResetPasswordRequest;
 import com.english.api.auth.dto.response.AuthResponse;
+import com.english.api.auth.dto.response.LinkAccountResponse;
 import com.english.api.auth.dto.response.OtpVerificationResponse;
 import com.english.api.auth.dto.response.UserLoginResponse;
 import com.english.api.auth.model.VerificationToken;
@@ -12,6 +14,7 @@ import com.english.api.auth.service.AuthService;
 import com.english.api.auth.service.JwtService;
 import com.english.api.auth.service.OTPCodeService;
 import com.english.api.auth.service.VerificationTokenService;
+import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.common.exception.ResourceAlreadyExistsException;
 import com.english.api.common.exception.ResourceInvalidException;
@@ -21,7 +24,12 @@ import com.english.api.user.model.Role;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.RoleRepository;
 import com.english.api.user.service.UserService;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,8 +40,11 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -52,6 +63,17 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final OTPCodeService otpCodeService;
+    private final com.english.api.user.repository.UserOAuth2TokenRepository oauth2TokenRepository;
+    private final org.springframework.web.client.RestTemplate restTemplate;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String googleClientId;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-secret}")
+    private String googleClientSecret;
+
+    @Value("${app.client-url}")
+    private String clientUrl;
 
     @Transactional
     @Override
@@ -98,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(request.fullName())
                 .provider("local")
                 .isActive(false)
-                .providerUid(request.email())
+                .providerUid(null)
                 .emailVerified(false)
                 .build();
 
@@ -354,5 +376,235 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception ignored) {
 
         }
+    }
+
+    @Transactional
+    @Override
+    public LinkAccountResponse linkGoogleAccount(LinkGoogleAccountRequest request) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        User currentUser = userService.findById(currentUserId);
+
+        if (request.idToken() == null && request.authorizationCode() == null) {
+            throw new ResourceInvalidException("Either idToken or authorizationCode must be provided");
+        }
+
+        try {
+            String googleUid;
+            String email;
+            String accessToken = null;
+            String refreshToken = null;
+            Long expiresIn = null;
+            
+            // If authorization code is provided, exchange it for tokens
+            if (request.authorizationCode() != null && !request.authorizationCode().isEmpty()) {
+                String redirectUri = request.redirectUri() != null ? request.redirectUri() : (clientUrl + "/auth/callback");
+                GoogleTokenResponse tokenResponse = exchangeAuthorizationCode(request.authorizationCode(), redirectUri);
+                accessToken = tokenResponse.accessToken;
+                refreshToken = tokenResponse.refreshToken;
+                expiresIn = tokenResponse.expiresIn;
+                
+                // Verify ID token from response
+                GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                        new NetHttpTransport(),
+                        new GsonFactory()
+                )
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
+
+                GoogleIdToken idToken = verifier.verify(tokenResponse.idToken);
+                if (idToken == null) {
+                    throw new ResourceInvalidException("Invalid Google ID token from authorization code");
+                }
+
+                GoogleIdToken.Payload payload = idToken.getPayload();
+                googleUid = payload.getSubject();
+                email = payload.getEmail();
+            } 
+            // Otherwise use the provided ID token
+            else if (request.idToken().startsWith("eyJ")) {
+                // It's a JWT ID token
+                GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                        new NetHttpTransport(),
+                        new GsonFactory()
+                )
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
+
+                GoogleIdToken idToken = verifier.verify(request.idToken());
+                if (idToken == null) {
+                    throw new ResourceInvalidException("Invalid Google ID token");
+                }
+
+                GoogleIdToken.Payload payload = idToken.getPayload();
+                googleUid = payload.getSubject();
+                email = payload.getEmail();
+            } else {
+                // It's an access token, verify via userinfo endpoint
+                String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
+                java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+                java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create(userInfoUrl))
+                        .header("Authorization", "Bearer " + request.idToken())
+                        .GET()
+                        .build();
+
+                java.net.http.HttpResponse<String> response = client.send(httpRequest, 
+                        java.net.http.HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() != 200) {
+                    throw new ResourceInvalidException("Invalid Google access token");
+                }
+
+                com.google.gson.JsonObject userInfo = com.google.gson.JsonParser.parseString(response.body()).getAsJsonObject();
+                googleUid = userInfo.get("sub").getAsString();
+                email = userInfo.has("email") ? userInfo.get("email").getAsString() : null;
+            }
+
+            if (email == null || googleUid == null) {
+                throw new ResourceInvalidException("Invalid Google token: missing email or user ID");
+            }
+
+            Optional<User> existingGoogleUser = userService.findByProviderAndProviderUid("GOOGLE", googleUid);
+            if (existingGoogleUser.isPresent() && !existingGoogleUser.get().getId().equals(currentUserId)) {
+                throw new ResourceAlreadyExistsException("This Google account is already linked to another user");
+            }
+
+            if (currentUser.getProviderUid() != null && !currentUser.getProviderUid().isEmpty()) {
+                throw new ResourceInvalidException("This account is already linked to a provider account");
+            }
+
+            currentUser.setProvider("GOOGLE");
+            currentUser.setProviderUid(googleUid);
+            currentUser.setEmailVerified(true);
+            userService.save(currentUser);
+
+            // Store OAuth2 tokens for calendar integration if we obtained them
+            if (accessToken != null && !accessToken.isEmpty()) {
+                storeOAuth2TokensFromExchange(currentUser, accessToken, refreshToken, expiresIn);
+            }
+
+            return new LinkAccountResponse(
+                    "Google account linked successfully",
+                    "GOOGLE",
+                    email
+            );
+
+        } catch (GeneralSecurityException | IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new ResourceInvalidException("Invalid Google token: " + e.getMessage());
+        }
+    }
+
+    private GoogleTokenResponse exchangeAuthorizationCode(String authorizationCode, String redirectUri) {
+        String tokenEndpoint = "https://oauth2.googleapis.com/token";
+        
+        org.springframework.util.LinkedMultiValueMap<String, String> params = new org.springframework.util.LinkedMultiValueMap<>();
+        params.add("code", authorizationCode);
+        params.add("client_id", googleClientId);
+        params.add("client_secret", googleClientSecret);
+        params.add("redirect_uri", redirectUri);
+        params.add("grant_type", "authorization_code");
+
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
+
+        org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, String>> request = 
+                new org.springframework.http.HttpEntity<>(params, headers);
+
+        try {
+            org.springframework.http.ResponseEntity<java.util.Map> response = restTemplate.postForEntity(
+                    tokenEndpoint, 
+                    request, 
+                    java.util.Map.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                java.util.Map<String, Object> body = response.getBody();
+                return new GoogleTokenResponse(
+                        (String) body.get("access_token"),
+                        (String) body.get("refresh_token"),
+                        (String) body.get("id_token"),
+                        body.get("expires_in") != null ? ((Number) body.get("expires_in")).longValue() : null
+                );
+            } else {
+                throw new ResourceInvalidException("Failed to exchange authorization code for tokens");
+            }
+        } catch (Exception e) {
+            throw new ResourceInvalidException("Failed to exchange authorization code: " + e.getMessage());
+        }
+    }
+
+    private static class GoogleTokenResponse {
+        String accessToken;
+        String refreshToken;
+        String idToken;
+        Long expiresIn;
+
+        GoogleTokenResponse(String accessToken, String refreshToken, String idToken, Long expiresIn) {
+            this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
+            this.idToken = idToken;
+            this.expiresIn = expiresIn;
+        }
+    }
+
+    private void storeOAuth2TokensFromExchange(User user, String accessToken, String refreshToken, Long expiresIn) {
+        try {
+            com.english.api.user.model.UserOAuth2Token token = oauth2TokenRepository
+                    .findByUserIdAndProvider(user.getId(), "GOOGLE")
+                    .orElse(com.english.api.user.model.UserOAuth2Token.builder()
+                            .user(user)
+                            .provider("GOOGLE")
+                            .build());
+
+            token.setAccessToken(accessToken);
+            
+            if (refreshToken != null && !refreshToken.isEmpty()) {
+                token.setRefreshToken(refreshToken);
+            }
+            
+            if (expiresIn != null) {
+                java.time.OffsetDateTime expiresAt = java.time.OffsetDateTime.now()
+                        .plusSeconds(expiresIn);
+                token.setTokenExpiresAt(expiresAt);
+            }
+
+            oauth2TokenRepository.save(token);
+        } catch (Exception e) {
+            // Log but don't fail the linking process
+            System.err.println("Error storing OAuth2 tokens for user " + user.getId() + ": " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    @Override
+    public LinkAccountResponse unlinkGoogleAccount() {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        User currentUser = userService.findById(currentUserId);
+
+        if (!"GOOGLE".equalsIgnoreCase(currentUser.getProvider())) {
+            throw new ResourceInvalidException("This account is not linked to a Google account");
+        }
+
+        if (currentUser.getPasswordHash() == null || currentUser.getPasswordHash().isEmpty()) {
+            throw new ResourceInvalidException("Cannot unlink Google account: No password set. Please set a password first.");
+        }
+
+        String previousEmail = currentUser.getEmail();
+        currentUser.setProvider("local");
+        currentUser.setProviderUid(null);
+        userService.save(currentUser);
+
+        // Delete OAuth2 tokens when unlinking
+        oauth2TokenRepository.findByUserIdAndProvider(currentUserId, "GOOGLE")
+                .ifPresent(oauth2TokenRepository::delete);
+
+        return new LinkAccountResponse(
+                "Google account unlinked successfully",
+                "local",
+                previousEmail
+        );
     }
 }

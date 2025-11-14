@@ -110,9 +110,15 @@ stripe:
   success-url: ${STRIPE_SUCCESS_URL}
   cancel-url: ${STRIPE_CANCEL_URL}
 
+n8n:
+  webhook:
+    ai-plan-url: ${N8N_AI_PLAN_URL}
+    api-key: ${N8N_API_KEY}
+
 logging:
  level:
   org.springframework.security: DEBUG
+  org.springframework.scheduling: DEBUG
 #    org.springframework.orm.jpa: DEBUG
 #    org.springframework.transaction: DEBUG
 #    org.hibernate.SQL: DEBUG

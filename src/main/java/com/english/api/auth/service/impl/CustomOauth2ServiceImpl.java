@@ -23,9 +23,21 @@ public class CustomOauth2ServiceImpl implements CustomOauth2Service {
 
     @Override
     public User processOAuth2User(String email, String name, String socialId, String provider, String avatar) {
-        Optional<User> optionalUser = userRepository.findByEmailWithRoles(email);
+        Optional<User> optionalUser = userRepository.findByProviderAndProviderUidWithRoles(provider, socialId);
         if (optionalUser.isPresent()) {
             return optionalUser.get();
+        }
+
+        Optional<User> existingUserByEmail = userRepository.findByEmailWithRoles(email);
+        if (existingUserByEmail.isPresent()) {
+            User existingUser = existingUserByEmail.get();
+            existingUser.setProvider(provider);
+            existingUser.setProviderUid(socialId);
+            existingUser.setEmailVerified(true);
+            if (existingUser.getAvatarUrl() == null && avatar != null) {
+                existingUser.setAvatarUrl(avatar);
+            }
+            return userRepository.save(existingUser);
         }
 
         Role userRole = roleRepository.findByCode("USER")

@@ -1,6 +1,7 @@
 package com.english.api.enrollment.service;
 
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.enrollment.dto.request.AIStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanScheduleRequest;
 import com.english.api.enrollment.dto.request.UpdateStudyPlanRequest;
@@ -22,5 +23,7 @@ public interface StudyPlanService {
     StudyPlanScheduleResponse addSchedule(UUID planId, CreateStudyPlanScheduleRequest request);
     StudyPlanDetailResponse updateSchedule(UUID planId, UUID scheduleId, UpdateStudyPlanScheduleRequest request);
     void deleteSchedule(UUID planId, UUID scheduleId);
-    void markScheduleComplete(UUID planId, UUID scheduleId); // Toggles between PENDING and COMPLETED
+    void markScheduleComplete(UUID planId, UUID scheduleId);
+    
+    Object generateAIPlan(AIStudyPlanRequest request);
 }

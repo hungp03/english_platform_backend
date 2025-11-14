@@ -20,7 +20,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
 
     @Query("""
-                SELECT u.id, u.email, u.fullName, u.avatarUrl, r.code
+                SELECT u.id, u.email, u.fullName, u.avatarUrl, u.provider, r.code
                 FROM User u
                 LEFT JOIN u.roles r
                 WHERE u.id = :id
@@ -47,4 +47,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     
     @Query("SELECT u FROM User u WHERE u.id IN :ids")
     List<User> findByIdIn(@Param("ids") List<UUID> ids);
+
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.provider = :provider AND u.providerUid = :providerUid")
+    Optional<User> findByProviderAndProviderUidWithRoles(@Param("provider") String provider, @Param("providerUid") String providerUid);
 }
