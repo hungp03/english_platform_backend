@@ -6,5 +6,5 @@ import java.util.UUID;
 public record ForumThreadCreateRequest(
     String title,
     String bodyMd,
-    java.util.List<java.util.UUID> categoryIds
+    List<UUID> categoryIds
 ) {}

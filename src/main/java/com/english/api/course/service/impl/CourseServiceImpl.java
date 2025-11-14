@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -177,12 +178,26 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public CourseResponse changeStatus(UUID id, CourseStatus status) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
+        boolean isAdmin = isCurrentUserAdmin();
 
         UUID ownerId = courseRepository.findOwnerIdById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
-        if (!ownerId.equals(currentUserId)) {
+        boolean isOwner = ownerId.equals(currentUserId);
+
+        // Check authorization: must be either owner or admin
+        if (!isAdmin && !isOwner) {
             throw new AccessDeniedException("You are not allowed to change status of this course.");
+        }
+
+        // If admin: can only approve (PUBLISHED) or reject (REJECTED)
+        if (isAdmin && status != CourseStatus.PUBLISHED && status != CourseStatus.REJECTED) {
+            throw new AccessDeniedException("Admin can only approve or reject courses.");
+        }
+
+        // Creator (non-admin) cannot self-reject
+        if (isOwner && !isAdmin && status == CourseStatus.REJECTED) {
+            throw new AccessDeniedException("You cannot reject your own course.");
         }
 
         Course course = courseRepository.findById(id)
@@ -198,6 +213,11 @@ public class CourseServiceImpl implements CourseService {
         }
 
         return mapper.toResponse(courseRepository.save(course));
+    }
+
+    private boolean isCurrentUserAdmin() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
     }
 
     @Override

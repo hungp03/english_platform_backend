@@ -18,5 +18,5 @@ public record ForumThreadListResponse (
     UUID lastPostAuthor,
     Instant createdAt,
     Instant updatedAt,
-    java.util.List<com.english.api.forum.dto.response.ForumCategoryResponse> categories
+    List<ForumCategoryResponse> categories
 ) {}

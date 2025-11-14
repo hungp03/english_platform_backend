@@ -1,13 +1,8 @@
 package com.english.api.quiz.controller.publicapi;
 
 import com.english.api.common.dto.PaginationResponse;
-import com.english.api.quiz.dto.response.PublicOption;
-import com.english.api.quiz.dto.response.PublicQuestion;
 import com.english.api.quiz.dto.response.PublicQuizDetailResponse;
-import com.english.api.quiz.dto.response.QuizResponse;
 import com.english.api.quiz.enums.QuizSkill;
-import com.english.api.quiz.enums.QuizStatus;
-import com.english.api.quiz.model.QuestionOption;
 import com.english.api.quiz.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;

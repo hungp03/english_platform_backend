@@ -4,7 +4,6 @@ import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
-import com.english.api.quiz.enums.QuizSkill;
 import com.english.api.quiz.enums.QuizStatus;
 
 public record QuizUpdateRequest(
