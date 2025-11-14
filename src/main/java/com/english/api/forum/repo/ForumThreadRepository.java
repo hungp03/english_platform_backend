@@ -6,7 +6,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,10 +29,4 @@ public interface ForumThreadRepository extends JpaRepository<ForumThread, UUID> 
                            Pageable pageable);
   
   Page<ForumThread> findByAuthorIdOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
-  
-  @Query("""
-    SELECT t FROM ForumThread t
-    WHERE t.id IN :ids
-    """)
-  List<ForumThread> findByIdInOrderPreserved(@Param("ids") List<UUID> ids);
 }

@@ -12,6 +12,8 @@ public record PublicPostDetailResponse(
     Instant publishedAt,
     Instant createdAt,
     UUID authorId,
+    String authorName,
+    String authorAvatarUrl,
     List<BlogCategoryResponse> categories
 ) {
 }

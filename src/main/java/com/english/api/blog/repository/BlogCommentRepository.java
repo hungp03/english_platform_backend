@@ -38,4 +38,9 @@ public interface BlogCommentRepository extends JpaRepository<BlogComment, UUID> 
     @Transactional
     @Query("delete from BlogComment c where c.post.id = :postId")
     void deleteByPostId(@Param("postId") UUID postId);
+
+    
+    @Modifying
+    @Query("delete from BlogComment c where c.parent = :parent")
+    void deleteByParent(@Param("parent") BlogComment parent);
 }
