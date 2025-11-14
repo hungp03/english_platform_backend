@@ -31,6 +31,8 @@ public interface BlogMapper {
     
     @Mapping(target = "authorId", source = "author.id")
     @Mapping(target = "categories", source = "categories")
+    @Mapping(target = "authorName", source = "author.fullName")
+    @Mapping(target = "authorAvatarUrl", source = "author.avatarUrl")
     PublicPostDetailResponse toPublicDetail(BlogPost post);
     
     @Mapping(target = "postId", source = "post.id")

@@ -44,7 +44,4 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             nativeQuery = true
     )
     Page<User> findByFullNameOrEmail(@Param("searchTerm") String searchTerm, Pageable pageable);
-    
-    @Query("SELECT u FROM User u WHERE u.id IN :ids")
-    List<User> findByIdIn(@Param("ids") List<UUID> ids);
 }

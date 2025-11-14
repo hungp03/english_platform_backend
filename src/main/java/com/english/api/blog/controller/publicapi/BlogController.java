@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,5 +41,12 @@ public class BlogController {
     public ResponseEntity<CommentResponse> createComment(@PathVariable UUID postId,
                                                          @Valid @RequestBody CommentCreateRequest req) {
         return ResponseEntity.ok(commentService.create(postId, req));
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteComment(@PathVariable UUID commentId) {
+        commentService.delete(commentId);
+        return ResponseEntity.noContent().build();
     }
 }
