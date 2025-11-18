@@ -293,7 +293,7 @@ import com.english.api.assessment.service.AttemptService;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.quiz.model.Quiz;
-import com.english.api.quiz.enums.QuizSkill;
+import com.english.api.quiz.model.enums.QuizSkill;
 import com.english.api.quiz.repository.QuestionOptionRepository;
 import com.english.api.quiz.repository.QuestionRepository;
 import com.english.api.quiz.repository.QuizRepository;

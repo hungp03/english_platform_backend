@@ -1,8 +1,8 @@
 package com.english.api.assessment.model;
 
-import com.english.api.quiz.enums.QuizSkill;
 import com.english.api.assessment.model.enums.QuizAttemptStatus;
 import com.english.api.quiz.model.Quiz;
+import com.english.api.quiz.model.enums.QuizSkill;
 import com.english.api.user.model.User;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
@@ -91,7 +91,7 @@ public class QuizAttempt {
         updatedAt = Instant.now();
     }
 
-    // ✅ Factory method tiện cho AttemptServiceImpl
+    // Factory method tiện cho AttemptServiceImpl
     public static QuizAttempt of(Quiz quiz, User user, QuizSkill skill, QuizAttemptStatus status) {
         return QuizAttempt.builder()
                 .quiz(quiz)

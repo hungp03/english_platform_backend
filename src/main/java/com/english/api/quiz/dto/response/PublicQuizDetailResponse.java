@@ -1,8 +1,9 @@
 package com.english.api.quiz.dto.response;
 
-import com.english.api.quiz.enums.QuizSkill;
 import java.util.List;
 import java.util.UUID;
+
+import com.english.api.quiz.model.enums.QuizSkill;
 
 public record PublicQuizDetailResponse(
     UUID id,

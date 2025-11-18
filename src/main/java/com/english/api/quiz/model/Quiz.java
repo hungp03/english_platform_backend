@@ -2,7 +2,8 @@ package com.english.api.quiz.model;
 import org.hibernate.annotations.BatchSize;
 import jakarta.persistence.*;
 import java.util.*;
-import com.english.api.quiz.enums.QuizStatus;
+
+import com.english.api.quiz.model.enums.QuizStatus;
 import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.*;
 import java.time.Instant;

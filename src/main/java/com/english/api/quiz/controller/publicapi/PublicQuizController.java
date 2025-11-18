@@ -2,7 +2,7 @@ package com.english.api.quiz.controller.publicapi;
 
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.quiz.dto.response.PublicQuizDetailResponse;
-import com.english.api.quiz.enums.QuizSkill;
+import com.english.api.quiz.model.enums.QuizSkill;
 import com.english.api.quiz.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;

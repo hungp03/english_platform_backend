@@ -10,8 +10,9 @@ import com.english.api.quiz.dto.response.PublicQuizDetailResponse;
 import com.english.api.quiz.dto.response.QuizListResponse;
 import com.english.api.quiz.dto.response.QuizResponse;
 import com.english.api.quiz.model.*;
+import com.english.api.quiz.model.enums.*;
 import com.english.api.quiz.repository.*;
-import com.english.api.quiz.enums.*;
+
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -19,12 +20,10 @@ import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.stream.Collectors;

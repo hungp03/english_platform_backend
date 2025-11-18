@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
-import com.english.api.quiz.enums.QuizStatus;
+import com.english.api.quiz.model.enums.QuizStatus;
 
 public record QuizUpdateRequest(
         @Size(max = 255) String title,

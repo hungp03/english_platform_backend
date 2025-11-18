@@ -11,13 +11,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(
-    name = "quiz_attempt_answers",
-    indexes = {
+@Table(name = "quiz_attempt_answers", indexes = {
         @Index(name = "idx_attempt_answers_attempt", columnList = "attempt_id"),
         @Index(name = "idx_attempt_answers_question", columnList = "question_id")
-    }
-)
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -55,6 +52,12 @@ public class QuizAttemptAnswer {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @OneToOne(mappedBy = "attemptAnswer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private SpeakingSubmission speakingSubmission;
+
+    @OneToOne(mappedBy = "attemptAnswer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private WritingSubmission writingSubmission;
+
     @PrePersist
     protected void prePersist() {
         if (id == null) {
@@ -62,7 +65,7 @@ public class QuizAttemptAnswer {
         }
     }
 
-    // ✅ Factory method tiện tạo mới
+    // Factory method tiện tạo mới
     public static QuizAttemptAnswer of(QuizAttempt attempt, Question question) {
         return QuizAttemptAnswer.builder()
                 .attempt(attempt)

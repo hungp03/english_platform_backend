@@ -4,7 +4,7 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.quiz.dto.request.QuizCreateRequest;
 import com.english.api.quiz.dto.request.QuizUpdateRequest;
 import com.english.api.quiz.dto.response.QuizResponse;
-import com.english.api.quiz.enums.*;
+import com.english.api.quiz.model.enums.*;
 // import com.english.api.quiz.model.QuizSkill;
 import com.english.api.quiz.service.QuizService;
 import jakarta.validation.Valid;

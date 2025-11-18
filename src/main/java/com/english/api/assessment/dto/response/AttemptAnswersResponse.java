@@ -3,7 +3,8 @@ package com.english.api.assessment.dto.response;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import com.english.api.quiz.enums.QuizSkill;
+
+import com.english.api.quiz.model.enums.QuizSkill;
 
 public record AttemptAnswersResponse(
     UUID attemptId,

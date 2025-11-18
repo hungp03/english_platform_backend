@@ -1,9 +1,9 @@
 package com.english.api.quiz.repository;
 
-import com.english.api.quiz.enums.QuizStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.english.api.quiz.model.Quiz;
+import com.english.api.quiz.model.enums.QuizStatus;
 
 import java.util.Optional;
 import java.util.UUID;
