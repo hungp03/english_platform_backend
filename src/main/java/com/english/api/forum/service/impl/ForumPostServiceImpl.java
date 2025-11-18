@@ -11,15 +11,22 @@ import com.english.api.user.repository.UserRepository;
 import com.english.api.forum.repo.ForumThreadRepository;
 import com.english.api.forum.service.ForumPostService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.stream.Collectors;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
-
+import java.util.ArrayList;
+import java.util.Comparator;
 @Service
 @RequiredArgsConstructor
 public class ForumPostServiceImpl implements ForumPostService {
@@ -30,13 +37,62 @@ public class ForumPostServiceImpl implements ForumPostService {
 
   @Override
   public PaginationResponse listByThread(UUID threadId, Pageable pageable, boolean onlyPublished) {
-    var t = threadRepo.findById(threadId).orElseThrow();
-    Page<ForumPost> page = onlyPublished
-        ? postRepo.findByThreadAndPublishedOrderByCreatedAtAsc(t, true, pageable)
-        : postRepo.findByThreadOrderByCreatedAtAsc(t, pageable);
-    var mapped = page.getContent().stream().map(this::toDto).toList();
-    return PaginationResponse.from(new PageImpl<>(mapped, pageable, page.getTotalElements()), pageable);
+      var thread = threadRepo.findById(threadId).orElseThrow();
+  
+      // 1. Lấy page bình thường như cũ
+      Page<ForumPost> page = onlyPublished
+              ? postRepo.findByThreadAndPublishedOrderByCreatedAtAsc(thread, true, pageable)
+              : postRepo.findByThreadOrderByCreatedAtAsc(thread, pageable);
+  
+      var postsInPage = page.getContent();
+  
+      // 2. Lấy id các post trong page
+      var pageIds = postsInPage.stream()
+              .map(ForumPost::getId)
+              .collect(Collectors.toSet());
+  
+      // 3. Tìm các parentId của post trong page, loại null, loại những thằng đã có trong page
+      var missingParentIds = postsInPage.stream()
+              .map(ForumPost::getParent)
+              .filter(Objects::nonNull)
+              .map(ForumPost::getId)
+              .filter(parentId -> !pageIds.contains(parentId))
+              .collect(Collectors.toSet());
+  
+      // 4. Query các parent bị thiếu
+      List<ForumPost> missingParents = missingParentIds.isEmpty()
+              ? Collections.emptyList()
+              : postRepo.findByIdIn(missingParentIds);
+  
+      // Optional: sort parent cho đẹp
+      missingParents.sort(Comparator.comparing(ForumPost::getCreatedAt));
+  
+      // 5. Map DTO: post trong page (chính)
+      var mainDtos = postsInPage.stream()
+              .map(this::toDto)
+              .toList();
+  
+      // 6. Map DTO: parent bổ sung
+      var parentDtos = missingParents.stream()
+              .map(this::toDto)
+              .toList();
+  
+      // 7. Gộp lại: result = [20 post trong page] + [các parent bổ sung]
+      var combined = new ArrayList<>(mainDtos.size() + parentDtos.size());
+      combined.addAll(mainDtos);
+      combined.addAll(parentDtos);
+  
+      // 8. Tạo PageImpl cho DTO rồi dùng PaginationResponse.from như cũ
+      Page<?> dtoPage = new PageImpl<>(
+              combined,
+              pageable,
+              page.getTotalElements()   // tổng vẫn là tổng số post thật, không đổi
+      );
+  
+      return PaginationResponse.from(dtoPage, pageable);
   }
+  
+
 
   @Override
   @Transactional
@@ -122,7 +178,13 @@ public class ForumPostServiceImpl implements ForumPostService {
     }
     // adjust thread counters
     var t = p.getThread();
+
+    // nếu là post cấp 1 (không có parent) -> xoá hết con rồi xoá nó
+    if (p.getParent() == null) {
+      postRepo.deleteByParent(p);
+    }
     postRepo.delete(p);
+          
     if (t != null) {
       long rc = Math.max(0, t.getReplyCount() - 1);
       t.setReplyCount(rc);
