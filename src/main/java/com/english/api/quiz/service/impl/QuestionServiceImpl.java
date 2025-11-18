@@ -23,7 +23,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +30,6 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
 
     private final QuizRepository quizRepository;
     private final QuestionRepository questionRepository;
-    private final QuestionOptionRepository optionRepository;
 
     @Transactional
     public QuestionResponse create(QuestionCreateRequest req) {
@@ -109,7 +107,6 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
 
     @Transactional(readOnly = true)
     public PaginationResponse listByQuiz(UUID quizId, Pageable pageable) {
-        // Page<Question> page = questionRepository.findByQuiz_Id(quizId, pageable);
         Page<Question> page = questionRepository.findByQuiz_IdOrderByOrderIndexAsc(quizId, pageable);
         return PaginationResponse.from(page.map(this::toResponse), pageable);
     }

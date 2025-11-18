@@ -2,31 +2,34 @@ package com.english.api.forum.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.forum.dto.request.ForumPostCreateRequest;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.entity.ForumPost;
-import com.english.api.forum.entity.ForumThread;
+import com.english.api.forum.mapper.ForumPostMapper;
 import com.english.api.forum.repo.ForumPostRepository;
+import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
 import com.english.api.forum.repo.ForumThreadRepository;
 import com.english.api.forum.service.ForumPostService;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.stream.Collectors;
+
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class ForumPostServiceImpl implements ForumPostService {
@@ -34,174 +37,154 @@ public class ForumPostServiceImpl implements ForumPostService {
   private final ForumPostRepository postRepo;
   private final ForumThreadRepository threadRepo;
   private final UserRepository userRepo;
+  private final ForumPostMapper forumPostMapper;
 
   @Override
   public PaginationResponse listByThread(UUID threadId, Pageable pageable, boolean onlyPublished) {
-      var thread = threadRepo.findById(threadId).orElseThrow();
-  
-      // 1. Lấy page bình thường như cũ
-      Page<ForumPost> page = onlyPublished
-              ? postRepo.findByThreadAndPublishedOrderByCreatedAtAsc(thread, true, pageable)
-              : postRepo.findByThreadOrderByCreatedAtAsc(thread, pageable);
-  
-      var postsInPage = page.getContent();
-  
-      // 2. Lấy id các post trong page
-      var pageIds = postsInPage.stream()
-              .map(ForumPost::getId)
-              .collect(Collectors.toSet());
-  
-      // 3. Tìm các parentId của post trong page, loại null, loại những thằng đã có trong page
-      var missingParentIds = postsInPage.stream()
-              .map(ForumPost::getParent)
-              .filter(Objects::nonNull)
-              .map(ForumPost::getId)
-              .filter(parentId -> !pageIds.contains(parentId))
-              .collect(Collectors.toSet());
-  
-      // 4. Query các parent bị thiếu
-      List<ForumPost> missingParents = missingParentIds.isEmpty()
-              ? Collections.emptyList()
-              : postRepo.findByIdIn(missingParentIds);
-  
-      // Optional: sort parent cho đẹp
-      missingParents.sort(Comparator.comparing(ForumPost::getCreatedAt));
-  
-      // 5. Map DTO: post trong page (chính)
-      var mainDtos = postsInPage.stream()
-              .map(this::toDto)
-              .toList();
-  
-      // 6. Map DTO: parent bổ sung
-      var parentDtos = missingParents.stream()
-              .map(this::toDto)
-              .toList();
-  
-      // 7. Gộp lại: result = [20 post trong page] + [các parent bổ sung]
-      var combined = new ArrayList<>(mainDtos.size() + parentDtos.size());
-      combined.addAll(mainDtos);
-      combined.addAll(parentDtos);
-  
-      // 8. Tạo PageImpl cho DTO rồi dùng PaginationResponse.from như cũ
-      Page<?> dtoPage = new PageImpl<>(
-              combined,
-              pageable,
-              page.getTotalElements()   // tổng vẫn là tổng số post thật, không đổi
-      );
-  
-      return PaginationResponse.from(dtoPage, pageable);
-  }
-  
+    var thread = threadRepo.findById(threadId).orElseThrow();
 
+    Page<ForumPost> page = onlyPublished
+        ? postRepo.findByThreadAndPublishedOrderByCreatedAtAsc(thread, true, pageable)
+        : postRepo.findByThreadOrderByCreatedAtAsc(thread, pageable);
+
+    var postsInPage = page.getContent();
+
+    var postIdsInPage = postsInPage.stream()
+        .map(ForumPost::getId)
+        .collect(Collectors.toSet());
+
+    var missingParentIds = postsInPage.stream()
+        .map(ForumPost::getParent)
+        .filter(Objects::nonNull)
+        .map(ForumPost::getId)
+        .filter(parentId -> !postIdsInPage.contains(parentId))
+        .collect(Collectors.toSet());
+
+    List<ForumPost> missingParents = missingParentIds.isEmpty()
+        ? Collections.emptyList()
+        : postRepo.findByIdIn(missingParentIds);
+
+    missingParents.sort(Comparator.comparing(ForumPost::getCreatedAt));
+
+    var allPostsWithParents = new ArrayList<ForumPost>(postsInPage.size() + missingParents.size());
+    allPostsWithParents.addAll(postsInPage);
+    allPostsWithParents.addAll(missingParents);
+
+    var allAuthorIds = allPostsWithParents.stream()
+        .map(ForumPost::getAuthorId)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+
+    Map<UUID, User> userMap = allAuthorIds.isEmpty()
+        ? Collections.emptyMap()
+        : userRepo.findAllById(allAuthorIds).stream()
+            .collect(Collectors.toMap(
+                User::getId,
+                u -> u
+            ));
+
+    var postResponsesInPage = postsInPage.stream()
+        .map(post -> forumPostMapper.toResponse(post, userMap))
+        .toList();
+
+    var parentPostResponses = missingParents.stream()
+        .map(post -> forumPostMapper.toResponse(post, userMap))
+        .toList();
+
+    var allPostResponses = new ArrayList<>(postResponsesInPage.size() + parentPostResponses.size());
+    allPostResponses.addAll(postResponsesInPage);
+    allPostResponses.addAll(parentPostResponses);
+
+    Page<?> dtoPage = new PageImpl<>(
+        allPostResponses,
+        pageable,
+        page.getTotalElements()
+    );
+
+    return PaginationResponse.from(dtoPage, pageable);
+  }
 
   @Override
   @Transactional
-  public ForumPostResponse create(UUID threadId, ForumPostCreateRequest req) {
+  public ForumPostResponse create(UUID threadId, ForumPostCreateRequest request) {
     UUID currentUserId = SecurityUtil.getCurrentUserId();
-    var t = threadRepo.findById(threadId).orElseThrow();
+    var thread = threadRepo.findById(threadId).orElseThrow();
 
-    if (t.isLocked()) {
+    if (thread.isLocked()) {
       throw new IllegalStateException("Thread is locked");
     }
 
-    var p = ForumPost.builder()
-        .thread(t)
-        .parent(req.parentId() == null ? null : ForumPost.builder().id(req.parentId()).build())
+    var post = ForumPost.builder()
+        .thread(thread)
+        .parent(request.parentId() == null ? null : ForumPost.builder().id(request.parentId()).build())
         .authorId(currentUserId)
-        .bodyMd(req.bodyMd())
+        .bodyMd(request.bodyMd())
         .published(true)
         .build();
 
-    p = postRepo.save(p);
+    post = postRepo.save(post);
 
-    t.setReplyCount(t.getReplyCount() + 1);
-    t.setLastPostAt(Instant.now());
-    t.setLastPostId(p.getId());
-    t.setLastPostAuthor(currentUserId);
-    threadRepo.save(t);
+    thread.setReplyCount(thread.getReplyCount() + 1);
+    thread.setLastPostAt(Instant.now());
+    thread.setLastPostId(post.getId());
+    thread.setLastPostAuthor(currentUserId);
+    threadRepo.save(thread);
 
-    return toDto(p);
+    return forumPostMapper.toResponse(post);
   }
 
   @Override
   @Transactional
   public ForumPostResponse hide(UUID postId) {
-    var p = postRepo.findById(postId).orElseThrow();
-    p.setPublished(false);
-    p = postRepo.save(p);
-    return toDto(p);
+    var post = postRepo.findById(postId).orElseThrow();
+    post.setPublished(false);
+    post = postRepo.save(post);
+    return forumPostMapper.toResponse(post);
   }
 
   @Override
   @Transactional
   public ForumPostResponse show(UUID postId) {
-    var p = postRepo.findById(postId).orElseThrow();
-    p.setPublished(true);
-    p = postRepo.save(p);
-    return toDto(p);
+    var post = postRepo.findById(postId).orElseThrow();
+    post.setPublished(true);
+    post = postRepo.save(post);
+    return forumPostMapper.toResponse(post);
   }
-
-  private ForumPostResponse toDto(ForumPost p) {
-    String authorName = null;
-    String authorAvatarUrl = null;
-  
-    if (p.getAuthorId() != null) {
-      var u = userRepo.findById(p.getAuthorId()).orElse(null);
-      if (u != null) {
-        authorName = u.getFullName();
-        authorAvatarUrl = u.getAvatarUrl();
-      }
-    }
-  
-    return new ForumPostResponse(
-        p.getId(),
-        p.getThread() != null ? p.getThread().getId() : null,
-        p.getParent() != null ? p.getParent().getId() : null,
-        p.getAuthorId(),
-        authorName,
-        authorAvatarUrl,
-        p.getBodyMd(),
-        p.isPublished(),
-        p.getCreatedAt(),
-        p.getUpdatedAt()
-    );
-  }
-  
 
   @Override
   @Transactional
-  public void deleteByOwner(java.util.UUID postId) {
-    java.util.UUID uid = com.english.api.auth.util.SecurityUtil.getCurrentUserId();
-    var p = postRepo.findById(postId).orElseThrow();
-    if (p.getAuthorId() == null || !p.getAuthorId().equals(uid)) {
-      throw new org.springframework.security.access.AccessDeniedException("Only author can delete this post");
+  public void deleteByOwner(UUID postId) {
+    UUID currentUserId = SecurityUtil.getCurrentUserId();
+    var post = postRepo.findById(postId).orElseThrow();
+    if (post.getAuthorId() == null || !post.getAuthorId().equals(currentUserId)) {
+      throw new AccessDeniedException("Only author can delete this post");
     }
     // adjust thread counters
-    var t = p.getThread();
+    var thread = post.getThread();
 
     // nếu là post cấp 1 (không có parent) -> xoá hết con rồi xoá nó
-    if (p.getParent() == null) {
-      postRepo.deleteByParent(p);
+    if (post.getParent() == null) {
+      postRepo.deleteByParent(post);
     }
-    postRepo.delete(p);
-          
-    if (t != null) {
-      long rc = Math.max(0, t.getReplyCount() - 1);
-      t.setReplyCount(rc);
-      threadRepo.save(t);
+    postRepo.delete(post);
+
+    if (thread != null) {
+      long replyCount = Math.max(0, thread.getReplyCount() - 1);
+      thread.setReplyCount(replyCount);
+      threadRepo.save(thread);
     }
   }
 
   @Override
   @Transactional
-  public void adminDelete(java.util.UUID postId) {
-    var p = postRepo.findById(postId).orElseThrow();
-    var t = p.getThread();
-    postRepo.delete(p);
-    if (t != null) {
-      long rc = Math.max(0, t.getReplyCount() - 1);
-      t.setReplyCount(rc);
-      threadRepo.save(t);
+  public void adminDelete(UUID postId) {
+    var post = postRepo.findById(postId).orElseThrow();
+    var thread = post.getThread();
+    postRepo.delete(post);
+    if (thread != null) {
+      long replyCount = Math.max(0, thread.getReplyCount() - 1);
+      thread.setReplyCount(replyCount);
+      threadRepo.save(thread);
     }
   }
 }

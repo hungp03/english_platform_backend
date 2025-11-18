@@ -16,7 +16,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/quiz/types")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminQuizTypeController {
 
     private final QuizTypeService service;

@@ -18,61 +18,54 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ForumCategoryServiceImpl implements ForumCategoryService {
 
-  private final ForumCategoryRepository repo;
+  private final ForumCategoryRepository categoryRepo;
 
   @Override
   public List<ForumCategoryResponse> list() {
-    return repo.findAll().stream().map(this::toDto).toList();
+    return categoryRepo.findAll().stream().map(this::toDto).toList();
   }
 
   @Override
   @Transactional
-  public ForumCategoryResponse create(ForumCategoryCreateRequest req) {
-    var cat = ForumCategory.builder()
-        .name(req.name())
-        .slug(SlugUtil.slugify(req.slug()))
-        .description(req.description())
+  public ForumCategoryResponse create(ForumCategoryCreateRequest request) {
+    var category = ForumCategory.builder()
+        .name(request.name())
+        .slug(SlugUtil.slugify(request.slug()))
+        .description(request.description())
         .build();
-    return toDto(repo.save(cat));
+    return toDto(categoryRepo.save(category));
   }
-
-  // @Override
-  // @Transactional
-  // public ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest req) {
-  //   var cat = repo.findById(id).orElseThrow();
-  //   if (req.name() != null) cat.setName(req.name());
-  //   if (req.slug() != null) cat.setSlug(SlugUtil.slugify(req.slug()));
-  //   if (req.description() != null) cat.setDescription(req.description());
-  //   return toDto(repo.save(cat));
-  // }
-  @Override
-@Transactional
-public ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest req) {
-    var cat = repo.findById(id).orElseThrow();
-
-    if (req.name() != null) {
-        cat.setName(req.name());
-        if (req.slug() == null || req.slug().isBlank()) {
-            cat.setSlug(SlugUtil.slugify(req.name()));
-        }
-    }
-
-    if (req.slug() != null && !req.slug().isBlank()) {
-        cat.setSlug(SlugUtil.slugify(req.slug()));
-    }
-
-    if (req.description() != null) {
-        cat.setDescription(req.description());
-    }
-
-    return toDto(repo.save(cat));
-}
 
   @Override
   @Transactional
-  public void delete(UUID id) { repo.deleteById(id); }
+  public ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest request) {
+    var category = categoryRepo.findById(id).orElseThrow();
 
-  private ForumCategoryResponse toDto(ForumCategory c) {
-    return new ForumCategoryResponse(c.getId(), c.getName(), c.getSlug(), c.getDescription(), c.getCreatedAt());
+    if (request.name() != null) {
+      category.setName(request.name());
+      if (request.slug() == null || request.slug().isBlank()) {
+        category.setSlug(SlugUtil.slugify(request.name()));
+      }
+    }
+
+    if (request.slug() != null && !request.slug().isBlank()) {
+      category.setSlug(SlugUtil.slugify(request.slug()));
+    }
+
+    if (request.description() != null) {
+      category.setDescription(request.description());
+    }
+
+    return toDto(categoryRepo.save(category));
+  }
+
+  @Override
+  @Transactional
+  public void delete(UUID id) {
+    categoryRepo.deleteById(id);
+  }
+
+  private ForumCategoryResponse toDto(ForumCategory category) {
+    return new ForumCategoryResponse(category.getId(), category.getName(), category.getSlug(), category.getDescription(), category.getCreatedAt());
   }
 }

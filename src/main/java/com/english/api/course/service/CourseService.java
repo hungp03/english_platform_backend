@@ -38,6 +38,8 @@ public interface CourseService {
 
     PaginationResponse getPublishedCourses(Pageable pageable, String keyword, String[] skills);
 
+    PaginationResponse getPublishedByInstructor(UUID instructorId, Pageable pageable, String keyword, String[] skills);
+
     CourseCheckoutResponse getCheckoutInfoById(UUID id);
     
     /**
