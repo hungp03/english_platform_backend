@@ -66,12 +66,12 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     public SpeakingSubmissionResponse getSubmission(UUID submissionId) {
         SpeakingSubmission submission = submissionRepo.findById(submissionId)
                 .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + submissionId));
-        
+
         UUID userId = SecurityUtil.getCurrentUserId();
         if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
             throw new SecurityException("Not authorized to access this submission");
         }
-        
+
         return toResponse(submission);
     }
 
@@ -103,12 +103,12 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     public SpeakingSubmissionResponse retryGrading(UUID submissionId) {
         SpeakingSubmission submission = submissionRepo.findById(submissionId)
                 .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + submissionId));
-        
+
         UUID userId = SecurityUtil.getCurrentUserId();
         if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
             throw new SecurityException("Not authorized to access this submission");
         }
-        
+
         return toResponse(submission);
     }
 
@@ -117,12 +117,12 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     public void deleteSubmission(UUID submissionId) {
         SpeakingSubmission submission = submissionRepo.findById(submissionId)
                 .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + submissionId));
-        
+
         UUID userId = SecurityUtil.getCurrentUserId();
         if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
             throw new SecurityException("Not authorized to delete this submission");
         }
-        
+
         submissionRepo.delete(submission);
     }
 
@@ -131,7 +131,7 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     public void handleAICallback(AICallbackSpeakingRequest request) {
         SpeakingSubmission submission = submissionRepo.findById(request.submissionId())
                 .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + request.submissionId()));
-        
+
         submission.setTranscript(request.transcript());
         submission.setAiFluency(request.aiFluency());
         submission.setAiPronunciation(request.aiPronunciation());
@@ -139,7 +139,7 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
         submission.setAiVocabulary(request.aiVocabulary());
         submission.setAiScore(request.aiScore());
         submission.setFeedback(request.feedback());
-        
+
         submissionRepo.save(submission);
     }
 

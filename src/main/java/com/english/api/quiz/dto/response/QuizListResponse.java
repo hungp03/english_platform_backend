@@ -1,10 +1,10 @@
 package com.english.api.quiz.dto.response;
 
-import java.time.Instant;
-import java.util.UUID;
-
 import com.english.api.quiz.model.enums.QuizSkill;
 import com.english.api.quiz.model.enums.QuizStatus;
+
+import java.time.Instant;
+import java.util.UUID;
 
 public record QuizListResponse(
         UUID id,
@@ -18,4 +18,5 @@ public record QuizListResponse(
         String quizTypeName,
         Instant createdAt,
         Instant updatedAt
-) {}
+) {
+}

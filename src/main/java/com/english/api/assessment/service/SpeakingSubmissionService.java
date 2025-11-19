@@ -9,9 +9,14 @@ import java.util.UUID;
 
 public interface SpeakingSubmissionService {
     SpeakingSubmissionResponse submitAudio(UUID attemptId, UUID answerId, SpeakingSubmissionRequest request);
+
     SpeakingSubmissionResponse getSubmission(UUID submissionId);
+
     Optional<SpeakingSubmissionResponse> getSubmissionByAnswer(UUID attemptId, UUID answerId);
+
     SpeakingSubmissionResponse retryGrading(UUID submissionId);
+
     void deleteSubmission(UUID submissionId);
+
     void handleAICallback(AICallbackSpeakingRequest request);
 }

@@ -8,5 +8,6 @@ import java.util.UUID;
 
 public interface WritingSubmissionRepository extends JpaRepository<WritingSubmission, UUID> {
     Optional<WritingSubmission> findByAttemptAnswer_Id(UUID attemptAnswerId);
+
     boolean existsByAttemptAnswer_Id(UUID attemptAnswerId);
 }

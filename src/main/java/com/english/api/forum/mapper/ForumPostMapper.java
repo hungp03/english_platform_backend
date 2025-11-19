@@ -3,7 +3,9 @@ package com.english.api.forum.mapper;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.entity.ForumPost;
 import com.english.api.user.model.User;
-import org.mapstruct.*;
+import org.mapstruct.Context;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.Map;
 import java.util.UUID;

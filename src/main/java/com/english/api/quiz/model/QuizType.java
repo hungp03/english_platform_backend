@@ -1,13 +1,13 @@
 package com.english.api.quiz.model;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
-import com.github.f4b6a3.uuid.UuidCreator;
 
 import java.time.Instant;
-import java.util.UUID;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -22,7 +22,7 @@ public class QuizType {
     private UUID id;
 
 
-    @Column(nullable = false, length = 255, unique = true)
+    @Column(nullable = false, unique = true)
     private String name;
 
     @Column(length = 512)

@@ -7,11 +7,12 @@ import com.english.api.user.model.User;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
-
 import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -20,13 +21,13 @@ import java.util.*;
 @Builder
 @Entity
 @Table(
-    name = "quiz_attempts",
-    indexes = {
-        @Index(name = "idx_quiz_attempts_user", columnList = "user_id"),
-        @Index(name = "idx_quiz_attempts_quiz", columnList = "quiz_id")
-    }
+        name = "quiz_attempts",
+        indexes = {
+                @Index(name = "idx_quiz_attempts_user", columnList = "user_id"),
+                @Index(name = "idx_quiz_attempts_quiz", columnList = "quiz_id")
+        }
 )
-@BatchSize(size = 20) // ✅ gom 20 attempt mỗi batch
+@BatchSize(size = 20)
 public class QuizAttempt {
 
     @Id
@@ -49,7 +50,7 @@ public class QuizAttempt {
     private QuizAttemptStatus status;
 
     @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
-    @BatchSize(size = 30) // ✅ gom 30 answer/lần khi load
+    @BatchSize(size = 30) // gom 30 answer/lần khi load
     private List<QuizAttemptAnswer> answers = new ArrayList<>();
 
     @Builder.Default

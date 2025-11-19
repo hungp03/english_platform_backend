@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.UUID;
 
 public record ForumThreadCreateRequest(
-    String title,
-    String bodyMd,
-    List<UUID> categoryIds
-) {}
+        String title,
+        String bodyMd,
+        List<UUID> categoryIds
+) {
+}

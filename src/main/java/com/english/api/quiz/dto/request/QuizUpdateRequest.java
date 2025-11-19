@@ -1,10 +1,9 @@
 package com.english.api.quiz.dto.request;
 
+import com.english.api.quiz.model.enums.QuizStatus;
 import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
-
-import com.english.api.quiz.model.enums.QuizStatus;
 
 public record QuizUpdateRequest(
         @Size(max = 255) String title,
@@ -17,4 +16,5 @@ public record QuizUpdateRequest(
         String questionText,
         String explanation
 
-) {}
+) {
+}

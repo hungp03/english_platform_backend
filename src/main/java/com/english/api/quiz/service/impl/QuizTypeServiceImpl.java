@@ -72,12 +72,12 @@ public class QuizTypeServiceImpl implements com.english.api.quiz.service.QuizTyp
 
     private QuizTypeResponse toResponse(QuizType e) {
         return new QuizTypeResponse(
-            e.getId(), 
-            // e.getCode(), 
-            e.getName(), 
-            e.getDescription(), 
-            e.getCreatedAt(), 
-            e.getUpdatedAt()
+                e.getId(),
+                // e.getCode(),
+                e.getName(),
+                e.getDescription(),
+                e.getCreatedAt(),
+                e.getUpdatedAt()
         );
     }
 }

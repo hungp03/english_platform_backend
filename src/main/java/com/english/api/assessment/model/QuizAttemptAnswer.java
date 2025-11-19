@@ -11,10 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "quiz_attempt_answers", indexes = {
-        @Index(name = "idx_attempt_answers_attempt", columnList = "attempt_id"),
-        @Index(name = "idx_attempt_answers_question", columnList = "question_id")
-})
+@Table(name = "quiz_attempt_answers", indexes = {@Index(name = "idx_attempt_answers_attempt", columnList = "attempt_id"), @Index(name = "idx_attempt_answers_question", columnList = "question_id")})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -67,9 +64,6 @@ public class QuizAttemptAnswer {
 
     // Factory method tiện tạo mới
     public static QuizAttemptAnswer of(QuizAttempt attempt, Question question) {
-        return QuizAttemptAnswer.builder()
-                .attempt(attempt)
-                .question(question)
-                .build();
+        return QuizAttemptAnswer.builder().attempt(attempt).question(question).build();
     }
 }

@@ -9,7 +9,9 @@ import com.english.api.forum.repo.ForumPostRepository;
 import com.english.api.forum.repo.ForumThreadRepository;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
-import org.mapstruct.*;
+import org.mapstruct.Context;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;

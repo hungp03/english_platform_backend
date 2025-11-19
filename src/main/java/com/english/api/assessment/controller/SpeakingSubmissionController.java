@@ -19,10 +19,7 @@ public class SpeakingSubmissionController {
     private final SpeakingSubmissionService speakingSubmissionService;
 
     @PostMapping("/attempts/{attemptId}/answers/{answerId}/speaking")
-    public SpeakingSubmissionResponse submitAudio(
-            @PathVariable UUID attemptId,
-            @PathVariable UUID answerId,
-            @Valid @RequestBody SpeakingSubmissionRequest request) {
+    public SpeakingSubmissionResponse submitAudio(@PathVariable UUID attemptId, @PathVariable UUID answerId, @Valid @RequestBody SpeakingSubmissionRequest request) {
         return speakingSubmissionService.submitAudio(attemptId, answerId, request);
     }
 
@@ -32,11 +29,8 @@ public class SpeakingSubmissionController {
     }
 
     @GetMapping("/attempts/{attemptId}/answers/{answerId}/speaking")
-    public SpeakingSubmissionResponse getSubmissionByAnswer(
-            @PathVariable UUID attemptId,
-            @PathVariable UUID answerId) {
-        return speakingSubmissionService.getSubmissionByAnswer(attemptId, answerId)
-                .orElse(null);
+    public SpeakingSubmissionResponse getSubmissionByAnswer(@PathVariable UUID attemptId, @PathVariable UUID answerId) {
+        return speakingSubmissionService.getSubmissionByAnswer(attemptId, answerId).orElse(null);
     }
 
     @PostMapping("/speaking-submissions/{submissionId}/retry")

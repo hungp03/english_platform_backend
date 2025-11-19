@@ -4,16 +4,21 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.quiz.dto.request.QuizCreateRequest;
 import com.english.api.quiz.dto.request.QuizUpdateRequest;
 import com.english.api.quiz.dto.response.PublicQuizDetailResponse;
-import com.english.api.quiz.dto.response.QuizListResponse;
 import com.english.api.quiz.dto.response.QuizResponse;
 import com.english.api.quiz.mapper.QuizMapper;
-import com.english.api.quiz.model.*;
-import com.english.api.quiz.model.enums.*;
-import com.english.api.quiz.repository.*;
+import com.english.api.quiz.model.Question;
+import com.english.api.quiz.model.Quiz;
+import com.english.api.quiz.model.QuizType;
+import com.english.api.quiz.model.enums.QuizSkill;
+import com.english.api.quiz.model.enums.QuizStatus;
+import com.english.api.quiz.repository.QuizRepository;
+import com.english.api.quiz.repository.QuizSectionRepository;
+import com.english.api.quiz.repository.QuizTypeRepository;
 import com.english.api.quiz.service.QuizService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +38,7 @@ public class QuizServiceImpl implements QuizService {
 
     @Transactional(readOnly = true)
     public PaginationResponse search(String keyword, UUID quizTypeId, UUID quizSectionId, QuizStatus status,
-            QuizSkill skill, Pageable pageable) {
+                                     QuizSkill skill, Pageable pageable) {
         String trimmedKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
         Page<Quiz> page = quizRepository.searchQuizzes(trimmedKeyword, quizTypeId, quizSectionId, status, skill,
                 pageable);
@@ -135,7 +140,7 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public PaginationResponse publicSearch(UUID quizTypeId, UUID quizSectionId,
-            QuizSkill skill, Pageable pageable) {
+                                           QuizSkill skill, Pageable pageable) {
         Page<Quiz> page = quizRepository.publicSearchQuizzes(quizTypeId, quizSectionId, skill, pageable);
         return PaginationResponse.from(page.map(quizMapper::toQuizListResponse), pageable);
     }

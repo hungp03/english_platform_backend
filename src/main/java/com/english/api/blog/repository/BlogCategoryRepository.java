@@ -1,11 +1,10 @@
 package com.english.api.blog.repository;
 
-import java.util.UUID;
-
+import com.english.api.blog.model.BlogCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.english.api.blog.model.BlogCategory;
+import java.util.UUID;
 
 @Repository
 public interface BlogCategoryRepository extends JpaRepository<BlogCategory, UUID> {

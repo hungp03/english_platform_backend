@@ -4,7 +4,8 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.quiz.dto.request.QuizCreateRequest;
 import com.english.api.quiz.dto.request.QuizUpdateRequest;
 import com.english.api.quiz.dto.response.QuizResponse;
-import com.english.api.quiz.model.enums.*;
+import com.english.api.quiz.model.enums.QuizSkill;
+import com.english.api.quiz.model.enums.QuizStatus;
 import com.english.api.quiz.service.QuizService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/quiz/quizzes")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminQuizController {
 
     private final QuizService service;

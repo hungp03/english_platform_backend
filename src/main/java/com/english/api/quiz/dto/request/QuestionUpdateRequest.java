@@ -10,4 +10,5 @@ public record QuestionUpdateRequest(
         @Size(max = 2000) String content,
         Integer orderIndex,
         List<QuestionOptionCreateRequest> options
-) {}
+) {
+}

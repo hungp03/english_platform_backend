@@ -4,8 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 public record ForumThreadUpdateRequest(
-    String title,
-    String bodyMd,
-    List<UUID> categoryIds,
-    Boolean locked
-) {}
+        String title,
+        String bodyMd,
+        List<UUID> categoryIds,
+        Boolean locked
+) {
+}

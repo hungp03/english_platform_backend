@@ -8,10 +8,15 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface ForumPostService {
-  PaginationResponse listByThread(UUID threadId, Pageable pageable, boolean onlyPublished);
-  ForumPostResponse create(UUID threadId, ForumPostCreateRequest req);
-  ForumPostResponse hide(UUID postId);
-  ForumPostResponse show(UUID postId);
-  void deleteByOwner(UUID postId);
-  void adminDelete(UUID postId);
+    PaginationResponse listByThread(UUID threadId, Pageable pageable, boolean onlyPublished);
+
+    ForumPostResponse create(UUID threadId, ForumPostCreateRequest req);
+
+    ForumPostResponse hide(UUID postId);
+
+    ForumPostResponse show(UUID postId);
+
+    void deleteByOwner(UUID postId);
+
+    void adminDelete(UUID postId);
 }

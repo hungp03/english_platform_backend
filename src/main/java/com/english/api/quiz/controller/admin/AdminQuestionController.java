@@ -17,7 +17,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/quiz/questions")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminQuestionController {
 
     private final QuestionService service;

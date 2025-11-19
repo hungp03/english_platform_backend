@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -74,24 +75,24 @@ public class ForumReportServiceImpl implements ForumReportService {
 
         var userIds = reports.stream()
                 .map(ForumReport::getUserId)
-                .filter(id -> id != null)
+                .filter(Objects::nonNull)
                 .distinct()
                 .toList();
 
         Map<UUID, ForumPost> postMap = postIds.isEmpty()
                 ? Collections.emptyMap()
                 : postRepo.findAllById(postIds).stream()
-                        .collect(Collectors.toMap(ForumPost::getId, post -> post));
+                .collect(Collectors.toMap(ForumPost::getId, post -> post));
 
         Map<UUID, ForumThread> threadMap = threadIds.isEmpty()
                 ? Collections.emptyMap()
                 : threadRepo.findAllById(threadIds).stream()
-                        .collect(Collectors.toMap(ForumThread::getId, thread -> thread));
+                .collect(Collectors.toMap(ForumThread::getId, thread -> thread));
 
         Map<UUID, User> userMap = userIds.isEmpty()
                 ? Collections.emptyMap()
                 : userRepo.findAllById(userIds).stream()
-                        .collect(Collectors.toMap(User::getId, user -> user));
+                .collect(Collectors.toMap(User::getId, user -> user));
 
         var reportResponses = reports.stream()
                 .map(report -> forumReportMapper.toResponse(report, userMap, postMap, threadMap))

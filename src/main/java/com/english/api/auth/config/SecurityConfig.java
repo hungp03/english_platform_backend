@@ -134,12 +134,12 @@ public class SecurityConfig {
                 .oauth2Login(oauth -> oauth
                         .loginPage("/oauth2/authorization/google")
                         .successHandler(oAuth2LoginSuccessHandler)
-                                .failureHandler((request, response, exception) -> {
+                        .failureHandler((request, response, exception) -> {
                             System.err.println("OAuth2 Login Error: " + exception.getMessage());
                             System.err.println("Request URI: " + request.getRequestURI());
                             System.err.println("Query String: " + request.getQueryString());
-                                    response.sendRedirect(client + "/authentication/error?isLogin=false");
-                                })
+                            response.sendRedirect(client + "/authentication/error?isLogin=false");
+                        })
                 );
         return http.build();
     }

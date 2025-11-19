@@ -9,7 +9,9 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface ForumReportService {
-  ForumReportResponse create(ForumReportCreateRequest req);
-  PaginationResponse list(ReportTargetType type, boolean onlyOpen, Pageable pageable);
-  ForumReportResponse resolve(UUID reportId);
+    ForumReportResponse create(ForumReportCreateRequest req);
+
+    PaginationResponse list(ReportTargetType type, boolean onlyOpen, Pageable pageable);
+
+    ForumReportResponse resolve(UUID reportId);
 }

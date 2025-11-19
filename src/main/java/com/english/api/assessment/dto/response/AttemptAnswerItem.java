@@ -4,14 +4,15 @@ import java.util.List;
 import java.util.UUID;
 
 public record AttemptAnswerItem(
-    UUID questionId,
-    String questionContent,
-    Integer orderIndex,
-    UUID selectedOptionId,
-    String selectedOptionContent,
-    List<OptionBrief> correctOptions,
-    Boolean isCorrect,
-    String answerText,
-    Integer timeSpentMs,
-    List<OptionReview> options
-) {}
+        UUID questionId,
+        String questionContent,
+        Integer orderIndex,
+        UUID selectedOptionId,
+        String selectedOptionContent,
+        List<OptionBrief> correctOptions,
+        Boolean isCorrect,
+        String answerText,
+        Integer timeSpentMs,
+        List<OptionReview> options
+) {
+}

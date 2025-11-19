@@ -1,14 +1,11 @@
 package com.english.api.quiz.mapper;
 
-import com.english.api.quiz.dto.response.PublicOption;
-import com.english.api.quiz.dto.response.PublicQuestion;
-import com.english.api.quiz.dto.response.PublicQuizDetailResponse;
-import com.english.api.quiz.dto.response.QuizListResponse;
-import com.english.api.quiz.dto.response.QuizResponse;
+import com.english.api.quiz.dto.response.*;
 import com.english.api.quiz.model.Question;
 import com.english.api.quiz.model.QuestionOption;
 import com.english.api.quiz.model.Quiz;
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 

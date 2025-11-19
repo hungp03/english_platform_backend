@@ -9,4 +9,5 @@ public record QuestionOptionCreateRequest(
         @NotNull Boolean correct,
         @Size(max = 2000) String explanation,
         Integer orderIndex
-) {}
+) {
+}

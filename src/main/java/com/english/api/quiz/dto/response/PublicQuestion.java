@@ -4,11 +4,12 @@ import java.util.List;
 import java.util.UUID;
 
 public record PublicQuestion(
-    UUID id,
-    Integer orderIndex,
-    String content,
-    // String contextText,
-    // String imageUrl,
-    // String audioUrl,
-    List<PublicOption> options
-) {}
+        UUID id,
+        Integer orderIndex,
+        String content,
+        // String contextText,
+        // String imageUrl,
+        // String audioUrl,
+        List<PublicOption> options
+) {
+}

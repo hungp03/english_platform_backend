@@ -15,7 +15,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/quiz/question-options")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminQuestionOptionController {
 
     private final QuestionOptionService service;

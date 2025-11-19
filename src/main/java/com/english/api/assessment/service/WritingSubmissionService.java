@@ -9,9 +9,14 @@ import java.util.UUID;
 
 public interface WritingSubmissionService {
     WritingSubmissionResponse submitWriting(UUID attemptId, UUID answerId, WritingSubmissionRequest request);
+
     WritingSubmissionResponse getSubmission(UUID submissionId);
+
     Optional<WritingSubmissionResponse> getSubmissionByAnswer(UUID attemptId, UUID answerId);
+
     WritingSubmissionResponse retryGrading(UUID submissionId);
+
     void deleteSubmission(UUID submissionId);
+
     void handleAICallback(AICallbackWritingRequest request);
 }

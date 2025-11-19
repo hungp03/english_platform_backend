@@ -19,10 +19,7 @@ public class WritingSubmissionController {
     private final WritingSubmissionService writingSubmissionService;
 
     @PostMapping("/attempts/{attemptId}/answers/{answerId}/writing")
-    public WritingSubmissionResponse submitWriting(
-            @PathVariable UUID attemptId,
-            @PathVariable UUID answerId,
-            @Valid @RequestBody WritingSubmissionRequest request) {
+    public WritingSubmissionResponse submitWriting(@PathVariable UUID attemptId, @PathVariable UUID answerId, @Valid @RequestBody WritingSubmissionRequest request) {
         return writingSubmissionService.submitWriting(attemptId, answerId, request);
     }
 
@@ -32,11 +29,8 @@ public class WritingSubmissionController {
     }
 
     @GetMapping("/attempts/{attemptId}/answers/{answerId}/writing")
-    public WritingSubmissionResponse getSubmissionByAnswer(
-            @PathVariable UUID attemptId,
-            @PathVariable UUID answerId) {
-        return writingSubmissionService.getSubmissionByAnswer(attemptId, answerId)
-                .orElse(null);
+    public WritingSubmissionResponse getSubmissionByAnswer(@PathVariable UUID attemptId, @PathVariable UUID answerId) {
+        return writingSubmissionService.getSubmissionByAnswer(attemptId, answerId).orElse(null);
     }
 
     @PostMapping("/writing-submissions/{submissionId}/retry")

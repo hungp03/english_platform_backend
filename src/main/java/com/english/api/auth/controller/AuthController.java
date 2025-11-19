@@ -63,7 +63,6 @@ public class AuthController {
     }
 
 
-
     @PostMapping("refresh")
     public ResponseEntity<UserLoginResponse> refresh(@CookieValue(name = "refresh_token", defaultValue = "none") String refreshToken) {
         System.out.println(refreshToken);

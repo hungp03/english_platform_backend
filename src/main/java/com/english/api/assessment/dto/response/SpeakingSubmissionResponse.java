@@ -7,15 +7,16 @@ import java.util.UUID;
 
 @Builder
 public record SpeakingSubmissionResponse(
-    UUID id,
-    UUID attemptAnswerId,
-    String audioUrl,
-    String transcript,
-    Double aiFluency,
-    Double aiPronunciation,
-    Double aiGrammar,
-    Double aiVocabulary,
-    Double aiScore,
-    String feedback,
-    Instant createdAt
-) {}
+        UUID id,
+        UUID attemptAnswerId,
+        String audioUrl,
+        String transcript,
+        Double aiFluency,
+        Double aiPronunciation,
+        Double aiGrammar,
+        Double aiVocabulary,
+        Double aiScore,
+        String feedback,
+        Instant createdAt
+) {
+}

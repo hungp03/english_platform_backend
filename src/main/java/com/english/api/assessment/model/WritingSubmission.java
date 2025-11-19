@@ -9,12 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(
-        name = "writing_submissions",
-        indexes = {
-                @Index(name = "idx_writing_answer", columnList = "attempt_answer_id")
-        }
-)
+@Table(name = "writing_submissions", indexes = {@Index(name = "idx_writing_answer", columnList = "attempt_answer_id")})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,12 +22,7 @@ public class WritingSubmission {
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "attempt_answer_id",
-            nullable = false,
-            unique = true,
-            foreignKey = @ForeignKey(name = "fk_writing_answer")
-    )
+    @JoinColumn(name = "attempt_answer_id", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_writing_answer"))
     private QuizAttemptAnswer attemptAnswer;
 
     // =====================

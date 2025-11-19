@@ -6,6 +6,7 @@ import com.english.api.quiz.dto.request.QuizSectionUpdateRequest;
 import com.english.api.quiz.dto.response.QuizSectionResponse;
 import com.english.api.quiz.service.QuizSectionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/quiz/sections")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminQuizSectionController {
 
     private final QuizSectionService service;
