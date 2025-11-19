@@ -1,7 +1,6 @@
 package com.english.api.assessment.repository;
 
 import com.english.api.assessment.model.QuizAttempt;
-import com.english.api.assessment.model.enums.QuizAttemptStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,9 +1,9 @@
 package com.english.api.order.service;
 
 import com.english.api.order.dto.request.PayOSCheckoutRequest;
-import com.english.api.order.dto.request.StripeCheckoutRequest;
+import com.english.api.order.dto.request.PayPalCheckoutRequest;
 import com.english.api.order.dto.response.PaymentResponse;
-import com.english.api.order.dto.response.StripeCheckoutResponse;
+import com.english.api.order.dto.response.PayPalCheckoutResponse;
 import vn.payos.type.CheckoutResponseData;
 
 import java.util.List;
@@ -16,11 +16,11 @@ import java.util.UUID;
 public interface PaymentService {
 
     /**
-     * Create a checkout session for Stripe payment
+     * Create a checkout order for PayPal payment
      * @param request the checkout request
-     * @return the checkout response with session URL
+     * @return the checkout response with approval URL
      */
-    StripeCheckoutResponse createStripeCheckout(StripeCheckoutRequest request);
+    PayPalCheckoutResponse createPayPalCheckout(PayPalCheckoutRequest request);
 
     /**
      * Get payments by order ID

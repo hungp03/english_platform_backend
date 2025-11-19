@@ -1,14 +1,12 @@
 package com.english.api.order.controller;
 
 import com.english.api.order.dto.request.PayOSCheckoutRequest;
-import com.english.api.order.dto.request.StripeCheckoutRequest;
+import com.english.api.order.dto.request.PayPalCheckoutRequest;
 import com.english.api.order.dto.response.PaymentResponse;
-import com.english.api.order.dto.response.StripeCheckoutResponse;
+import com.english.api.order.dto.response.PayPalCheckoutResponse;
 import com.english.api.order.service.PayOSPaymentService;
 import com.english.api.order.service.PaymentService;
-import com.english.api.order.service.StripePaymentService;
-import com.stripe.model.Event;
-import com.stripe.model.checkout.Session;
+import com.english.api.order.service.PayPalPaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,16 +27,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final StripePaymentService stripePaymentService;
+    private final PayPalPaymentService payPalPaymentService;
     private final PayOSPaymentService payOSPaymentService;
     private final PaymentService paymentService;
 
-    @PostMapping("/stripe/checkout")
+    @PostMapping("/paypal/checkout")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<StripeCheckoutResponse> createStripeCheckout(
-            @Valid @RequestBody StripeCheckoutRequest request) {
-        StripeCheckoutResponse response = paymentService.createStripeCheckout(request);
+    public ResponseEntity<PayPalCheckoutResponse> createPayPalCheckout(
+            @Valid @RequestBody PayPalCheckoutRequest request) {
+        PayPalCheckoutResponse response = paymentService.createPayPalCheckout(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/paypal/capture/{paypalOrderId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> capturePayPalOrder(@PathVariable String paypalOrderId) {
+        payPalPaymentService.captureOrder(paypalOrderId);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/payos/checkout")
@@ -65,34 +70,21 @@ public class PaymentController {
         return ResponseEntity.ok(payment);
     }
 
-    @PostMapping("/stripe/webhook")
-    public ResponseEntity<String> handleStripeWebhook(
-            @RequestBody String payload,
-            @RequestHeader("Stripe-Signature") String sigHeader) {
-        try {
-            Event event = stripePaymentService.handleWebhook(payload, sigHeader);
-            switch (event.getType()) {
-                case "checkout.session.completed":
-                    Session session = (Session) event.getDataObjectDeserializer()
-                            .getObject()
-                            .orElseThrow(() -> new RuntimeException("Failed to deserialize session"));
-                    stripePaymentService.processSuccessfulCheckout(session);
-                    break;
-                case "checkout.session.expired":
-                case "payment_intent.succeeded":
-                case "payment_intent.payment_failed":
-                    break;
-            }
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Webhook processing failed");
-        }
-    }
-
     @PostMapping("/payos/webhook")
     public ResponseEntity<String> handlePayOSWebhook(@RequestBody Webhook webhook) {
         try {
             payOSPaymentService.handleWebhook(webhook);
+            return ResponseEntity.ok("Webhook processed");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Webhook failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/paypal/webhook")
+    public ResponseEntity<String> handlePayPalWebhook(
+            @RequestBody com.english.api.order.dto.request.PayPalWebhookRequest webhook) {
+        try {
+            payPalPaymentService.handleWebhook(webhook);
             return ResponseEntity.ok("Webhook processed");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Webhook failed: " + e.getMessage());

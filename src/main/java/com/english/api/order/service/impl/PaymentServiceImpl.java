@@ -2,15 +2,15 @@ package com.english.api.order.service.impl;
 
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.order.dto.request.PayOSCheckoutRequest;
-import com.english.api.order.dto.request.StripeCheckoutRequest;
+import com.english.api.order.dto.request.PayPalCheckoutRequest;
 import com.english.api.order.dto.response.PaymentResponse;
-import com.english.api.order.dto.response.StripeCheckoutResponse;
+import com.english.api.order.dto.response.PayPalCheckoutResponse;
 import com.english.api.order.mapper.OrderMapper;
 import com.english.api.order.model.Payment;
 import com.english.api.order.repository.PaymentRepository;
 import com.english.api.order.service.PayOSPaymentService;
+import com.english.api.order.service.PayPalPaymentService;
 import com.english.api.order.service.PaymentService;
-import com.english.api.order.service.StripePaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +27,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
-    private final StripePaymentService stripePaymentService;
+    private final PayPalPaymentService payPalPaymentService;
     private final PaymentRepository paymentRepository;
     private final PayOSPaymentService payOSPaymentService;
     private final OrderMapper orderMapper;
 
     @Override
     @Transactional
-    public StripeCheckoutResponse createStripeCheckout(StripeCheckoutRequest request) {
-        return stripePaymentService.createCheckoutSession(request);
+    public PayPalCheckoutResponse createPayPalCheckout(PayPalCheckoutRequest request) {
+        return payPalPaymentService.createCheckoutOrder(request);
     }
 
     @Override
