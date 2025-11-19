@@ -5,9 +5,11 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.order.dto.request.CancelOrderRequest;
 import com.english.api.order.dto.request.CreateOrderRequest;
 import com.english.api.order.dto.request.UpdateOrderStatusRequest;
+import com.english.api.order.dto.response.InvoiceResponse;
 import com.english.api.order.dto.response.OrderDetailResponse;
 import com.english.api.order.dto.response.OrderResponse;
 import com.english.api.order.model.enums.OrderStatus;
+import com.english.api.order.service.InvoiceService;
 import com.english.api.order.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import java.util.UUID;
 public class OrderController {
 
     private final OrderService orderService;
+    private final InvoiceService invoiceService;
 
     /**
      * Create a new order
@@ -106,6 +109,16 @@ public class OrderController {
             @PathVariable UUID id,
             @Valid @RequestBody UpdateOrderStatusRequest request) {
         OrderResponse response = orderService.updateOrderStatus(id, request.status(), request.cancelReason());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get invoice information for an order
+     */
+    @GetMapping("/{orderId}/invoice")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<InvoiceResponse> getOrderInvoice(@PathVariable UUID orderId) {
+        InvoiceResponse response = invoiceService.getInvoiceByOrderId(orderId);
         return ResponseEntity.ok(response);
     }
 }
