@@ -52,4 +52,6 @@ public interface BlogPostRepository extends JpaRepository<BlogPost, UUID> {
 
     @EntityGraph(attributePaths = {"categories"})
     Optional<BlogPost> findBySlugAndPublishedIsTrue(String slug);
+
+    Long countByPublished(boolean published);
 }

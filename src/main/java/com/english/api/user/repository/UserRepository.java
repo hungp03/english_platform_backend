@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,7 +21,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
 
     @Query("""
-                SELECT u.id, u.email, u.fullName, u.avatarUrl, r.code
+                SELECT u.id, u.email, u.fullName, u.avatarUrl, u.provider, r.code
                 FROM User u
                 LEFT JOIN u.roles r
                 WHERE u.id = :id
@@ -47,4 +48,20 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT u FROM User u WHERE u.id IN :ids")
     List<User> findByIdIn(@Param("ids") List<UUID> ids);
+
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.provider = :provider AND u.providerUid = :providerUid")
+    Optional<User> findByProviderAndProviderUidWithRoles(@Param("provider") String provider, @Param("providerUid") String providerUid);
+
+    @Query(value = """
+      SELECT 
+         DATE_TRUNC('month', u.created_at AT TIME ZONE 'UTC')::DATE AS month,
+         COUNT(u.id)::BIGINT AS new_users,
+         SUM(CASE WHEN u.is_active = true THEN 1 ELSE 0 END)::BIGINT AS active_users,
+         SUM(CASE WHEN u.email_verified = true THEN 1 ELSE 0 END)::BIGINT AS verified_users
+      FROM users u 
+      WHERE u.created_at >= :startDate
+      GROUP BY month 
+      ORDER BY month DESC
+      """, nativeQuery = true)
+   List<Object[]> getUserGrowthByMonth(@Param("startDate") Instant startDate);
 }

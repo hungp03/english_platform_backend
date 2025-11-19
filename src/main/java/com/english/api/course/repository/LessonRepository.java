@@ -70,4 +70,6 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
         ORDER BY l.module.position, l.position
         """)
     List<LessonWithProgressResponse> findPublishedLessonsWithProgressByCourseId(@Param("courseId") UUID courseId, @Param("userId") UUID userId);
+
+    Long countByIsFree(boolean isFree);
 }

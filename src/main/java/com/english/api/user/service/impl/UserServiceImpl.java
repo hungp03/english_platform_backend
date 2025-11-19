@@ -83,13 +83,14 @@ public class UserServiceImpl implements UserService {
         String email = (String) first[1];
         String fullName = (String) first[2];
         String avatarUrl = (String) first[3];
+        String provider = (String) first[4];
 
         List<String> roles = rows.stream()
-                .map(r -> (String) r[4])
+                .map(r -> (String) r[5])
                 .filter(Objects::nonNull)
                 .toList();
 
-        return new UserResponse(id, email, fullName, avatarUrl, roles);
+        return new UserResponse(id, email, fullName, avatarUrl, provider, roles);
     }
 
     @Transactional
@@ -191,6 +192,11 @@ public class UserServiceImpl implements UserService {
         User user = findByEmail(email);
         user.setPasswordHash(newPassword);
         userRepository.save(user);
+    }
+
+    @Override
+    public Optional<User> findByProviderAndProviderUid(String provider, String providerUid) {
+        return userRepository.findByProviderAndProviderUidWithRoles(provider, providerUid);
     }
 
 }

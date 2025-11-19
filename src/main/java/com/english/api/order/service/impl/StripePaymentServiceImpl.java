@@ -15,6 +15,7 @@ import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.repository.PaymentRepository;
 import com.english.api.order.service.StripePaymentService;
 import com.english.api.order.service.InvoiceService;
+import com.english.api.notification.service.NotificationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.exception.SignatureVerificationException;
@@ -46,6 +47,7 @@ public class StripePaymentServiceImpl implements StripePaymentService {
     private final ObjectMapper objectMapper;
     private final InvoiceService invoiceService;
     private final EnrollmentService enrollmentService;
+    private final NotificationService notificationService;
 
     @Value("${stripe.webhook-secret}")
     private String webhookSecret;
@@ -162,8 +164,16 @@ public class StripePaymentServiceImpl implements StripePaymentService {
                     order.setStatus(OrderStatus.PAID);
                     order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
                     orderRepository.save(order);
+                    
                     // Create enrollments for purchased courses
                     enrollmentService.createEnrollmentsAfterPayment(order);
+                    
+                    // Send notification about successful payment
+                    notificationService.sendNotification(
+                        order.getUser().getId(),
+                        "Thanh toán thành công",
+                        "Thanh toán cho đơn hàng #" + order.getId() + " Đã được xử lí thành công. Tổng: $" + (order.getTotalCents())+" "+(order.getCurrency())
+                    );
                     
                     // Generate and send invoice asynchronously
                     invoiceService.generateAndSendInvoiceAsync(order, payment);

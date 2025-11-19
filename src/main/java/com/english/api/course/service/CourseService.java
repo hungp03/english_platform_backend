@@ -45,7 +45,12 @@ public interface CourseService {
      * @param instructorId the instructor's user ID
      * @return instructor statistics including courses, students, and revenue
      */
-    InstructorStatsResponse getInstructorStats(UUID instructorId);
+    
+    /**
+     * Get published courses for a given instructor (public).
+     */
+    PaginationResponse getPublishedByInstructor(UUID instructorId, Pageable pageable, String keyword, String[] skills);
+InstructorStatsResponse getInstructorStats(UUID instructorId);
     
     /**
      * Get monthly growth statistics for an instructor

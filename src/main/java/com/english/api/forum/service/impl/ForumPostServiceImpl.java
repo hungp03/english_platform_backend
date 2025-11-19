@@ -7,9 +7,12 @@ import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.entity.ForumPost;
 import com.english.api.forum.entity.ForumThread;
 import com.english.api.forum.repo.ForumPostRepository;
+import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
 import com.english.api.forum.repo.ForumThreadRepository;
 import com.english.api.forum.service.ForumPostService;
+import com.english.api.notification.service.NotificationService;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
@@ -27,6 +30,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class ForumPostServiceImpl implements ForumPostService {
@@ -34,6 +39,7 @@ public class ForumPostServiceImpl implements ForumPostService {
   private final ForumPostRepository postRepo;
   private final ForumThreadRepository threadRepo;
   private final UserRepository userRepo;
+  private final NotificationService notificationService;
 
   @Override
   public PaginationResponse listByThread(UUID threadId, Pageable pageable, boolean onlyPublished) {
@@ -91,8 +97,6 @@ public class ForumPostServiceImpl implements ForumPostService {
   
       return PaginationResponse.from(dtoPage, pageable);
   }
-  
-
 
   @Override
   @Transactional
@@ -119,6 +123,37 @@ public class ForumPostServiceImpl implements ForumPostService {
     t.setLastPostId(p.getId());
     t.setLastPostAuthor(currentUserId);
     threadRepo.save(t);
+
+
+    // Xác định parent post nếu có
+    ForumPost parentPost = null;
+    if (req.parentId() != null) {
+        parentPost = postRepo.findById(req.parentId()).orElse(null);
+    }
+    // Lấy thông tin người đang comment để hiển thị tên trong thông báo
+    User currentUser = userRepo.findById(currentUserId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+    // 1. Gửi thông báo cho chủ thread (nếu người comment không phải chủ thread)
+    if (t.getAuthorId() != null && !t.getAuthorId().equals(currentUserId)) {
+      notificationService.sendNotification(
+          t.getAuthorId(),
+          "Phản hồi mới trong chủ đề của bạn",
+          currentUser.getFullName() + " đã bình luận trong chủ đề của bạn: \"" + t.getTitle() + "\""
+      );
+  }
+
+  // 2. Gửi thông báo cho chủ comment cha (nếu là reply và người reply không phải chủ comment cha)
+  if (parentPost != null && parentPost.getAuthorId() != null 
+      && !parentPost.getAuthorId().equals(currentUserId)) {
+      // Tránh gửi trùng nếu chủ thread cũng là chủ comment cha
+      if (!parentPost.getAuthorId().equals(t.getAuthorId())) {
+          notificationService.sendNotification(
+              parentPost.getAuthorId(),
+              "Phản hồi mới trong bình luận của bạn",
+              currentUser.getFullName() + " đã phản hồi trong bài post của bạn: \"" + t.getTitle() + "\""
+          );
+      }
+  }
 
     return toDto(p);
   }

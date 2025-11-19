@@ -2,6 +2,7 @@ package com.english.api.auth.controller;
 
 import com.english.api.auth.dto.request.*;
 import com.english.api.auth.dto.response.AuthResponse;
+import com.english.api.auth.dto.response.LinkAccountResponse;
 import com.english.api.auth.dto.response.OtpVerificationResponse;
 import com.english.api.auth.dto.response.UserLoginResponse;
 import com.english.api.auth.service.AuthService;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -128,5 +130,18 @@ public class AuthController {
             @Valid @RequestBody ResetPasswordRequest request) {
         this.authService.resetPassword(request);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/link-google-account")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LinkAccountResponse> linkGoogleAccount(
+            @Valid @RequestBody LinkGoogleAccountRequest request) {
+        return ResponseEntity.ok(authService.linkGoogleAccount(request));
+    }
+
+    @PostMapping("/unlink-google-account")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LinkAccountResponse> unlinkGoogleAccount() {
+        return ResponseEntity.ok(authService.unlinkGoogleAccount());
     }
 }

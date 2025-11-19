@@ -39,7 +39,15 @@ public class SecurityConfig {
 
     private final String[] whiteList = {
             "/",
-            "/api/auth/**", // login, register, refresh...
+            "/api/auth/register",
+            "/api/auth/verify-register",
+            "/api/auth/login",
+            "/api/auth/refresh",
+            "/api/auth/logout",
+            "/api/auth/logout-all",
+            "/api/auth/forgot-password",
+            "/api/auth/verify-otp",
+            "/api/auth/reset-password",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",

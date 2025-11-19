@@ -21,6 +21,7 @@ public record CourseDetailResponse(
         Long priceCents,
         String currency,
         CourseStatus status,
+        UUID instructorId,
         String createdBy,
         Instant updatedAt,
         Long moduleCount,

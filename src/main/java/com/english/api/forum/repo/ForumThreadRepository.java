@@ -29,4 +29,9 @@ public interface ForumThreadRepository extends JpaRepository<ForumThread, UUID> 
                            Pageable pageable);
   
   Page<ForumThread> findByAuthorIdOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
+
+  Long countByLocked(boolean locked);
+
+  @Query("SELECT COALESCE(SUM(ft.viewCount), 0) FROM ForumThread ft")
+  Long sumAllViewCounts();
 }

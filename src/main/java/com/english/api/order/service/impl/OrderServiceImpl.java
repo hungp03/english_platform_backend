@@ -20,6 +20,7 @@ import com.english.api.order.model.enums.OrderItemEntityType;
 import com.english.api.order.model.enums.OrderStatus;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.service.OrderService;
+import com.english.api.notification.service.NotificationService;
 import com.english.api.user.model.User;
 import com.english.api.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class OrderServiceImpl implements OrderService {
     private final CourseService courseService;
     private final OrderMapper orderMapper;
     private final CartService cartService;
+    private final NotificationService notificationService;
 
     // Valid status transitions mapping
     private static final Set<OrderStatus> PENDING_TRANSITIONS = Set.of(OrderStatus.PAID, OrderStatus.CANCELLED, OrderStatus.FAILED);
@@ -85,6 +87,14 @@ public class OrderServiceImpl implements OrderService {
         order.setItems(orderItems);
         // Save order
         Order savedOrder = orderRepository.save(order);
+        
+        // Send notification to user about order creation
+        notificationService.sendNotification(
+            currentUserId,
+            "Đơn hàng của bạn đã được đặt thành công",
+            "Đơn hàng #" + savedOrder.getId() + " đã xử lí thành công. Tổng cộng: " + (totalCents) +" "+(savedOrder.getCurrency())
+        );
+        
         // If order is from cart, remove the purchased items from cart after successful order creation
         if (request.orderSource() == OrderSource.CART) {
             removeOrderedItemsFromCart(request.items());
@@ -113,6 +123,14 @@ public class OrderServiceImpl implements OrderService {
         if (newStatus == OrderStatus.CANCELLED) {
             order.setCancelReason(cancelReason);
             order.setCancelAt(OffsetDateTime.now());
+            
+            // Send notification about order cancellation
+            notificationService.sendNotification(
+                order.getUser().getId(),
+                "Đã hủy đơn hàng",
+                "Đơn hàng #" + order.getId() + " đã được hủy. " + 
+                (cancelReason != null ? "Lý do: " + cancelReason : "")
+            );
         }
         Order savedOrder = orderRepository.save(order);
         return orderMapper.toOrderResponse(savedOrder);

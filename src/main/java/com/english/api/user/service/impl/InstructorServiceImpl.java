@@ -28,6 +28,7 @@ import com.english.api.user.repository.UserRepository;
 import com.english.api.user.service.InstructorService;
 import com.english.api.common.service.MediaService;
 import com.english.api.mail.service.MailService;
+import com.english.api.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -58,6 +59,7 @@ public class InstructorServiceImpl implements InstructorService {
     private final CertificateProofMapper certificateProofMapper;
     private final MediaService mediaService;
     private final MailService mailService;
+    private final NotificationService notificationService;
 
     @Override
     public InstructorRequestResponse createInstructorRequest(CreateInstructorRequest request) {
@@ -174,9 +176,26 @@ public class InstructorServiceImpl implements InstructorService {
 
         InstructorRequest updatedRequest = instructorRequestRepository.save(request);
         
-        // Send email notification to user
+        // Send notification to user about request review
         User requestUser = request.getUser();
         boolean isApproved = reviewRequest.action() == ReviewInstructorRequest.ApprovalAction.APPROVE;
+        
+        if (isApproved) {
+            notificationService.sendNotification(
+                requestUser.getId(),
+                "Yêu cầu giảng viên được chấp nhận",
+                "Chúc mừng! Yêu cầu giảng viên của bạn đã được chấp nhận. Giờ bạn có thể tạo khóa học mới."
+            );
+        } else {
+            notificationService.sendNotification(
+                requestUser.getId(),
+                "Yêu cầu giảng viên đã bị từ chối",
+                "Yêu cầu giảng viên của bạn đã được đánh giá. " + 
+                (reviewRequest.adminNotes() != null ? "Người quản trị ghi chú: " + reviewRequest.adminNotes() : "")
+            );
+        }
+        
+        // Send email notification to user
         String userName = requestUser.getFullName() != null ? requestUser.getFullName() : requestUser.getEmail();
         mailService.sendInstructorRequestReviewEmail(
             requestUser.getEmail(), 

@@ -6,6 +6,6 @@ import java.util.UUID;
 public record ForumThreadUpdateRequest(
     String title,
     String bodyMd,
-    List<UUID> categoryIds,
+    java.util.List<java.util.UUID> categoryIds,
     Boolean locked
 ) {}

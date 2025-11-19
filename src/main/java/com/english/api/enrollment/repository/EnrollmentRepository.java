@@ -2,6 +2,8 @@ package com.english.api.enrollment.repository;
 
 import com.english.api.enrollment.dto.projection.EnrollmentProjection;
 import com.english.api.enrollment.model.Enrollment;
+import com.english.api.enrollment.model.enums.EnrollmentStatus;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +13,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -113,4 +117,52 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
         ) THEN true ELSE false END
         """)
     boolean isUserEnrolledInLessonCourse(@Param("userId") UUID userId, @Param("lessonId") UUID lessonId);
+
+    Long countByStatus(EnrollmentStatus status);
+
+    @Query("SELECT AVG(e.progressPercent) FROM Enrollment e WHERE e.status = 'ACTIVE'")
+    BigDecimal calculateAverageProgress();
+
+    // Get top courses by enrollment count
+    @Query("SELECT e.course.id, COUNT(e) FROM Enrollment e GROUP BY e.course.id ORDER BY COUNT(e) DESC")
+    List<Object[]> findTopCoursesByEnrollmentCount(Pageable pageable);
+
+    // Get completion rate by course
+    @Query("SELECT e.course.id, " +
+        "COUNT(e) as total, " +
+        "SUM(CASE WHEN e.status = 'COMPLETED' THEN 1 ELSE 0 END) as completed, " +
+        "AVG(e.progressPercent) as avgProgress " +
+        "FROM Enrollment e " +
+        "GROUP BY e.course.id")
+    List<Object[]> getCourseCompletionStats();
+
+
+    @Query("""
+        SELECT 
+            FUNCTION('DATE_TRUNC', 'month', e.startedAt) as month,
+            COUNT(e) as newEnrollments,
+            SUM(CASE WHEN e.status = 'COMPLETED' THEN 1 ELSE 0 END) as completedEnrollments,
+            COALESCE(AVG(e.progressPercent), 0) as avgProgress
+        FROM Enrollment e 
+        WHERE e.startedAt >= :startDate 
+        GROUP BY FUNCTION('DATE_TRUNC', 'month', e.startedAt) 
+        ORDER BY month DESC
+        """)
+    List<Object[]> getEnrollmentsByMonth(@Param("startDate") OffsetDateTime startDate);
+
+    // @Query("""
+    //     SELECT 
+    //         c.id, c.title, c.slug, c.thumbnail,
+    //         u.fullName, u.id,
+    //         COUNT(e.id),
+    //         SUM(CASE WHEN e.status = 'COMPLETED' THEN 1 ELSE 0 END),
+    //         AVG(r.rating)
+    //     FROM Course c 
+    //     JOIN c.enrollments e 
+    //     JOIN c.createdBy u 
+    //     WHERE c.status = 'PUBLISHED'
+    //     GROUP BY c.id, c.title, c.slug, c.thumbnail, u.fullName, u.id
+    //     ORDER BY COUNT(e.id) DESC
+    //     """)
+    // List<Object[]> findTopCoursesByEnrollmentCount(Pageable pageable);
 }

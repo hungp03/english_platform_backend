@@ -11,6 +11,7 @@ public record UserResponse(
         String email,
         String fullName,
         String avatarUrl,
+        String provider,
         List<String>roles
 ) {
 }

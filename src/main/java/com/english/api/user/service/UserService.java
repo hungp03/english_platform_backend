@@ -26,4 +26,5 @@ public interface UserService {
     PaginationResponse getUsers(String searchTerm, Pageable pageable);
     boolean isUserActive(UUID userId);
     void resetPassword(String email, String newPassword);
+    Optional<User> findByProviderAndProviderUid(String provider, String providerUid);
 }

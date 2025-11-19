@@ -53,4 +53,5 @@ public interface StudyPlanRepository extends JpaRepository<StudyPlan, UUID> {
         WHERE sp.id = :id AND sp.user.id = :userId
         """)
     boolean existsByIdAndUserId(@Param("id") UUID id, @Param("userId") UUID userId);
+
 }
