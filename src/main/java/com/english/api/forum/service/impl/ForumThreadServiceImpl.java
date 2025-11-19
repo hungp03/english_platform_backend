@@ -4,6 +4,7 @@ import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.forum.dto.request.ForumThreadCreateRequest;
+import com.english.api.forum.dto.request.ForumThreadUpdateRequest;
 import com.english.api.forum.dto.response.ForumCategoryResponse;
 import com.english.api.forum.dto.response.ForumThreadListResponse;
 import com.english.api.forum.dto.response.ForumThreadResponse;
@@ -11,6 +12,7 @@ import com.english.api.forum.entity.ForumCategory;
 import com.english.api.forum.entity.ForumThread;
 import com.english.api.forum.entity.ForumThreadCategory;
 import com.english.api.forum.repo.ForumCategoryRepository;
+import com.english.api.forum.repo.ForumPostRepository;
 import com.english.api.forum.repo.ForumThreadCategoryRepository;
 import com.english.api.forum.repo.ForumThreadRepository;
 import com.english.api.forum.service.ForumThreadService;
@@ -38,6 +40,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     private final UserRepository userRepo;
     private final ForumCategoryRepository categoryRepo;
     private final ForumThreadCategoryRepository threadCatRepo;
+    private final ForumPostRepository postRepo;
 
     @Override
     public PaginationResponse listPublic(String keyword, UUID categoryId, Boolean locked, Pageable pageable) {
@@ -183,4 +186,83 @@ public class ForumThreadServiceImpl implements ForumThreadService {
                 thread.getCreatedAt(), thread.getUpdatedAt(), categoryResponses
         );
     }
+
+    @Override
+    @Transactional
+    public ForumThreadResponse updateByOwner(UUID id, ForumThreadUpdateRequest req) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        var thread = threadRepo.findById(id).orElseThrow();
+
+        if (thread.getAuthorId() == null || !thread.getAuthorId().equals(currentUserId)) {
+            throw new AccessDeniedException("Bạn không có quyền sửa bài viết này");
+        }
+        
+        if (thread.isLocked()) {
+             throw new IllegalStateException("Bài viết đang bị khóa, không thể chỉnh sửa");
+        }
+
+        // 3. Cập nhật Title & Slug (nếu title thay đổi)
+        if (req.title() != null && !req.title().isBlank() && !req.title().equals(thread.getTitle())) {
+            thread.setTitle(req.title());
+
+            String newSlug = SlugUtil.ensureUnique(SlugUtil.slugify(req.title()),
+                    s -> threadRepo.findBySlug(s).isPresent());
+            thread.setSlug(newSlug);
+        }
+
+        // 4. Cập nhật Body
+        if (req.bodyMd() != null) {
+            thread.setBodyMd(req.bodyMd());
+        }
+
+        if (req.categoryIds() != null) {
+            var oldLinks = threadCatRepo.findByThread(thread);
+            threadCatRepo.deleteAll(oldLinks);
+
+            if (!req.categoryIds().isEmpty()) {
+                List<ForumCategory> categories = categoryRepo.findAllById(req.categoryIds());
+                for (ForumCategory category : categories) {
+                    threadCatRepo.save(ForumThreadCategory.builder()
+                            .thread(thread)
+                            .category(category)
+                            .build());
+                }
+            }
+        }
+
+        thread = threadRepo.save(thread);
+        return toDto(thread);
+    }
+
+    @Override
+    @Transactional
+    public void deleteByOwner(UUID id) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        var thread = threadRepo.findById(id).orElseThrow(() -> new RuntimeException("Thread not found"));
+
+        if (thread.getAuthorId() == null || !thread.getAuthorId().equals(currentUserId)) {
+            throw new AccessDeniedException("Bạn không có quyền xóa bài viết này");
+        }
+        
+        if (thread.isLocked()) {
+            throw new IllegalStateException("Không thể xóa bài viết đang bị khóa");
+        }
+        threadCatRepo.deleteByThread(thread);
+        postRepo.unlinkParentsByThread(thread); 
+        postRepo.deleteAllByThread(thread);   
+        threadRepo.delete(thread);
+    }
+
+    @Override
+    @Transactional
+    public void adminDelete(UUID id) {
+        var thread = threadRepo.findById(id).orElseThrow(() -> new RuntimeException("Thread not found"));
+
+        threadCatRepo.deleteByThread(thread);
+        postRepo.unlinkParentsByThread(thread); 
+        postRepo.deleteAllByThread(thread);    
+        threadRepo.delete(thread);
+
+    }
+
 }

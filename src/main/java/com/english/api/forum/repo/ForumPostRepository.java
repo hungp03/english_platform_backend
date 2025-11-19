@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
@@ -73,4 +74,14 @@ public interface ForumPostRepository extends JpaRepository<ForumPost, UUID> {
         @Param("parentIds") List<UUID> parentIds,
         @Param("includeUnpublished") boolean includeUnpublished
     );
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE ForumPost p SET p.parent = NULL WHERE p.thread = :thread")
+    void unlinkParentsByThread(@Param("thread") ForumThread thread);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ForumPost p WHERE p.thread = :thread")
+    void deleteAllByThread(@Param("thread") ForumThread thread);
 }

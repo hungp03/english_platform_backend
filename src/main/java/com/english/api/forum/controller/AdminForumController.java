@@ -110,4 +110,10 @@ public class AdminForumController {
         postService.adminDelete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/threads/{id}")
+    public ResponseEntity<Void> deleteThread(@PathVariable UUID id) {
+        threadService.adminDelete(id);
+        return ResponseEntity.noContent().build();
+    }
 }
