@@ -42,18 +42,6 @@ public interface BlogCommentRepository extends JpaRepository<BlogComment, UUID> 
     @Query("delete from BlogComment c where c.parent = :parent")
     void deleteByParent(@Param("parent") BlogComment parent);
 
-    // @Query("""
-    //     SELECT c FROM BlogComment c 
-    //     LEFT JOIN FETCH c.author 
-    //     WHERE c.post.id = :postId 
-    //     AND c.parent IS NULL 
-    //     AND (:includeUnpublished = true OR c.published = true)
-    // """)
-    // Page<BlogComment> findRootsByPost(
-    //     @Param("postId") UUID postId, 
-    //     @Param("includeUnpublished") boolean includeUnpublished, 
-    //     Pageable pageable
-    // );
 
     @Query("""
         SELECT c FROM BlogComment c 
@@ -80,99 +68,37 @@ public interface BlogCommentRepository extends JpaRepository<BlogComment, UUID> 
         @Param("includeUnpublished") boolean includeUnpublished
     );
 
-    // @Query("SELECT c FROM BlogComment c WHERE c.post = :post AND c.parent IS NULL")
-    // Page<BlogComment> findRootCommentsByPost(@Param("post") BlogPost post, Pageable pageable);
-
-    // @Query("SELECT c FROM BlogComment c WHERE c.post = :post AND c.parent IS NULL AND c.published = true")
-    // Page<BlogComment> findRootCommentsByPostAndPublished(@Param("post") BlogPost post, Pageable pageable);
-
     @Query("SELECT COUNT(c) FROM BlogComment c WHERE c.post.id = :postId " +
        "AND (:includeUnpublished = true OR c.published = true)")
     long countAllByPostId(@Param("postId") UUID postId, 
                         @Param("includeUnpublished") boolean includeUnpublished);
 
-    
-                        // BlogCommentRepository.java
-
-    // @Query("SELECT c FROM BlogComment c WHERE c.post.id = :postId AND c.parent IS NULL")
-    // Page<BlogComment> findRootCommentsByPostId(@Param("postId") UUID postId, Pageable pageable);
-
-    // @Query("SELECT c FROM BlogComment c WHERE c.post.id = :postId AND c.parent IS NULL AND c.published = true")
-    // Page<BlogComment> findPublishedRootCommentsByPostId(@Param("postId") UUID postId, Pageable pageable);
 
     // Dùng cái này để lấy tất cả con (không cần phân trang)
     @Query("SELECT c FROM BlogComment c WHERE c.parent.id IN :parentIds")
     List<BlogComment> findByParentIdIn(@Param("parentIds") List<UUID> parentIds);
 
-    // long countPublicByPostId(UUID postId);
 
     Long countByPostIdAndParentIsNull(UUID postId);
     Long countByPostIdAndParentIsNullAndPublishedTrue(UUID postId);
 
-    // @Query(
-    //     value = "SELECT c FROM BlogComment c " +
-    //             "WHERE c.post.id = :postId AND c.parent IS NULL AND c.published = true " +
-    //             "ORDER BY c.createdAt DESC",
-    //     countQuery = "SELECT COUNT(c) FROM BlogComment c " +
-    //                 "WHERE c.post.id = :postId AND c.parent IS NULL AND c.published = true"
-    // )
-    // Page<BlogComment> findPublicRootComments(
-    //     @Param("postId") UUID postId, 
-    //     Pageable pageable
-    // );
 
     // Lấy tất cả con của các parent (có fetch author)
     @EntityGraph(attributePaths = {"author", "parent.author"})
     @Query("SELECT c FROM BlogComment c WHERE c.parent.id IN :parentIds")
     List<BlogComment> findRepliesByParentIds(@Param("parentIds") List<UUID> parentIds);
 
-    // @Query(
-    //     value = "SELECT c FROM BlogComment c WHERE c.post.id = :postId AND c.parent IS NULL",
-    //     countQuery = "SELECT COUNT(c) FROM BlogComment c WHERE c.post.id = :postId AND c.parent IS NULL"
-    // )
-    // @EntityGraph(attributePaths = {"author", "post"}) // fetch author + post
-    // Page<BlogComment> findAllRootComments(
-    //     @Param("postId") UUID postId, 
-    //     Pageable pageable
-    // );
-    // 1. Cho user thường
-    // @Query(
-    //     value = "SELECT c FROM BlogComment c " +
-    //             "WHERE c.post.id = :postId AND c.parent IS NULL AND c.published = true " +
-    //             "ORDER BY c.createdAt DESC",  // ← THÊM DÒNG NÀY
-    //     countQuery = "SELECT COUNT(c) FROM BlogComment c " +
-    //                 "WHERE c.post.id = :postId AND c.parent IS NULL AND c.published = true"
-    // )
-    // @EntityGraph(attributePaths = {"author", "post"})
-    // Page<BlogComment> findPublicRootComments(
-    //     @Param("postId") UUID postId, Pageable pageable
-    // );
 
-    // // 2. Cho admin
-    // @Query(
-    //     value = "SELECT c FROM BlogComment c " +
-    //             "WHERE c.post.id = :postId AND c.parent IS NULL " +
-    //             "ORDER BY c.createdAt DESC",  // ← THÊM DÒNG NÀY
-    //     countQuery = "SELECT COUNT(c) FROM BlogComment c " +
-    //                 "WHERE c.post.id = :postId AND c.parent IS NULL"
-    // )
-    // @EntityGraph(attributePaths = {"author", "post"})
-    // Page<BlogComment> findAllRootComments(
-    //     @Param("postId") UUID postId, Pageable pageable
-    // );
-
-    // For User (Public)
     @Query(
         value = "SELECT c FROM BlogComment c " +
                 "WHERE c.post.id = :postId AND c.parent IS NULL AND c.published = true " +
                 "ORDER BY c.createdAt DESC", 
         countQuery = "SELECT COUNT(c) FROM BlogComment c " +
-                    "WHERE c.post.id = :postId AND c.parent IS NULL AND c.published = true" // <--- MUST HAVE THIS
+                    "WHERE c.post.id = :postId AND c.parent IS NULL AND c.published = true" 
     )
     @EntityGraph(attributePaths = {"author", "post"})
     Page<BlogComment> findPublicRootComments(@Param("postId") UUID postId, Pageable pageable);
 
-    // For Admin (All)
     @Query(
         value = "SELECT c FROM BlogComment c " +
                 "WHERE c.post.id = :postId AND c.parent IS NULL " +

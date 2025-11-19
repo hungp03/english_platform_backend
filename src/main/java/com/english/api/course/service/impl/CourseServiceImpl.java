@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -177,27 +178,44 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public CourseResponse changeStatus(UUID id, CourseStatus status) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
+        boolean isAdmin = isCurrentUserAdmin();
 
         UUID ownerId = courseRepository.findOwnerIdById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
-        if (!ownerId.equals(currentUserId)) {
+        boolean isOwner = ownerId.equals(currentUserId);
+
+        // Check authorization: must be either owner or admin
+        if (!isAdmin && !isOwner) {
             throw new AccessDeniedException("You are not allowed to change status of this course.");
+        }
+
+        // If admin: can only approve (PUBLISHED) or reject (REJECTED)
+        if (isAdmin && status != CourseStatus.PUBLISHED && status != CourseStatus.REJECTED) {
+            throw new AccessDeniedException("Admin can only approve or reject courses.");
+        }
+
+        // Creator (non-admin) cannot self-reject
+        if (isOwner && !isAdmin && status == CourseStatus.REJECTED) {
+            throw new AccessDeniedException("You cannot reject your own course.");
         }
 
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         course.setStatus(status);
-
         // Set publishedAt when status is PUBLISHED
         if (status == CourseStatus.PUBLISHED) {
             course.setPublishedAt(Instant.now());
         } else {
             course.setPublishedAt(null);
         }
-
         return mapper.toResponse(courseRepository.save(course));
+    }
+
+    private boolean isCurrentUserAdmin() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
     }
 
     @Override
@@ -222,27 +240,6 @@ public class CourseServiceImpl implements CourseService {
         return PaginationResponse.from(page, pageable);
     }
 
-    @Override
-    public PaginationResponse getPublishedByInstructor(UUID instructorId, Pageable pageable, String keyword, String[] skills) {
-        var page = courseRepository.searchByOwnerWithStats(instructorId, keyword, "PUBLISHED", skills, pageable)
-                .map(projection -> new CourseWithStatsResponse(
-                        projection.getId(),
-                        projection.getTitle(),
-                        projection.getSlug(),
-                        projection.getDescription(),
-                        projection.getLanguage(),
-                        projection.getThumbnail(),
-                        projection.getSkillFocus(),
-                        projection.getPriceCents(),
-                        projection.getCurrency(),
-                        projection.getStatus(),
-                        projection.getModuleCount(),
-                        projection.getLessonCount(),
-                        projection.getCreatedAt(),
-                        projection.getUpdatedAt()
-                ));
-        return PaginationResponse.from(page, pageable);
-    }
 
     /**
      * Gets minimal course information needed for checkout payment display.

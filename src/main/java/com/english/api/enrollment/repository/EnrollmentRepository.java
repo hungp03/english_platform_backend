@@ -150,19 +150,4 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
         """)
     List<Object[]> getEnrollmentsByMonth(@Param("startDate") OffsetDateTime startDate);
 
-    // @Query("""
-    //     SELECT 
-    //         c.id, c.title, c.slug, c.thumbnail,
-    //         u.fullName, u.id,
-    //         COUNT(e.id),
-    //         SUM(CASE WHEN e.status = 'COMPLETED' THEN 1 ELSE 0 END),
-    //         AVG(r.rating)
-    //     FROM Course c 
-    //     JOIN c.enrollments e 
-    //     JOIN c.createdBy u 
-    //     WHERE c.status = 'PUBLISHED'
-    //     GROUP BY c.id, c.title, c.slug, c.thumbnail, u.fullName, u.id
-    //     ORDER BY COUNT(e.id) DESC
-    //     """)
-    // List<Object[]> findTopCoursesByEnrollmentCount(Pageable pageable);
 }

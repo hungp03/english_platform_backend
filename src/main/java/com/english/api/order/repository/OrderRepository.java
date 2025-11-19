@@ -167,19 +167,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Object[]> findTopCoursesByRevenue(Pageable pageable);
     
     // Get top instructors by revenue
-    // @Query("""
-    //     SELECT c.createdBy.id as instructorId, 
-    //         SUM(oi.unitPriceCents * oi.quantity) as totalRevenue, 
-    //         COUNT(DISTINCT o.id) as orderCount
-    //     FROM Order o 
-    //     JOIN o.items oi 
-    //     JOIN Course c ON oi.entityId = c.id 
-    //     WHERE o.status = 'PAID' 
-    //     AND oi.entity = 'COURSE'
-    //     GROUP BY c.createdBy.id 
-    //     ORDER BY totalRevenue DESC
-    //     """)
-    // List<Object[]> findTopInstructorsByRevenue(Pageable pageable);
 
     @Query("""
         SELECT 
@@ -198,16 +185,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         """)
     List<Object[]> findTopInstructorsByRevenue(Pageable pageable);
 
-    // @Query("SELECT " +
-    //    "FUNCTION('DATE_TRUNC', 'month', o.createdAt) as month, " +
-    //    "SUM(CASE WHEN o.currency = 'VND' THEN o.totalCents ELSE 0 END) as revenueVND, " +
-    //    "SUM(CASE WHEN o.currency = 'USD' THEN o.totalCents ELSE 0 END) as revenueUSD, " +
-    //    "COUNT(o) as orderCount " +
-    //    "FROM Order o " +
-    //    "WHERE o.status = 'COMPLETED' AND o.createdAt >= :startDate " +
-    //    "GROUP BY FUNCTION('DATE_TRUNC', 'month', o.createdAt) " +
-    //    "ORDER BY month DESC")
-    // List<Object[]> getRevenueByMonth(@Param("startDate") Instant startDate);
 
     @Query("""
         SELECT 
