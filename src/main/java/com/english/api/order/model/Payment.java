@@ -56,9 +56,6 @@ public class Payment {
     @Column(name = "confirmed_at")
     private OffsetDateTime confirmedAt;
 
-    @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Refund> refunds;
-
     @PrePersist
     public void prePersist() {
         if (id == null) {

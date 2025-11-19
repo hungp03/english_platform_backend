@@ -16,30 +16,16 @@ import java.util.UUID;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
-    @EntityGraph(attributePaths = "refunds")
-    Optional<Payment> findById(UUID id);
     Optional<Payment> findTopByOrderIdAndProviderOrderByCreatedAtDesc(UUID orderId, PaymentProvider provider);
-    /**
-     * Find payments by order ID
-     */
-    @EntityGraph(attributePaths = "refunds")
+
     List<Payment> findByOrderIdOrderByCreatedAtDesc(UUID orderId);
-    /**
-     * Find payment by provider transaction ID with order, user, and items eagerly loaded
-     */
+
     @EntityGraph(attributePaths = {"order", "order.user", "order.items"})
     @Query("SELECT p FROM Payment p WHERE p.providerTxn = :providerTxn")
     Optional<Payment> findByProviderTxnWithOrderDetails(@Param("providerTxn") String providerTxn);
 
-    /**
-     * Find payment by provider and provider transaction ID
-     */
-    @EntityGraph(attributePaths = "refunds")
     Optional<Payment> findByProviderAndProviderTxn(PaymentProvider provider, String providerTxn);
 
-    /**
-     * Find payment by provider and provider transaction ID with order, user, and items eagerly loaded
-     */
     @EntityGraph(attributePaths = {"order", "order.user", "order.items"})
     @Query("SELECT p FROM Payment p WHERE p.provider = :provider AND p.providerTxn = :providerTxn")
     Optional<Payment> findByProviderAndProviderTxnWithOrderDetails(@Param("provider") PaymentProvider provider, @Param("providerTxn") String providerTxn);

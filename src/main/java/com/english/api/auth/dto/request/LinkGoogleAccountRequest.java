@@ -5,4 +5,5 @@ public record LinkGoogleAccountRequest(
         String idToken,
         String authorizationCode,
         String redirectUri
-) {}
+) {
+}

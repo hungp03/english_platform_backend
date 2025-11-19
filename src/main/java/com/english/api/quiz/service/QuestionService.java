@@ -4,14 +4,20 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.quiz.dto.request.QuestionCreateRequest;
 import com.english.api.quiz.dto.request.QuestionUpdateRequest;
 import com.english.api.quiz.dto.response.QuestionResponse;
-import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 
+import java.util.UUID;
+
 public interface QuestionService {
-  public QuestionResponse create(QuestionCreateRequest req);
-  public QuestionResponse update(UUID id, QuestionUpdateRequest req);
-  public void delete(UUID id);
-  public QuestionResponse get(UUID id);
-  public PaginationResponse listByQuiz(UUID quizId, Pageable pageable);
-  PaginationResponse listBySection(UUID sectionId, Pageable pageable);
+    QuestionResponse create(QuestionCreateRequest req);
+
+    QuestionResponse update(UUID id, QuestionUpdateRequest req);
+
+    void delete(UUID id);
+
+    QuestionResponse get(UUID id);
+
+    PaginationResponse listByQuiz(UUID quizId, Pageable pageable);
+
+    PaginationResponse listBySection(UUID sectionId, Pageable pageable);
 }

@@ -2,15 +2,14 @@ package com.english.api.quiz.service.impl;
 
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.quiz.dto.request.QuestionCreateRequest;
-import com.english.api.quiz.dto.request.QuestionUpdateRequest;
 import com.english.api.quiz.dto.request.QuestionOptionCreateRequest;
+import com.english.api.quiz.dto.request.QuestionUpdateRequest;
 import com.english.api.quiz.dto.response.QuestionOptionResponse;
 import com.english.api.quiz.dto.response.QuestionResponse;
 import com.english.api.quiz.model.Question;
 import com.english.api.quiz.model.QuestionOption;
 import com.english.api.quiz.model.Quiz;
 import com.english.api.quiz.repository.QuestionRepository;
-import com.english.api.quiz.repository.QuestionOptionRepository;
 import com.english.api.quiz.repository.QuizRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +22,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +29,6 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
 
     private final QuizRepository quizRepository;
     private final QuestionRepository questionRepository;
-    private final QuestionOptionRepository optionRepository;
 
     @Transactional
     public QuestionResponse create(QuestionCreateRequest req) {
@@ -109,7 +106,6 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
 
     @Transactional(readOnly = true)
     public PaginationResponse listByQuiz(UUID quizId, Pageable pageable) {
-        // Page<Question> page = questionRepository.findByQuiz_Id(quizId, pageable);
         Page<Question> page = questionRepository.findByQuiz_IdOrderByOrderIndexAsc(quizId, pageable);
         return PaginationResponse.from(page.map(this::toResponse), pageable);
     }
@@ -128,7 +124,7 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
                 e.getUpdatedAt()
         );
     }
-    
+
 
     @Override
     @Transactional(readOnly = true)

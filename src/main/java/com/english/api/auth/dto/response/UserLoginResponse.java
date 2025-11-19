@@ -1,6 +1,7 @@
 package com.english.api.auth.dto.response;
 
 import com.english.api.user.model.User;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -30,5 +31,6 @@ public record UserLoginResponse(
     public record RoleResponse(
             UUID roleId,
             String roleName
-    ) {}
+    ) {
+    }
 }

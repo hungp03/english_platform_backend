@@ -5,7 +5,6 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.forum.dto.request.ForumPostCreateRequest;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.entity.ForumPost;
-import com.english.api.forum.entity.ForumThread;
 import com.english.api.forum.repo.ForumPostRepository;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
@@ -15,7 +14,6 @@ import com.english.api.notification.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -26,12 +24,9 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class ForumPostServiceImpl implements ForumPostService {

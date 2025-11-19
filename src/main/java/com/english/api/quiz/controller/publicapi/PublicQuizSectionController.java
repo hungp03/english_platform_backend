@@ -1,7 +1,7 @@
-package com.english.api.quiz.controller.admin;
+package com.english.api.quiz.controller.publicapi;
 
 import com.english.api.quiz.dto.response.QuizSectionResponse;
-import com.english.api.quiz.enums.QuizSkill;
+import com.english.api.quiz.model.enums.QuizSkill;
 import com.english.api.quiz.service.QuizSectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

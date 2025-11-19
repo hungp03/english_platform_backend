@@ -3,6 +3,7 @@ package com.english.api.enrollment.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceNotFoundException;
+import com.english.api.enrollment.dto.request.AIStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanScheduleRequest;
 import com.english.api.enrollment.dto.request.StudyPlanScheduleRequest;
@@ -21,10 +22,16 @@ import com.english.api.enrollment.service.StudyPlanService;
 import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +46,13 @@ public class StudyPlanServiceImpl implements StudyPlanService {
     private final StudyPlanScheduleRepository studyPlanScheduleRepository;
     private final StudyPlanMapper studyPlanMapper;
     private final GoogleCalendarService googleCalendarService;
+    private final RestTemplate restTemplate;
+
+    @Value("${n8n.webhook.ai-plan-url}")
+    private String n8nAiPlanUrl;
+
+    @Value("${n8n.webhook.api-key}")
+    private String n8nApiKey;
 
     @Override
     @Transactional
@@ -270,6 +284,32 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         studyPlanScheduleRepository.save(schedule);
         log.info("Toggled schedule {} status to {} in plan {} for user {}",
                 scheduleId, newStatus, planId, currentUserId);
+    }
+
+    @Override
+    public Object generateAIPlan(AIStudyPlanRequest request) {
+        log.debug("Calling n8n AI plan generation with goal: {}", request.goal());
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + n8nApiKey);
+        headers.set("Content-Type", "application/json");
+
+        HttpEntity<AIStudyPlanRequest> requestEntity = new HttpEntity<>(request, headers);
+
+        try {
+            ResponseEntity<Object> response = restTemplate.exchange(
+                    n8nAiPlanUrl,
+                    HttpMethod.POST,
+                    requestEntity,
+                    Object.class
+            );
+
+            log.info("Successfully generated AI plan for goal: {}", request.goal());
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("Error calling n8n webhook for AI plan generation", e);
+            throw new RuntimeException("Failed to generate AI plan: " + e.getMessage(), e);
+        }
     }
 
     private void syncSchedulesToGoogleCalendar(List<StudyPlanSchedule> schedules, UUID userId) {

@@ -4,9 +4,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record ForumCategoryResponse(
-    UUID id,
-    String name,
-    String slug,
-    String description,
-    Instant createdAt
-) {}
+        UUID id,
+        String name,
+        String slug,
+        String description,
+        Instant createdAt
+) {
+}

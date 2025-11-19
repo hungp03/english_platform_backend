@@ -1,19 +1,3 @@
-// package com.english.api.forum.repo;
-// import com.english.api.forum.entity.ForumReport;
-// import com.english.api.forum.entity.ReportTargetType;
-
-// import java.util.List;
-
-// import org.springframework.data.domain.*;
-// import org.springframework.data.jpa.repository.JpaRepository;
-// public interface ForumReportRepository extends JpaRepository<ForumReport, java.util.UUID> {
-//   Page<ForumReport> findByTargetTypeAndResolvedAtIsNull(ReportTargetType type, Pageable pageable);
-//   Page<ForumReport> findByTargetType(ReportTargetType type, Pageable pageable);
-//   Page<ForumReport> findAll(Pageable pageable);
-//   List<ForumReport> findTop15ByResolvedAtIsNullOrderByCreatedAtAsc();
-//   Long countByResolvedAtIsNull();
-// }
-
 package com.english.api.forum.repo;
 
 import com.english.api.forum.entity.ForumReport;
@@ -38,4 +22,6 @@ public interface ForumReportRepository extends JpaRepository<ForumReport, UUID> 
     
     // Đếm số lượng report chưa giải quyết
     Long countByResolvedAtIsNull();
+
+    Page<ForumReport> findAll(Pageable pageable);
 }

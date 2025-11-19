@@ -12,4 +12,5 @@ public record QuestionCreateRequest(
         @NotBlank @Size(max = 2000) String content,
         @NotNull Integer orderIndex,
         List<QuestionOptionCreateRequest> options
-) {}
+) {
+}

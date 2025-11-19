@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.UUID;
 
 @RestController
@@ -17,7 +18,9 @@ public class AttemptController {
 
     private final AttemptService attemptService;
 
-    /** One-shot submit: tạo attempt + lưu câu trả lời + auto grade (nếu MCQ) */
+    /**
+     * One-shot submit: tạo attempt + lưu câu trả lời + auto grade (nếu MCQ)
+     */
     @PostMapping("/submit")
     public AttemptResponse submit(@RequestBody SubmitAttemptRequest req) {
         return attemptService.submitOneShot(req);

@@ -8,4 +8,5 @@ public record QuestionOptionResponse(
         boolean correct,
         String explanation,
         Integer orderIndex
-) {}
+) {
+}

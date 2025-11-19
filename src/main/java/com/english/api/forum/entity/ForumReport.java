@@ -4,8 +4,10 @@ import com.english.api.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
 
 import java.time.Instant;
 import java.util.UUID;
@@ -34,7 +36,6 @@ public class ForumReport {
     @Column(name = "target_id", nullable = false)
     private UUID targetId;
 
-    // --- THAY ĐỔI TẠI ĐÂY: Liên kết trực tiếp với User ---
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

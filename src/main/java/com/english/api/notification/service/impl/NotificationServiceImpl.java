@@ -10,8 +10,6 @@ import com.english.api.notification.model.UserFcmToken;
 import com.english.api.notification.repository.NotificationRepository;
 import com.english.api.notification.repository.UserFcmTokenRepository;
 import com.english.api.notification.service.NotificationService;
-import com.english.api.notification.mapper.NotificationMapper;
-import com.english.api.notification.dto.response.NotificationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,7 +28,6 @@ import java.util.UUID;
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserFcmTokenRepository userFcmTokenRepository;
-    private final NotificationMapper notificationMapper;
 
     @Async
     @Override
@@ -84,8 +81,7 @@ public class NotificationServiceImpl implements NotificationService {
         UUID userId = SecurityUtil.getCurrentUserId();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        Page<NotificationResponse> notificationResponses = notifications.map(notificationMapper::toResponse);
-        return PaginationResponse.from(notificationResponses, pageable);
+        return PaginationResponse.from(notifications, pageable);
     }
 
     @Async

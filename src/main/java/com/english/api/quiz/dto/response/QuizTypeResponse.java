@@ -10,4 +10,5 @@ public record QuizTypeResponse(
         String description,
         Instant createdAt,
         Instant updatedAt
-) {}
+) {
+}

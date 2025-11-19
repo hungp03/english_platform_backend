@@ -1,2 +1,3 @@
 package com.english.api.forum.entity;
-public enum ReportTargetType { THREAD, POST }
+
+public enum ReportTargetType {THREAD, POST}

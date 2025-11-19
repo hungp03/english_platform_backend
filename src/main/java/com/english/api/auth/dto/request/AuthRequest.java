@@ -24,4 +24,5 @@ public record AuthRequest(
                 message = "Password must not contain spaces"
         )
         String password
-) {}
+) {
+}

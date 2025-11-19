@@ -1,8 +1,8 @@
 package com.english.api.quiz.model;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
-import com.github.f4b6a3.uuid.UuidCreator;
 
 import java.time.Instant;
 import java.util.LinkedHashSet;

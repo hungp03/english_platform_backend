@@ -222,6 +222,28 @@ public class CourseServiceImpl implements CourseService {
         return PaginationResponse.from(page, pageable);
     }
 
+    @Override
+    public PaginationResponse getPublishedByInstructor(UUID instructorId, Pageable pageable, String keyword, String[] skills) {
+        var page = courseRepository.searchByOwnerWithStats(instructorId, keyword, "PUBLISHED", skills, pageable)
+                .map(projection -> new CourseWithStatsResponse(
+                        projection.getId(),
+                        projection.getTitle(),
+                        projection.getSlug(),
+                        projection.getDescription(),
+                        projection.getLanguage(),
+                        projection.getThumbnail(),
+                        projection.getSkillFocus(),
+                        projection.getPriceCents(),
+                        projection.getCurrency(),
+                        projection.getStatus(),
+                        projection.getModuleCount(),
+                        projection.getLessonCount(),
+                        projection.getCreatedAt(),
+                        projection.getUpdatedAt()
+                ));
+        return PaginationResponse.from(page, pageable);
+    }
+
     /**
      * Gets minimal course information needed for checkout payment display.
      * Only returns essential fields to minimize data transfer.

@@ -1,5 +1,6 @@
 package com.english.api.order.mapper;
 
+import com.english.api.order.dto.response.InvoiceResponse;
 import com.english.api.order.dto.response.OrderDetailResponse;
 import com.english.api.order.dto.response.OrderItemResponse;
 import com.english.api.order.dto.response.OrderResponse;
@@ -7,6 +8,7 @@ import com.english.api.order.dto.response.OrderSummaryResponse;
 import com.english.api.order.dto.response.PaymentResponse;
 import com.english.api.order.dto.response.PaymentSummaryResponse;
 import com.english.api.order.dto.response.UserBasicInfo;
+import com.english.api.order.model.Invoice;
 import com.english.api.order.model.Order;
 import com.english.api.order.model.OrderItem;
 import com.english.api.order.model.Payment;
@@ -56,4 +58,9 @@ public interface OrderMapper {
     PaymentSummaryResponse toPaymentSummaryResponse(Payment payment);
 
     List<PaymentSummaryResponse> toPaymentSummaryResponses(List<Payment> payments);
+
+    @Mapping(target = "orderId", source = "order.id")
+    InvoiceResponse toInvoiceResponse(Invoice invoice);
+
+    List<InvoiceResponse> toInvoiceResponses(List<Invoice> invoices);
 }

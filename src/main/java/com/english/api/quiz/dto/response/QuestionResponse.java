@@ -12,4 +12,5 @@ public record QuestionResponse(
         List<QuestionOptionResponse> options,
         Instant createdAt,
         Instant updatedAt
-) {}
+) {
+}

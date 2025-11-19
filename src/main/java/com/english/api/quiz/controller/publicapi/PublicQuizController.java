@@ -2,10 +2,12 @@ package com.english.api.quiz.controller.publicapi;
 
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.quiz.dto.response.PublicQuizDetailResponse;
-import com.english.api.quiz.enums.QuizSkill;
+import com.english.api.quiz.model.enums.QuizSkill;
 import com.english.api.quiz.service.QuizService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,6 +49,6 @@ public class PublicQuizController {
     @GetMapping("/quizzes/{id}")
     public ResponseEntity<PublicQuizDetailResponse> getPublicQuiz(@PathVariable UUID id) {
         return ResponseEntity.ok(quizService.getPublicQuiz(id));
-}
+    }
 
 }

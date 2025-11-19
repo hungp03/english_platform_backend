@@ -1,6 +1,10 @@
 package com.english.api.order.service.impl;
 
+import com.english.api.auth.util.SecurityUtil;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.mail.service.MailService;
+import com.english.api.order.dto.response.InvoiceResponse;
+import com.english.api.order.mapper.OrderMapper;
 import com.english.api.order.model.Invoice;
 import com.english.api.order.model.Order;
 import com.english.api.order.model.Payment;
@@ -25,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +40,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final MailService mailService;
     private final SpringTemplateEngine templateEngine;
     private final ObjectMapper objectMapper;
+    private final OrderMapper orderMapper;
 
     @Value("${cloud.public-url}")
     private String publicUrl;
@@ -111,10 +117,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         // Customer info
         context.setVariable("customerName", order.getUser().getFullName());
         context.setVariable("customerEmail", order.getUser().getEmail());
-        context.setVariable("customerId", order.getUser().getId().toString().substring(0, 8).toUpperCase());
+        context.setVariable("customerId", order.getUser().getId().toString());
         
         // Order info
-        context.setVariable("orderId", order.getId().toString().substring(0, 8).toUpperCase());
+        context.setVariable("orderId", order.getId().toString());
         context.setVariable("orderItems", order.getItems());
         
         // Payment info
@@ -171,5 +177,14 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private String formatCurrency(Long cents) {
         return VND_FORMAT.format(cents) + "đ";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public InvoiceResponse getInvoiceByOrderId(UUID orderId) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        Invoice invoice = invoiceRepository.findByOrderIdAndUserId(orderId, currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found for order ID: " + orderId + " or access denied"));
+        return orderMapper.toInvoiceResponse(invoice);
     }
 }

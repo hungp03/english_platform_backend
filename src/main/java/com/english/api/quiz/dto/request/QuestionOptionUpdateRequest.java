@@ -7,4 +7,5 @@ public record QuestionOptionUpdateRequest(
         Boolean correct,
         @Size(max = 2000) String explanation,
         Integer orderIndex
-) {}
+) {
+}

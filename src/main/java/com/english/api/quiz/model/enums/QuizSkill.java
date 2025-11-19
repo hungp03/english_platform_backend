@@ -1,4 +1,4 @@
-package com.english.api.quiz.enums;
+package com.english.api.quiz.model.enums;
 
 public enum QuizSkill {
     LISTENING,

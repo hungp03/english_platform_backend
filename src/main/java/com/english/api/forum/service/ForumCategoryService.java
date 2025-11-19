@@ -8,8 +8,11 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ForumCategoryService {
-  List<ForumCategoryResponse> list();
-  ForumCategoryResponse create(ForumCategoryCreateRequest req);
-  ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest req);
-  void delete(UUID id);
+    List<ForumCategoryResponse> list();
+
+    ForumCategoryResponse create(ForumCategoryCreateRequest req);
+
+    ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest req);
+
+    void delete(UUID id);
 }

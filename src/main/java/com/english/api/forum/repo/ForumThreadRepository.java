@@ -3,7 +3,8 @@ package com.english.api.forum.repo;
 import com.english.api.forum.entity.ForumThread;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
@@ -11,7 +12,7 @@ import java.util.UUID;
 
 public interface ForumThreadRepository extends JpaRepository<ForumThread, UUID> {
 
-  Optional<ForumThread> findBySlug(String slug);
+    Optional<ForumThread> findBySlug(String slug);
 
   @Query("""
 

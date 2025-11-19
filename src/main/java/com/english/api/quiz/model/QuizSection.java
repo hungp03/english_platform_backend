@@ -1,14 +1,13 @@
 
 package com.english.api.quiz.model;
 
+import com.english.api.quiz.model.enums.QuizSkill;
+import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.time.Instant;
 import java.util.UUID;
-
-import com.english.api.quiz.enums.QuizSkill;
-
-import lombok.*;
-import com.github.f4b6a3.uuid.UuidCreator;
 
 @Getter
 @Setter

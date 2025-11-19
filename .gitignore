@@ -37,3 +37,4 @@ build/
 
 ### Log ###
 logs/
+src/main/resources/fcm-service-account.json

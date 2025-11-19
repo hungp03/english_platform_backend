@@ -1,12 +1,11 @@
 package com.english.api.quiz.dto.request;
 
+import com.english.api.quiz.model.enums.QuizStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
-
-import com.english.api.quiz.enums.QuizStatus;
 
 public record QuizCreateRequest(
         @NotBlank @Size(max = 255) String title,
@@ -16,6 +15,7 @@ public record QuizCreateRequest(
         @NotNull UUID quizTypeId,
         UUID quizSectionId,
         String contextText,
-        String questionText, 
-        String explanation 
-) {}
+        String questionText,
+        String explanation
+) {
+}

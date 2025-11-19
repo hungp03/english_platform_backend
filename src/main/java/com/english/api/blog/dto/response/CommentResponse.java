@@ -16,4 +16,5 @@ public record CommentResponse(
         boolean published,
         Instant createdAt,
         Instant updatedAt
-) {}
+) {
+}
