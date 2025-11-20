@@ -366,6 +366,58 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         return mapToResponse(withdrawal);
     }
     
+    @Override
+    @Transactional
+    public void handlePayoutBatchFailed(String payoutBatchId, String reason) {
+        withdrawalRepository.findByPaypalPayoutBatchId(payoutBatchId).ifPresent(withdrawal -> {
+            if (withdrawal.getStatus() == WithdrawalStatus.PROCESSING) {
+                // Refund the amount back to instructor's balance
+                String currency = withdrawal.getOriginalCurrency() != null ? 
+                        withdrawal.getOriginalCurrency() : "USD";
+                walletService.refundBalance(
+                        withdrawal.getUser().getId(),
+                        withdrawal.getOriginalAmountCents(),
+                        withdrawal.getId(),
+                        "PayPal payout failed: " + (reason != null ? reason : "Unknown error"),
+                        currency
+                );
+                
+                withdrawal.setStatus(WithdrawalStatus.FAILED);
+                withdrawal.setAdminNote("PayPal payout denied/failed: " + (reason != null ? reason : "Unknown error"));
+                
+                withdrawalRepository.save(withdrawal);
+                
+                log.warn("PayPal payout batch failed: batchId={}, requestId={}, reason={}", 
+                        payoutBatchId, withdrawal.getId(), reason);
+            }
+        });
+    }
+    
+    @Override
+    @Transactional
+    public void handlePayoutBatchSuccess(String payoutBatchId) {
+        withdrawalRepository.findByPaypalPayoutBatchId(payoutBatchId).ifPresent(withdrawal -> {
+            if (withdrawal.getStatus() == WithdrawalStatus.PROCESSING) {
+                // Remove from pending balance (payout successful)
+                walletService.completeWithdrawal(
+                        withdrawal.getUser().getId(),
+                        withdrawal.getOriginalAmountCents()
+                );
+                
+                withdrawal.setStatus(WithdrawalStatus.COMPLETED);
+                withdrawal.setCompletedAt(Instant.now());
+                if (withdrawal.getAdminNote() == null) {
+                    withdrawal.setAdminNote("PayPal payout completed successfully");
+                }
+                
+                withdrawalRepository.save(withdrawal);
+                
+                log.info("PayPal payout batch succeeded: batchId={}, requestId={}", 
+                        payoutBatchId, withdrawal.getId());
+            }
+        });
+    }
+    
     private String formatAmount(BigDecimal amount, String currency) {
         if (amount == null) return "0.00";
         if ("VND".equals(currency)) {

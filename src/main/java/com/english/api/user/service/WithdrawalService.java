@@ -52,4 +52,14 @@ public interface WithdrawalService {
      * Cancel/revoke a pending withdrawal request (instructor only)
      */
     WithdrawalRequestResponse cancelWithdrawalRequest(UUID requestId);
+    
+    /**
+     * Handle PayPal payout batch failure (webhook)
+     */
+    void handlePayoutBatchFailed(String payoutBatchId, String reason);
+    
+    /**
+     * Handle PayPal payout batch success (webhook)
+     */
+    void handlePayoutBatchSuccess(String payoutBatchId);
 }

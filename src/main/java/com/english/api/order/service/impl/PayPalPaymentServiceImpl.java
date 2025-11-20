@@ -20,6 +20,8 @@ import com.english.api.order.service.ExchangeRateService;
 import com.english.api.order.service.InvoiceService;
 import com.english.api.order.service.PayPalPaymentService;
 import com.english.api.order.service.paypal.PayPalClient;
+import com.english.api.user.service.InstructorWalletService;
+import com.english.api.user.service.WithdrawalService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -48,7 +50,8 @@ public class PayPalPaymentServiceImpl implements PayPalPaymentService {
     private final InvoiceService invoiceService;
     private final EnrollmentService enrollmentService;
     private final ExchangeRateService exchangeRateService;
-    private final com.english.api.user.service.InstructorWalletService instructorWalletService;
+    private final InstructorWalletService instructorWalletService;
+    private final WithdrawalService withdrawalService;
 
     @Override
     @Transactional
@@ -140,6 +143,10 @@ public class PayPalPaymentServiceImpl implements PayPalPaymentService {
             handlePaymentCaptureCompleted(webhookEvent);
         } else if ("CHECKOUT.ORDER.APPROVED".equalsIgnoreCase(eventType)) {
             handleCheckoutOrderApproved(webhookEvent);
+        } else if ("PAYMENT.PAYOUTSBATCH.DENIED".equalsIgnoreCase(eventType)) {
+            handlePayoutBatchDenied(webhookEvent);
+        } else if ("PAYMENT.PAYOUTSBATCH.SUCCESS".equalsIgnoreCase(eventType)) {
+            handlePayoutBatchSuccess(webhookEvent);
         } else {
             // Log other events but don't process
             return;
@@ -304,6 +311,42 @@ public class PayPalPaymentServiceImpl implements PayPalPaymentService {
                 .toPlainString();
     }
 
+    private void handlePayoutBatchDenied(PayPalWebhookRequest webhookEvent) {
+        try {
+            Map<String, Object> resource = webhookEvent.resource();
+            if (resource.containsKey("batch_header")) {
+                Map<String, Object> batchHeader = (Map<String, Object>) resource.get("batch_header");
+                String payoutBatchId = (String) batchHeader.get("payout_batch_id");
+                String batchStatus = (String) batchHeader.get("batch_status");
+                
+                if (payoutBatchId != null && "DENIED".equalsIgnoreCase(batchStatus)) {
+                    withdrawalService.handlePayoutBatchFailed(payoutBatchId, "Payout batch denied by PayPal");
+                }
+            }
+        } catch (Exception e) {
+            // Log but don't fail - manual intervention may be needed
+            throw new ResourceInvalidException("Failed to process PayPal payout denied webhook: " + e.getMessage());
+        }
+    }
+    
+    private void handlePayoutBatchSuccess(PayPalWebhookRequest webhookEvent) {
+        try {
+            Map<String, Object> resource = webhookEvent.resource();
+            if (resource.containsKey("batch_header")) {
+                Map<String, Object> batchHeader = (Map<String, Object>) resource.get("batch_header");
+                String payoutBatchId = (String) batchHeader.get("payout_batch_id");
+                String batchStatus = (String) batchHeader.get("batch_status");
+                
+                if (payoutBatchId != null && "SUCCESS".equalsIgnoreCase(batchStatus)) {
+                    withdrawalService.handlePayoutBatchSuccess(payoutBatchId);
+                }
+            }
+        } catch (Exception e) {
+            // Log but don't fail - manual intervention may be needed
+            throw new ResourceInvalidException("Failed to process PayPal payout success webhook: " + e.getMessage());
+        }
+    }
+    
     private String formatAmount(BigDecimal amount) {
         if (amount == null) {
             return "0.00";
