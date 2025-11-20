@@ -37,6 +37,28 @@ public class PayPalClient {
                 .body(JsonNode.class));
     }
 
+    public JsonNode post(String uri, ObjectNode payload) {
+        return executeWithBearer(token -> restClient().post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .body(payload)
+                .retrieve()
+                .body(JsonNode.class));
+    }
+
+    public JsonNode get(String uri) {
+        return executeWithBearer(token -> restClient().get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .retrieve()
+                .body(JsonNode.class));
+    }
+
+    public String getAccessToken() {
+        return accessToken();
+    }
+
     private <T> T executeWithBearer(RestCall<T> call) {
         String token = "Bearer " + accessToken();
         try {

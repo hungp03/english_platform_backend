@@ -48,6 +48,7 @@ public class PayPalPaymentServiceImpl implements PayPalPaymentService {
     private final InvoiceService invoiceService;
     private final EnrollmentService enrollmentService;
     private final ExchangeRateService exchangeRateService;
+    private final com.english.api.user.service.InstructorWalletService instructorWalletService;
 
     @Override
     @Transactional
@@ -214,6 +215,10 @@ public class PayPalPaymentServiceImpl implements PayPalPaymentService {
             order.setStatus(OrderStatus.PAID);
             order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
             orderRepository.save(order);
+            
+            // Credit instructors for their course sales
+            instructorWalletService.processOrderEarnings(order);
+            
             enrollmentService.createEnrollmentsAfterPayment(order);
             invoiceService.generateAndSendInvoiceAsync(order, payment);
         }
