@@ -131,11 +131,6 @@
             <version>2.31.77</version>
         </dependency>
         <dependency>
-            <groupId>com.stripe</groupId>
-            <artifactId>stripe-java</artifactId>
-            <version>30.0.0</version>
-        </dependency>
-        <dependency>
             <groupId>vn.payos</groupId>
             <artifactId>payos-java</artifactId>
             <version>1.0.3</version>

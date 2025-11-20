@@ -4,6 +4,7 @@ import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.common.exception.ResourceAlreadyOwnedException;
+import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.common.service.MediaService;
 import com.english.api.course.dto.request.CourseRequest;
@@ -64,6 +65,13 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     @Override
     public CourseResponse create(CourseRequest req) {
+        // TEMPORARY: Only allow VND currency for new courses
+        // TODO: Remove this restriction when multiple currencies are fully supported
+        if (!"VND".equalsIgnoreCase(req.currency())) {
+            throw new com.english.api.common.exception.ResourceInvalidException(
+                "Currently, only VND currency is supported for course creation");
+        }
+        
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         Course course = mapper.toEntity(req);
         course.setCreatedBy(User.builder().id(currentUserId).build());
@@ -120,6 +128,13 @@ public class CourseServiceImpl implements CourseService {
     @CacheEvict(value = "courses", key = "#id")
     @Override
     public CourseResponse update(UUID id, CourseRequest req) {
+        // TEMPORARY: Only allow VND currency for courses
+        // TODO: Remove this restriction when multiple currencies are fully supported
+        if (!"VND".equalsIgnoreCase(req.currency())) {
+            throw new ResourceInvalidException(
+                "Currently, only VND currency is supported for courses");
+        }
+        
         UUID currentUserId = SecurityUtil.getCurrentUserId();
 
         UUID ownerId = courseRepository.findOwnerIdById(id)

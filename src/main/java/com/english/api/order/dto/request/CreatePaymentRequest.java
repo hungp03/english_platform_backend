@@ -27,8 +27,8 @@ public record CreatePaymentRequest(
         String vnpayOrderType,
         String vnpayLocale,
 
-        // Stripe specific fields
-        String stripeSuccessUrl,
-        String stripeCancelUrl,
-        String stripeCustomerEmail
+        // PayPal specific fields
+        String paypalSuccessUrl,
+        String paypalCancelUrl,
+        String paypalPayerEmail
 ) {}

@@ -6,7 +6,6 @@ import com.english.api.course.service.CourseService;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.user.dto.response.InstructorProfileResponse;
 import com.english.api.user.dto.response.PublicInstructorResponse;
-import com.english.api.user.model.InstructorProfile;
 import com.english.api.user.repository.InstructorProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

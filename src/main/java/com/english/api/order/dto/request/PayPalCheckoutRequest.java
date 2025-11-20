@@ -6,10 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 /**
- * Request DTO for creating a Stripe checkout session
- * Created by hungpham on 10/23/2025
+ * Request DTO for creating a PayPal checkout order
  */
-public record StripeCheckoutRequest(
+public record PayPalCheckoutRequest(
         @NotNull(message = "Order ID is required")
         UUID orderId,
 

@@ -184,7 +184,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
     @Transactional(readOnly = true)
     @Override
     public String getSignedMediaUrl(UUID assetId) {
-        UUID userId = SecurityUtil.getCurrentUserId();
+        // UUID userId = SecurityUtil.getCurrentUserId();
 
         MediaAssetSimpleResponse asset = assetRepository.findVideoById(assetId)
                 .orElseThrow(() -> new ResourceNotFoundException("Video not found"));

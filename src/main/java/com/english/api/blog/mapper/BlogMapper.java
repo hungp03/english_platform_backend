@@ -1,14 +1,10 @@
 package com.english.api.blog.mapper;
 
 import com.english.api.blog.dto.response.*;
-import com.english.api.blog.model.BlogCategory;
 import com.english.api.blog.model.BlogComment;
 import com.english.api.blog.model.BlogPost;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-
-import java.util.List;
-import java.util.Set;
 
 @Mapper(componentModel = "spring")
 public interface BlogMapper {

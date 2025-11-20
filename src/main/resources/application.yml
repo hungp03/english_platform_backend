@@ -104,11 +104,17 @@ payos:
   success-url: ${PAYOS_SUCCESS_URL}
   cancel-url: ${PAYOS_CANCEL_URL}
 
-stripe:
-  secret-key: ${STRIPE_SECRET_KEY}
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
-  success-url: ${STRIPE_SUCCESS_URL}
-  cancel-url: ${STRIPE_CANCEL_URL}
+paypal:
+  base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
+  client-id: ${PAYPAL_CLIENT_ID}
+  client-secret: ${PAYPAL_CLIENT_SECRET}
+  success-url: ${PAYPAL_SUCCESS_URL}
+  cancel-url: ${PAYPAL_CANCEL_URL}
+  brand-name: ${PAYPAL_BRAND_NAME:English Platform}
+
+exchange-rate:
+  api-url: https://api.exchangerate-api.com/v4/latest/
+  cache-minutes: 60
 
 n8n:
   webhook:
