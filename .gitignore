@@ -37,4 +37,7 @@ build/
 
 ### Log ###
 logs/
+
+
 src/main/resources/fcm-service-account.json
+src/main/resources/db/migrations
