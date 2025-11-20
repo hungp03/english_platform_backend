@@ -1,6 +1,7 @@
 package com.english.api.notification.service;
 
 import com.english.api.common.dto.PaginationResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -11,7 +12,7 @@ public interface NotificationService {
     
     void registerToken(UUID userId, String token);
     
-    PaginationResponse getNotificationsByUser(int page, int size);
+    PaginationResponse getNotificationsByUser(Pageable pageable);
     
     void markAsRead(Long notificationId);
     

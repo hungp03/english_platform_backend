@@ -22,6 +22,7 @@ import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.mail.service.MailService;
 import com.english.api.user.model.Role;
 import com.english.api.user.model.User;
+import com.english.api.user.model.UserOAuth2Token;
 import com.english.api.user.repository.RoleRepository;
 import com.english.api.user.service.UserService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -45,6 +46,7 @@ import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -514,14 +516,14 @@ public class AuthServiceImpl implements AuthService {
                 new org.springframework.http.HttpEntity<>(params, headers);
 
         try {
-            org.springframework.http.ResponseEntity<java.util.Map> response = restTemplate.postForEntity(
+            org.springframework.http.ResponseEntity<Map> response = restTemplate.postForEntity(
                     tokenEndpoint, 
                     request, 
-                    java.util.Map.class
+                    Map.class
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                java.util.Map<String, Object> body = response.getBody();
+                Map<String, Object> body = response.getBody();
                 return new GoogleTokenResponse(
                         (String) body.get("access_token"),
                         (String) body.get("refresh_token"),
@@ -552,9 +554,9 @@ public class AuthServiceImpl implements AuthService {
 
     private void storeOAuth2TokensFromExchange(User user, String accessToken, String refreshToken, Long expiresIn) {
         try {
-            com.english.api.user.model.UserOAuth2Token token = oauth2TokenRepository
+            UserOAuth2Token token = oauth2TokenRepository
                     .findByUserIdAndProvider(user.getId(), "GOOGLE")
-                    .orElse(com.english.api.user.model.UserOAuth2Token.builder()
+                    .orElse(UserOAuth2Token.builder()
                             .user(user)
                             .provider("GOOGLE")
                             .build());

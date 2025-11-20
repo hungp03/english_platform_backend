@@ -89,6 +89,9 @@ app:
     url: ${WORKER_URL}
     api-token: ${WORKER_API_TOKEN}
     callback-secret: ${WORKER_CALLBACK_SECRET}
+  platform-fee-percentage: ${PLATFORM_FEE_PERCENTAGE:15}
+  minimum-withdrawal-usd: ${MINIMUM_WITHDRAWAL_USD:10}
+  minimum-withdrawal-vnd: ${MINIMUM_WITHDRAWAL_VND:250000}
 
 cloud:
   endpoint: ${S3_ENDPOINT}

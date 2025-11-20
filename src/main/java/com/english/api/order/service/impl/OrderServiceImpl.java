@@ -8,6 +8,7 @@ import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.service.CourseService;
+import com.english.api.notification.service.NotificationService;
 import com.english.api.order.dto.request.CreateOrderRequest;
 import com.english.api.order.dto.request.OrderSource;
 import com.english.api.order.dto.response.OrderDetailResponse;
@@ -49,7 +50,8 @@ public class OrderServiceImpl implements OrderService {
     private final NotificationService notificationService;
 
     // Valid status transitions mapping
-    private static final Set<OrderStatus> PENDING_TRANSITIONS = Set.of(OrderStatus.PAID, OrderStatus.CANCELLED, OrderStatus.FAILED);
+    private static final Set<OrderStatus> PENDING_TRANSITIONS = Set.of(OrderStatus.PAID, OrderStatus.CANCELLED,
+            OrderStatus.FAILED);
     private static final Set<OrderStatus> PAID_TRANSITIONS = Set.of(OrderStatus.REFUNDED);
     private static final Set<OrderStatus> FAILED_TRANSITIONS = Set.of(OrderStatus.PENDING);
     private static final Set<OrderStatus> CANCELLED_TRANSITIONS = Set.of(); // No transitions from cancelled
@@ -87,18 +89,16 @@ public class OrderServiceImpl implements OrderService {
         order.setItems(orderItems);
         // Save order
         Order savedOrder = orderRepository.save(order);
-        
-        // Send notification to user about order creation
-        notificationService.sendNotification(
-            currentUserId,
-            "Đơn hàng của bạn đã được đặt thành công",
-            "Đơn hàng #" + savedOrder.getId() + " đã xử lí thành công. Tổng cộng: " + (totalCents) +" "+(savedOrder.getCurrency())
-        );
-        
-        // If order is from cart, remove the purchased items from cart after successful order creation
+        // If order is from cart, remove the purchased items from cart after successful
         if (request.orderSource() == OrderSource.CART) {
             removeOrderedItemsFromCart(request.items());
         }
+
+        notificationService.sendNotification(
+                currentUserId,
+                "Đơn hàng đã được tạo thành công",
+                "Đơn hàng #" + savedOrder.getId() + " đã được khởi tạo thành công.");
+
         return orderMapper.toOrderResponse(savedOrder);
     }
 
@@ -110,8 +110,7 @@ public class OrderServiceImpl implements OrderService {
         // Validate status transition
         if (!isValidStatusTransition(currentStatus, newStatus)) {
             throw new ResourceInvalidException(
-                    String.format("Invalid status transition from %s to %s", currentStatus, newStatus)
-            );
+                    String.format("Invalid status transition from %s to %s", currentStatus, newStatus));
         }
         // Update status
         order.setStatus(newStatus);
@@ -147,10 +146,9 @@ public class OrderServiceImpl implements OrderService {
         return PaginationResponse.from(orderSummaryPage, pageable);
     }
 
-
     @Override
     public PaginationResponse getOrders(Pageable pageable, OrderStatus status,
-                                        OffsetDateTime startDate, OffsetDateTime endDate) {
+            OffsetDateTime startDate, OffsetDateTime endDate) {
         Page<Order> orderPage;
         // Apply filters based on provided parameters
         if (status != null && startDate != null && endDate != null) {
@@ -173,7 +171,8 @@ public class OrderServiceImpl implements OrderService {
 
         // Use method that fetches items with user authorization built-in
         Order order = orderRepository.findByIdAndUserIdWithItems(orderId, currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId + " or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Order not found with ID: " + orderId + " or access denied"));
 
         return orderMapper.toOrderResponse(order);
     }
@@ -183,10 +182,12 @@ public class OrderServiceImpl implements OrderService {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         // Get order with user and items in one query (with user authorization built-in)
         Order orderWithItems = orderRepository.findByIdAndUserIdWithItems(orderId, currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId + " or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Order not found with ID: " + orderId + " or access denied"));
         // Get payments in separate query (with user authorization built-in)
         Order orderWithPayments = orderRepository.findByIdAndUserIdWithPayments(orderId, currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId + " or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Order not found with ID: " + orderId + " or access denied"));
         // Merge the data: use orderWithItems as base and add payments
         orderWithItems.setPayments(orderWithPayments.getPayments());
         return orderMapper.toOrderDetailResponse(orderWithItems);
@@ -211,16 +212,24 @@ public class OrderServiceImpl implements OrderService {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         // Find order with user authorization built-in
         Order order = orderRepository.findByIdAndUserIdWithItems(orderId, currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId + " or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Order not found with ID: " + orderId + " or access denied"));
         // Validate order can be cancelled
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new ResourceInvalidException("Only PENDING orders can be cancelled. Current status: " + order.getStatus());
+            throw new ResourceInvalidException(
+                    "Only PENDING orders can be cancelled. Current status: " + order.getStatus());
         }
         // Update status to cancelled
         order.setStatus(OrderStatus.CANCELLED);
         order.setCancelReason(cancelReason);
         order.setCancelAt(OffsetDateTime.now());
         Order savedOrder = orderRepository.save(order);
+        notificationService.sendNotification(
+            currentUserId,
+            "Đã hủy đơn hàng",
+            "Đơn hàng #" + order.getId() + " đã được hủy. " + 
+            (cancelReason != null ? "Lý do: " + cancelReason : "")
+        );
         return orderMapper.toOrderResponse(savedOrder);
     }
 
@@ -245,7 +254,8 @@ public class OrderServiceImpl implements OrderService {
         }
         long totalCents = 0;
         for (CreateOrderRequest.OrderItemRequest item : request.items()) {
-            // Validate item fields only - entity existence will be validated during order creation
+            // Validate item fields only - entity existence will be validated during order
+            // creation
             if (item.entityType() == null) {
                 throw new ResourceInvalidException("Entity type is required for all items");
             }
@@ -271,7 +281,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Validates and retrieves entity information in a single operation to optimize database queries
+     * Validates and retrieves entity information in a single operation to optimize
+     * database queries
      */
     private CourseCheckoutResponse validateAndGetCourseInfo(UUID courseId) {
         return courseService.getCheckoutInfoById(courseId);
@@ -286,7 +297,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Optimized method that validates entity existence and gets title in a single database query
+     * Optimized method that validates entity existence and gets title in a single
+     * database query
      */
     private String getEntityTitleOptimized(OrderItemEntityType entityType, UUID entityId) {
         return switch (entityType) {
@@ -312,8 +324,9 @@ public class OrderServiceImpl implements OrderService {
             if (item.entityType() == OrderItemEntityType.COURSE) {
                 if (orderRepository.hasUserPurchasedCourse(userId, item.entityId())) {
                     throw new ResourceAlreadyOwnedException(
-                            String.format("You have already purchased the course with ID: %s. Please remove it from your order.", item.entityId())
-                    );
+                            String.format(
+                                    "You have already purchased the course with ID: %s. Please remove it from your order.",
+                                    item.entityId()));
                 }
             }
         }

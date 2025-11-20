@@ -65,8 +65,8 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
         BigDecimal amount = BigDecimal.valueOf(amountCents);
         BigDecimal convertedAmount = amount.multiply(rate);
         
-        // Return with 2 decimal places precision
-        BigDecimal convertedValue = convertedAmount.setScale(2, RoundingMode.HALF_UP);
+        // Return with 2 decimal places precision - use DOWN to never round up
+        BigDecimal convertedValue = convertedAmount.setScale(2, RoundingMode.DOWN);
         
         log.info("Converted {} {} to {} {} at rate {}", 
                 amountCents, from, convertedValue, to, rate);

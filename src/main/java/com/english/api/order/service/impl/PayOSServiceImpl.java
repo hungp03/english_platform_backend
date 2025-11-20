@@ -37,6 +37,7 @@ public class PayOSServiceImpl implements PayOSPaymentService {
     private final PayOS payOS;
     private final InvoiceService invoiceService;
     private final EnrollmentService enrollmentService;
+    private final com.english.api.user.service.InstructorWalletService instructorWalletService;
 
     @Value("${payos.success-url}")
     private String defaultSuccessUrl;
@@ -131,6 +132,9 @@ public class PayOSServiceImpl implements PayOSPaymentService {
                     order.setStatus(OrderStatus.PAID);
                     order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
                     orderRepository.save(order);
+                    
+                    // Credit instructors for their course sales
+                    instructorWalletService.processOrderEarnings(order);
                     
                     // Create enrollments for purchased courses
                     enrollmentService.createEnrollmentsAfterPayment(order);

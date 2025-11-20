@@ -4,6 +4,8 @@ import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,9 +29,8 @@ public class NotificationController {
 
     @GetMapping
     public ResponseEntity<PaginationResponse> getUserNotifications(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(notificationService.getNotificationsByUser(page, size));
+            @PageableDefault(page = 0, size = 20) Pageable pageable) {
+        return ResponseEntity.ok(notificationService.getNotificationsByUser(pageable));
     }
 
     @PostMapping("/mark-read/{id}")
