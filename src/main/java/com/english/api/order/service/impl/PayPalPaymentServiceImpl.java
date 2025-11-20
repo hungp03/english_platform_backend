@@ -301,15 +301,15 @@ public class PayPalPaymentServiceImpl implements PayPalPaymentService {
         return baseUrl + separator + "orderId=" + orderId;
     }
 
-    private String formatAmount(Long amountCents) {
-        if (amountCents == null) {
-            return "0.00";
-        }
-        // Use database value as-is (no division by 100)
-        return BigDecimal.valueOf(amountCents)
-                .setScale(2, RoundingMode.HALF_UP)
-                .toPlainString();
-    }
+    // private String formatAmount(Long amountCents) {
+    //     if (amountCents == null) {
+    //         return "0.00";
+    //     }
+    //     // Use database value as-is (no division by 100)
+    //     return BigDecimal.valueOf(amountCents)
+    //             .setScale(2, RoundingMode.HALF_UP)
+    //             .toPlainString();
+    // }
 
     private void handlePayoutBatchDenied(PayPalWebhookRequest webhookEvent) {
         try {

@@ -209,11 +209,11 @@ public class InstructorWalletServiceImpl implements InstructorWalletService {
         return String.format("%s$%,.2f", sign, cents);
     }
     
-    private String formatBalance(BigDecimal cents, String currency) {
-        if (cents == null) return "0.00";
-        if ("VND".equals(currency)) {
-            return String.format("%,.2f VND", cents);
-        }
-        return String.format("$%,.2f", cents);
-    }
+    // private String formatBalance(BigDecimal cents, String currency) {
+    //     if (cents == null) return "0.00";
+    //     if ("VND".equals(currency)) {
+    //         return String.format("%,.2f VND", cents);
+    //     }
+    //     return String.format("$%,.2f", cents);
+    // }
 }

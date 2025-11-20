@@ -6,10 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -20,8 +17,6 @@ public class PayPalPayoutService {
     
     private final PayPalClient payPalClient;
     private final ObjectMapper objectMapper;
-    private final RestTemplate restTemplate = new RestTemplate();
-    
     /**
      * Create a payout to send money to instructor's PayPal account
      * 
@@ -32,8 +27,6 @@ public class PayPalPayoutService {
      * @return PayPal payout batch ID and item ID
      */
     public PayoutResult createPayout(String paypalEmail, BigDecimal amountUSD, String senderItemId, String note) {
-        String accessToken = payPalClient.getAccessToken();
-        
         ObjectNode payload = objectMapper.createObjectNode();
         
         // Sender batch header
