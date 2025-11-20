@@ -96,12 +96,12 @@ public class AdminForumController {
 
     // === Posts moderation ===
     @PostMapping("/posts/{id}/hide")
-    public ResponseEntity<ForumPostResponse> hide(@PathVariable java.util.UUID id) {
+    public ResponseEntity<ForumPostResponse> hide(@PathVariable UUID id) {
         return ResponseEntity.ok(postService.hide(id));
     }
 
     @PostMapping("/posts/{id}/unhide")
-    public ResponseEntity<ForumPostResponse> unhide(@PathVariable java.util.UUID id) {
+    public ResponseEntity<ForumPostResponse> unhide(@PathVariable UUID id) {
         return ResponseEntity.ok(postService.show(id));
     }
 

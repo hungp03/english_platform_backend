@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ForumPostRepository extends JpaRepository<ForumPost, UUID> {
@@ -84,4 +85,14 @@ public interface ForumPostRepository extends JpaRepository<ForumPost, UUID> {
     @Transactional
     @Query("DELETE FROM ForumPost p WHERE p.thread = :thread")
     void deleteAllByThread(@Param("thread") ForumThread thread);
+
+    long countByParent(ForumPost parent);
+
+    Optional<ForumPost> findFirstByThreadOrderByCreatedAtDesc(ForumThread thread);
+
+    @Query("SELECT p.id FROM ForumPost p WHERE p.thread = :thread")
+    List<UUID> findIdsByThread(@Param("thread") ForumThread thread);
+
+    @Query("SELECT p.id FROM ForumPost p WHERE p.parent = :parent")
+    List<UUID> findIdsByParent(@Param("parent") ForumPost parent);
 }

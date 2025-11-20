@@ -6,6 +6,7 @@ import com.english.api.forum.dto.request.ForumPostCreateRequest;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.entity.ForumPost;
 import com.english.api.forum.repo.ForumPostRepository;
+import com.english.api.forum.repo.ForumReportRepository;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
 import com.english.api.forum.repo.ForumThreadRepository;
@@ -35,6 +36,7 @@ public class ForumPostServiceImpl implements ForumPostService {
   private final ForumThreadRepository threadRepo;
   private final UserRepository userRepo;
   private final NotificationService notificationService;
+  private final ForumReportRepository reportRepo;
 
   @Override
   public PaginationResponse listByThread(UUID threadId, Pageable pageable, boolean onlyPublished) {
@@ -149,7 +151,6 @@ public class ForumPostServiceImpl implements ForumPostService {
           );
       }
   }
-
     return toDto(p);
   }
 
@@ -200,38 +201,101 @@ public class ForumPostServiceImpl implements ForumPostService {
 
   @Override
   @Transactional
-  public void deleteByOwner(java.util.UUID postId) {
-    java.util.UUID uid = com.english.api.auth.util.SecurityUtil.getCurrentUserId();
-    var p = postRepo.findById(postId).orElseThrow();
-    if (p.getAuthorId() == null || !p.getAuthorId().equals(uid)) {
-      throw new org.springframework.security.access.AccessDeniedException("Only author can delete this post");
-    }
-    // adjust thread counters
-    var t = p.getThread();
+  public void deleteByOwner(UUID postId) {
+      UUID uid = SecurityUtil.getCurrentUserId();
+      var p = postRepo.findById(postId).orElseThrow();
+      
+      if (p.getAuthorId() == null || !p.getAuthorId().equals(uid)) {
+          throw new org.springframework.security.access.AccessDeniedException("Only author can delete this post");
+      }
 
-    // nếu là post cấp 1 (không có parent) -> xoá hết con rồi xoá nó
-    if (p.getParent() == null) {
-      postRepo.deleteByParent(p);
-    }
-    postRepo.delete(p);
-          
-    if (t != null) {
-      long rc = Math.max(0, t.getReplyCount() - 1);
-      t.setReplyCount(rc);
-      threadRepo.save(t);
-    }
+      performDelete(p);
   }
 
   @Override
   @Transactional
-  public void adminDelete(java.util.UUID postId) {
-    var p = postRepo.findById(postId).orElseThrow();
+  public void adminDelete(UUID postId) {
+      var p = postRepo.findById(postId).orElseThrow();
+
+      UUID adminId = SecurityUtil.getCurrentUserId();
+      var adminUser = userRepo.findById(adminId).orElse(null);
+      String adminName = adminUser != null ? adminUser.getFullName() : "Quản trị viên";
+
+      UUID postAuthorId = p.getAuthorId();
+      UUID threadAuthorId = p.getThread() != null ? p.getThread().getAuthorId() : null;
+      String threadTitle = p.getThread() != null ? p.getThread().getTitle() : "";
+
+      performDelete(p);
+
+      // Gửi thông báo tới chủ post (nếu có và khác admin)
+      if (postAuthorId != null && !postAuthorId.equals(adminId)) {
+          String title = "Bài viết của bạn đã bị xóa";
+          String body = adminName + " đã xóa bài viết của bạn";
+          if (threadTitle != null && !threadTitle.isBlank()) {
+              body += " trong chủ đề: \"" + threadTitle + "\".";
+          } else {
+              body += ".";
+          }
+          notificationService.sendNotification(postAuthorId, title, body);
+      }
+
+      if (threadAuthorId != null && !threadAuthorId.equals(adminId)
+              && (postAuthorId == null || !threadAuthorId.equals(postAuthorId))) {
+          String title = "Bài viết trong chủ đề của bạn đã bị xóa";
+          String body = adminName + " đã xóa một bài viết trong chủ đề của bạn";
+          if (threadTitle != null && !threadTitle.isBlank()) {
+              body += ": \"" + threadTitle + "\".";
+          } else {
+              body += ".";
+          }
+          notificationService.sendNotification(threadAuthorId, title, body);
+      }
+  }
+
+  private void performDelete(ForumPost p) {
     var t = p.getThread();
+    long deletedCount = 1; 
+
+    // 1. Xóa các bài con (nếu có)
+    if (p.getParent() == null) {
+        long childrenCount = postRepo.countByParent(p);
+        if (childrenCount > 0) {
+
+            List<UUID> childIds = postRepo.findIdsByParent(p);
+            if (!childIds.isEmpty()) {
+                reportRepo.deleteByTargetIds(childIds);
+            }
+
+            postRepo.deleteByParent(p);
+            deletedCount += childrenCount;
+        }
+    }
+
     postRepo.delete(p);
+    
+    //Flush để đảm bảo lệnh xóa đã được ghi nhận trước khi ta query tìm bài mới nhất
+    postRepo.flush(); 
+
     if (t != null) {
-      long rc = Math.max(0, t.getReplyCount() - 1);
-      t.setReplyCount(rc);
-      threadRepo.save(t);
+        long currentCount = t.getReplyCount();
+        long newCount = Math.max(0, currentCount - deletedCount);
+        t.setReplyCount(newCount);
+        
+        var latestPostOpt = postRepo.findFirstByThreadOrderByCreatedAtDesc(t);
+        
+        if (latestPostOpt.isPresent()) {
+            ForumPost latestPost = latestPostOpt.get();
+            t.setLastPostAt(latestPost.getCreatedAt());
+            t.setLastPostId(latestPost.getId());
+            t.setLastPostAuthor(latestPost.getAuthorId());
+        } else {
+            t.setLastPostAt(t.getCreatedAt());
+            t.setLastPostId(null);
+            t.setLastPostAuthor(null);
+        }
+        
+        threadRepo.save(t);
     }
   }
+
 }

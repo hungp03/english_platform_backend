@@ -13,6 +13,7 @@ import com.english.api.forum.entity.ForumThread;
 import com.english.api.forum.entity.ForumThreadCategory;
 import com.english.api.forum.repo.ForumCategoryRepository;
 import com.english.api.forum.repo.ForumPostRepository;
+import com.english.api.forum.repo.ForumReportRepository;
 import com.english.api.forum.repo.ForumThreadCategoryRepository;
 import com.english.api.forum.repo.ForumThreadRepository;
 import com.english.api.forum.service.ForumThreadService;
@@ -26,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.english.api.notification.service.NotificationService;
 
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +43,8 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     private final ForumCategoryRepository categoryRepo;
     private final ForumThreadCategoryRepository threadCatRepo;
     private final ForumPostRepository postRepo;
+    private final NotificationService notificationService; 
+    private final ForumReportRepository reportRepo;
 
     @Override
     public PaginationResponse listPublic(String keyword, UUID categoryId, Boolean locked, Pageable pageable) {
@@ -247,6 +251,13 @@ public class ForumThreadServiceImpl implements ForumThreadService {
         if (thread.isLocked()) {
             throw new IllegalStateException("Không thể xóa bài viết đang bị khóa");
         }
+        List<UUID> postIds = postRepo.findIdsByThread(thread);
+        if (!postIds.isEmpty()) {
+            reportRepo.deleteByTargetIds(postIds);
+        }
+        // 2. Xóa report của chính thread này
+        reportRepo.deleteByTargetId(thread.getId());
+
         threadCatRepo.deleteByThread(thread);
         postRepo.unlinkParentsByThread(thread); 
         postRepo.deleteAllByThread(thread);   
@@ -258,11 +269,36 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     public void adminDelete(UUID id) {
         var thread = threadRepo.findById(id).orElseThrow(() -> new RuntimeException("Thread not found"));
 
+        UUID adminId = SecurityUtil.getCurrentUserId();
+        var adminUser = userRepo.findById(adminId).orElse(null);
+        String adminName = adminUser != null ? adminUser.getFullName() : "Quản trị viên";
+
+        UUID threadAuthorId = thread.getAuthorId();
+        String threadTitle = thread.getTitle() != null ? thread.getTitle() : "";
+
         threadCatRepo.deleteByThread(thread);
-        postRepo.unlinkParentsByThread(thread); 
-        postRepo.deleteAllByThread(thread);    
+        postRepo.unlinkParentsByThread(thread);
+        postRepo.deleteAllByThread(thread);
         threadRepo.delete(thread);
 
+        List<UUID> postIds = postRepo.findIdsByThread(thread);
+        if (!postIds.isEmpty()) {
+            reportRepo.deleteByTargetIds(postIds);
+        }
+
+        reportRepo.deleteByTargetId(thread.getId());
+
+        if (threadAuthorId != null && !threadAuthorId.equals(adminId)) {
+            String title = "Chủ đề của bạn đã bị xóa bởi quản trị";
+            String body = adminName + " đã xóa chủ đề của bạn";
+            if (!threadTitle.isBlank()) {
+                body += ": \"" + threadTitle + "\".";
+            } else {
+                body += ".";
+            }
+            notificationService.sendNotification(threadAuthorId, title, body);
+        }
     }
+
 
 }

@@ -22,9 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.english.api.notification.service.NotificationService;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
+
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,7 +45,7 @@ public class ForumReportServiceImpl implements ForumReportService {
         var entity = ForumReport.builder()
                 .targetType(req.targetType())
                 .targetId(req.targetId())
-                .user(user) // Set entity User
+                .user(user)
                 .reason(req.reason())
                 .build();
         
@@ -78,10 +76,10 @@ public class ForumReportServiceImpl implements ForumReportService {
 
 
         var postMap = postRepository.findAllById(postIds).stream()
-                .collect(java.util.stream.Collectors.toMap(p -> p.getId(), p -> p));
+                .collect(Collectors.toMap(p -> p.getId(), p -> p));
 
         var threadMap = threadRepository.findAllById(threadIds).stream()
-                .collect(java.util.stream.Collectors.toMap(t -> t.getId(), t -> t));
+                .collect(Collectors.toMap(t -> t.getId(), t -> t));
 
         var mapped = reports.stream().map(r -> {
             String preview = null;
@@ -96,7 +94,7 @@ public class ForumReportServiceImpl implements ForumReportService {
             } else if (r.getTargetType() == ReportTargetType.THREAD) {
                 var t = threadMap.get(r.getTargetId());
                 if (t != null) {
-                    preview = t.getTitle();
+                    preview = t.getSlug();
                     targetPublished = !t.isLocked();
                 }
             }
@@ -116,7 +114,8 @@ public class ForumReportServiceImpl implements ForumReportService {
                     targetPublished,
                     r.getCreatedAt(),
                     r.getResolvedAt(),
-                    r.getResolvedBy() != null ? r.getResolvedBy().getId() : null // Lấy ID admin
+                    // r.getResolvedBy() != null ? r.getResolvedBy().getId() : null
+                    r.getResolvedBy() != null ? r.getResolvedBy().getFullName() : null // Lấy ID admin
             );
         }).toList();
 
@@ -175,7 +174,8 @@ public class ForumReportServiceImpl implements ForumReportService {
                 targetPublished,
                 r.getCreatedAt(),
                 r.getResolvedAt(),
-                r.getResolvedBy() != null ? r.getResolvedBy().getId() : null
+                // r.getResolvedBy() != null ? r.getResolvedBy().getId() : null
+                r.getResolvedBy() != null ? r.getResolvedBy().getFullName() : null
         );
     }
 }
