@@ -28,6 +28,8 @@ import com.english.api.user.repository.UserRepository;
 import com.english.api.user.service.InstructorService;
 import com.english.api.common.service.MediaService;
 import com.english.api.mail.service.MailService;
+import com.english.api.notification.service.NotificationService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -58,6 +60,7 @@ public class InstructorServiceImpl implements InstructorService {
     private final CertificateProofMapper certificateProofMapper;
     private final MediaService mediaService;
     private final MailService mailService;
+    private final NotificationService notificationService;
 
     @Override
     public InstructorRequestResponse createInstructorRequest(CreateInstructorRequest request) {
@@ -120,8 +123,8 @@ public class InstructorServiceImpl implements InstructorService {
                 .toList();
 
         // Create page of DTO items
-        Page<InstructorRequestListResponse.InstructorRequestItem> itemPage =
-            new org.springframework.data.domain.PageImpl<>(items, requests.getPageable(), requests.getTotalElements());
+        Page<InstructorRequestListResponse.InstructorRequestItem> itemPage = new org.springframework.data.domain.PageImpl<>(
+                items, requests.getPageable(), requests.getTotalElements());
 
         return PaginationResponse.from(itemPage, pageable);
     }
@@ -158,12 +161,12 @@ public class InstructorServiceImpl implements InstructorService {
                     .orElse(InstructorProfile.builder()
                             .user(requestUser)
                             .build());
-            
+
             instructorProfile.setBio(request.getBio());
             instructorProfile.setExpertise(request.getExpertise());
             instructorProfile.setExperienceYears(request.getExperienceYears());
             instructorProfile.setQualification(request.getQualification());
-            
+
             instructorProfileRepository.save(instructorProfile);
             log.info("Created/updated instructor profile for user: {}", requestUser.getEmail());
             log.info("Approved instructor request for user: {}", requestUser.getEmail());
@@ -173,18 +176,31 @@ public class InstructorServiceImpl implements InstructorService {
         }
 
         InstructorRequest updatedRequest = instructorRequestRepository.save(request);
-        
+
         // Send email notification to user
         User requestUser = request.getUser();
         boolean isApproved = reviewRequest.action() == ReviewInstructorRequest.ApprovalAction.APPROVE;
+        if (isApproved) {
+            notificationService.sendNotification(
+                    requestUser.getId(),
+                    "Yêu cầu giảng viên được chấp nhận",
+                    "Chúc mừng! Yêu cầu giảng viên của bạn đã được chấp nhận. Giờ bạn có thể tạo khóa học mới.");
+        } else {
+            notificationService.sendNotification(
+                    requestUser.getId(),
+                    "Yêu cầu giảng viên đã bị từ chối",
+                    "Yêu cầu giảng viên của bạn đã được đánh giá. " +
+                            (reviewRequest.adminNotes() != null
+                                    ? "Người quản trị ghi chú: " + reviewRequest.adminNotes()
+                                    : ""));
+        }
         String userName = requestUser.getFullName() != null ? requestUser.getFullName() : requestUser.getEmail();
         mailService.sendInstructorRequestReviewEmail(
-            requestUser.getEmail(), 
-            userName, 
-            isApproved, 
-            reviewRequest.adminNotes()
-        );
-        
+                requestUser.getEmail(),
+                userName,
+                isApproved,
+                reviewRequest.adminNotes());
+
         return instructorRequestMapper.toResponse(updatedRequest);
     }
 
@@ -202,7 +218,8 @@ public class InstructorServiceImpl implements InstructorService {
     public InstructorRequestResponse getUserRequestById(UUID requestId) {
         UUID userId = SecurityUtil.getCurrentUserId();
         InstructorRequest request = instructorRequestRepository.findByIdAndUserId(requestId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found with id: " + requestId + " for current user"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Instructor request not found with id: " + requestId + " for current user"));
         return instructorRequestMapper.toResponse(request);
     }
 
@@ -220,7 +237,8 @@ public class InstructorServiceImpl implements InstructorService {
     public InstructorRequestResponse updatePendingRequest(UUID requestId, UpdateInstructorRequest request) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         InstructorRequest instructorRequest = instructorRequestRepository.findByIdAndUserId(requestId, currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found or you don't have permission"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Instructor request not found or you don't have permission"));
 
         if (instructorRequest.getStatus() != InstructorRequest.Status.PENDING) {
             throw new ResourceInvalidException("Only pending requests can be updated");
@@ -250,10 +268,12 @@ public class InstructorServiceImpl implements InstructorService {
     }
 
     @Override
-    public List<CertificateProofResponse> uploadCertificateProof(UUID requestId, UploadCertificateProofRequest request) {
+    public List<CertificateProofResponse> uploadCertificateProof(UUID requestId,
+            UploadCertificateProofRequest request) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         InstructorRequest instructorRequest = instructorRequestRepository.findByIdAndUserId(requestId, currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found or you don't have permission"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Instructor request not found or you don't have permission"));
 
         if (instructorRequest.getStatus() != InstructorRequest.Status.PENDING) {
             throw new ResourceInvalidException("Can only upload proofs for pending requests");
@@ -266,7 +286,7 @@ public class InstructorServiceImpl implements InstructorService {
                         .fileUrl(fileUrl)
                         .build())
                 .toList();
-        
+
         List<InstructorCertificateProof> savedProofs = certificateProofRepository.saveAll(proofs);
         log.info("Uploaded {} certificate proofs for request: {}", savedProofs.size(), requestId);
 
@@ -291,7 +311,8 @@ public class InstructorServiceImpl implements InstructorService {
     public void deleteCertificateProof(UUID requestId, UUID proofId) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         InstructorRequest instructorRequest = instructorRequestRepository.findByIdAndUserId(requestId, currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Instructor request not found or you don't have permission"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Instructor request not found or you don't have permission"));
 
         if (instructorRequest.getStatus() != InstructorRequest.Status.PENDING) {
             throw new ResourceInvalidException("Can only delete proofs from pending requests");
@@ -323,7 +344,7 @@ public class InstructorServiceImpl implements InstructorService {
     @Override
     public void deleteCertificateProofByOwner(UUID proofId) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        
+
         InstructorCertificateProof proof = certificateProofRepository.findByIdWithRequest(proofId)
                 .orElseThrow(() -> new ResourceNotFoundException("Certificate proof not found with id: " + proofId));
 
@@ -349,7 +370,7 @@ public class InstructorServiceImpl implements InstructorService {
     @Override
     public void deleteRequest(UUID requestId) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        
+
         if (!instructorRequestRepository.existsByIdAndUserId(requestId, currentUserId)) {
             throw new ResourceNotFoundException("Instructor request not found or you don't have permission");
         }

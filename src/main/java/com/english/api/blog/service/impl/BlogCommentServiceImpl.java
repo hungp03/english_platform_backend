@@ -14,6 +14,7 @@ import com.english.api.blog.repository.BlogPostRepository;
 import com.english.api.blog.service.BlogCommentService;
 import com.english.api.user.model.User;
 import com.english.api.user.service.UserService;
+import com.english.api.notification.service.NotificationService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class BlogCommentServiceImpl implements BlogCommentService {
     private final BlogPostRepository postRepository;
     private final UserService userService;
     private final BlogMapper blogMapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -56,6 +58,17 @@ public class BlogCommentServiceImpl implements BlogCommentService {
                 .published(true)
                 .build();
         c = commentRepository.save(c);
+        
+        // Notify blog owner if someone else commented on their post
+        if (post.getAuthor() != null && !post.getAuthor().getId().equals(currentUserId)) {
+            String commentType = parent != null ? "phản hồi" : "bình luận";
+            notificationService.sendNotification(
+                post.getAuthor().getId(),
+                "Bình luận mới trên bài viết",
+                author.getFullName() + " đã " + commentType + " trên bài viết \"" + post.getTitle() + "\" của bạn."
+            );
+        }
+        
         return blogMapper.toCommentResponse(c);
     }
 
@@ -104,45 +117,8 @@ public class BlogCommentServiceImpl implements BlogCommentService {
         return blogMapper.toCommentResponse(c);
     }
 
-//     @Override
-//     public PaginationResponse listByPost(UUID postId, Pageable pageable, boolean includeUnpublished) {
-//         BlogPost post = postRepository.findById(postId)
-//                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-
-//         // First query: get paginated comment IDs
-//         Page<BlogComment> commentsPage = includeUnpublished
-//                 ? commentRepository.findByPost(post, pageable)
-//                 : commentRepository.findByPostAndPublishedIsTrue(post, pageable);
-
-//         // If no results, return empty page
-//         if (commentsPage.isEmpty()) {
-//             return PaginationResponse.from(commentsPage.map(blogMapper::toCommentResponse), pageable);
-//         }
-
-//         // Second query: fetch full entities with associations
-//         List<UUID> commentIds = commentsPage.getContent().stream()
-//                 .map(BlogComment::getId)
-//                 .toList();
-
-//         List<BlogComment> commentsWithAssociations = commentRepository.findByIdInWithAssociations(commentIds);
-
-//         // Preserve the original order from pagination
-//         java.util.Map<UUID, BlogComment> commentMap = commentsWithAssociations.stream()
-//                 .collect(java.util.stream.Collectors.toMap(BlogComment::getId, c -> c));
-
-//         List<CommentResponse> responses = commentIds.stream()
-//                 .map(commentMap::get)
-//                 .map(blogMapper::toCommentResponse)
-//                 .toList();
-
-//         Page<CommentResponse> page = new org.springframework.data.domain.PageImpl<>(
-//                 responses, pageable, commentsPage.getTotalElements()
-//         );
-
-//         return PaginationResponse.from(page, pageable);
-//     }
-        @Override
-        public PaginationResponse listByPost(UUID postId, Pageable pageable, boolean includeUnpublished) {
+     @Override
+     public PaginationResponse listByPost(UUID postId, Pageable pageable, boolean includeUnpublished) {
         BlogPost post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 

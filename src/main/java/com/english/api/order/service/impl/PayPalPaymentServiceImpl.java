@@ -22,6 +22,7 @@ import com.english.api.order.service.PayPalPaymentService;
 import com.english.api.order.service.paypal.PayPalClient;
 import com.english.api.user.service.InstructorWalletService;
 import com.english.api.user.service.WithdrawalService;
+import com.english.api.notification.service.NotificationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -52,6 +53,7 @@ public class PayPalPaymentServiceImpl implements PayPalPaymentService {
     private final ExchangeRateService exchangeRateService;
     private final InstructorWalletService instructorWalletService;
     private final WithdrawalService withdrawalService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -228,6 +230,13 @@ public class PayPalPaymentServiceImpl implements PayPalPaymentService {
             
             enrollmentService.createEnrollmentsAfterPayment(order);
             invoiceService.generateAndSendInvoiceAsync(order, payment);
+            
+            // Notify user about successful payment
+            notificationService.sendNotification(
+                order.getUser().getId(),
+                "Thanh toán thành công",
+                "Đơn hàng #" + order.getId() + " đã được thanh toán thành công. Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!"
+            );
         }
     }
 

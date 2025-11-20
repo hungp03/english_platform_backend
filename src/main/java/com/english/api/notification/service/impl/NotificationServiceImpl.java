@@ -77,11 +77,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public PaginationResponse getNotificationsByUser(int page, int size) {
+    public PaginationResponse getNotificationsByUser(Pageable pageable) {
         UUID userId = SecurityUtil.getCurrentUserId();
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        return PaginationResponse.from(notifications, pageable);
+        Pageable pageableWithSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("createdAt").descending());
+        Page<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageableWithSort);
+        return PaginationResponse.from(notifications, pageableWithSort);
     }
 
     @Async

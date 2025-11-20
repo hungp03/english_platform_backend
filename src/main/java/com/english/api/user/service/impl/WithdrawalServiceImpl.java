@@ -21,6 +21,7 @@ import com.english.api.user.repository.WithdrawalRequestRepository;
 import com.english.api.user.repository.UserRepository;
 import com.english.api.user.service.InstructorWalletService;
 import com.english.api.user.service.WithdrawalService;
+import com.english.api.notification.service.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     private final PayPalPayoutService payoutService;
     private final ObjectMapper objectMapper;
     private final ExchangeRateService exchangeRateService;
+    private final NotificationService notificationService;
     
     @Value("${app.minimum-withdrawal-usd:10}")
     private BigDecimal minimumWithdrawalUsd;
@@ -387,6 +389,13 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                 
                 withdrawalRepository.save(withdrawal);
                 
+                // Notify user about failed payout
+                notificationService.sendNotification(
+                    withdrawal.getUser().getId(),
+                    "Rút tiền thất bại",
+                    "Yêu cầu rút tiền #" + withdrawal.getId() + " đã bị từ chối bởi PayPal. Số tiền đã được hoàn trả vào ví của bạn. Vui lòng kiểm tra thông tin tài khoản PayPal và thử lại."
+                );
+                
                 log.warn("PayPal payout batch failed: batchId={}, requestId={}, reason={}", 
                         payoutBatchId, withdrawal.getId(), reason);
             }
@@ -411,6 +420,15 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                 }
                 
                 withdrawalRepository.save(withdrawal);
+                
+                // Notify user about successful payout
+                String formattedAmount = formatAmount(withdrawal.getOriginalAmountCents(), 
+                        withdrawal.getOriginalCurrency() != null ? withdrawal.getOriginalCurrency() : "USD");
+                notificationService.sendNotification(
+                    withdrawal.getUser().getId(),
+                    "Rút tiền thành công",
+                    "Yêu cầu rút tiền #" + withdrawal.getId() + " đã được xử lý thành công. Số tiền " + formattedAmount + " đã được chuyển vào tài khoản PayPal của bạn."
+                );
                 
                 log.info("PayPal payout batch succeeded: batchId={}, requestId={}", 
                         payoutBatchId, withdrawal.getId());
