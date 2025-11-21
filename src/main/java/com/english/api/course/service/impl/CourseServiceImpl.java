@@ -205,8 +205,8 @@ public class CourseServiceImpl implements CourseService {
             throw new AccessDeniedException("You are not allowed to change status of this course.");
         }
 
-        // If admin: can only approve (PUBLISHED) or reject (REJECTED)
-        if (isAdmin && status != CourseStatus.PUBLISHED && status != CourseStatus.REJECTED) {
+        // If admin but NOT owner: can only approve (PUBLISHED) or reject (REJECTED)
+        if (isAdmin && !isOwner && status != CourseStatus.PUBLISHED && status != CourseStatus.REJECTED) {
             throw new AccessDeniedException("Admin can only approve or reject courses.");
         }
 

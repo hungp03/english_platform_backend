@@ -4,7 +4,6 @@ import com.english.api.order.model.enums.OrderItemEntityType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,14 +22,6 @@ public record CreateOrderRequest(
             OrderItemEntityType entityType,
 
             @NotNull(message = "Entity ID is required")
-            UUID entityId,
-
-            @NotNull(message = "Quantity is required")
-            @Positive(message = "Quantity must be positive")
-            Integer quantity,
-
-            @NotNull(message = "Unit price is required")
-            @Positive(message = "Unit price must be positive")
-            Long unitPriceCents
+            UUID entityId
     ) {}
 }

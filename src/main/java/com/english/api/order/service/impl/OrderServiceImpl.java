@@ -8,6 +8,7 @@ import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.service.CourseService;
+import com.english.api.enrollment.service.EnrollmentService;
 import com.english.api.notification.service.NotificationService;
 import com.english.api.order.dto.request.CreateOrderRequest;
 import com.english.api.order.dto.request.OrderSource;
@@ -46,6 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final CourseService courseService;
     private final OrderMapper orderMapper;
     private final CartService cartService;
+    private final EnrollmentService enrollmentService;
     private final NotificationService notificationService;
 
     // Valid status transitions mapping
@@ -71,17 +73,18 @@ public class OrderServiceImpl implements OrderService {
                 .status(OrderStatus.PENDING)
                 .totalCents(totalCents)
                 .build();
-        // Create order items with optimized entity validation and title fetching
+        // Create order items with optimized entity validation and title/price fetching
         List<OrderItem> orderItems = new ArrayList<>();
         for (CreateOrderRequest.OrderItemRequest itemRequest : request.items()) {
             String entityTitle = getEntityTitleOptimized(itemRequest.entityType(), itemRequest.entityId());
+            Long entityPrice = getEntityPrice(itemRequest.entityType(), itemRequest.entityId());
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .entity(itemRequest.entityType())
                     .entityId(itemRequest.entityId())
                     .title(entityTitle)
-                    .quantity(itemRequest.quantity())
-                    .unitPriceCents(itemRequest.unitPriceCents())
+                    .quantity(1)  // Quantity is always 1 for courses
+                    .unitPriceCents(entityPrice)
                     .build();
             orderItems.add(orderItem);
         }
@@ -93,10 +96,25 @@ public class OrderServiceImpl implements OrderService {
             removeOrderedItemsFromCart(request.items());
         }
 
-        notificationService.sendNotification(
-                currentUserId,
-                "Đơn hàng đã được tạo thành công",
-                "Đơn hàng #" + savedOrder.getId() + " đã được khởi tạo thành công.");
+        // Handle free courses (total = 0) - skip payment and complete order immediately
+        if (totalCents == 0) {
+            savedOrder.setStatus(OrderStatus.PAID);
+            savedOrder.setPaidAt(OffsetDateTime.now());
+            savedOrder = orderRepository.save(savedOrder);
+
+            // Create enrollments directly for free courses
+            enrollmentService.createEnrollmentsAfterPayment(savedOrder);
+
+            notificationService.sendNotification(
+                    currentUserId,
+                    "Đơn hàng đã hoàn thành",
+                    "Đơn hàng #" + savedOrder.getId() + " đã được hoàn thành thành công. Bạn đã được ghi danh vào các khóa học.");
+        } else {
+            notificationService.sendNotification(
+                    currentUserId,
+                    "Đơn hàng đã được tạo thành công",
+                    "Đơn hàng #" + savedOrder.getId() + " đã được khởi tạo thành công.");
+        }
 
         return orderMapper.toOrderResponse(savedOrder);
     }
@@ -253,28 +271,22 @@ public class OrderServiceImpl implements OrderService {
         }
         long totalCents = 0;
         for (CreateOrderRequest.OrderItemRequest item : request.items()) {
-            // Validate item fields only - entity existence will be validated during order
-            // creation
+            // Validate item fields
             if (item.entityType() == null) {
                 throw new ResourceInvalidException("Entity type is required for all items");
             }
             if (item.entityId() == null) {
                 throw new ResourceInvalidException("Entity ID is required for all items");
             }
-            if (item.quantity() == null || item.quantity() <= 0) {
-                throw new ResourceInvalidException("Quantity must be positive for all items");
-            }
-            if (item.unitPriceCents() == null || item.unitPriceCents() <= 0) {
-                throw new ResourceInvalidException("Unit price must be positive for all items");
-            }
-            // Skip entity existence validation here to avoid duplicate queries
-            // Entity validation will be performed in createOrder() when fetching titles
-            // Calculate item total
-            long itemTotal = item.quantity() * item.unitPriceCents();
-            totalCents += itemTotal;
+
+            // Fetch actual price from database based on entity type
+            Long unitPriceCents = getEntityPrice(item.entityType(), item.entityId());
+
+            // Add price to total (quantity is always 1)
+            totalCents += unitPriceCents;
         }
-        if (totalCents <= 0) {
-            throw new ResourceInvalidException("Order total must be positive");
+        if (totalCents < 0) {
+            throw new ResourceInvalidException("Order total must not be negative");
         }
         return totalCents;
     }
@@ -304,6 +316,24 @@ public class OrderServiceImpl implements OrderService {
             case COURSE -> {
                 CourseCheckoutResponse courseInfo = validateAndGetCourseInfo(entityId);
                 yield courseInfo.title();
+            }
+            case SUBSCRIPTION -> {
+                throw new ResourceInvalidException("SUBSCRIPTION entities are not supported yet");
+            }
+            case BUNDLE -> {
+                throw new ResourceInvalidException("BUNDLE entities are not supported yet");
+            }
+        };
+    }
+
+    /**
+     * Fetches the actual price from database for the given entity
+     */
+    private Long getEntityPrice(OrderItemEntityType entityType, UUID entityId) {
+        return switch (entityType) {
+            case COURSE -> {
+                CourseCheckoutResponse courseInfo = validateAndGetCourseInfo(entityId);
+                yield courseInfo.priceCents();
             }
             case SUBSCRIPTION -> {
                 throw new ResourceInvalidException("SUBSCRIPTION entities are not supported yet");
