@@ -21,7 +21,6 @@ import com.english.api.order.model.enums.OrderItemEntityType;
 import com.english.api.order.model.enums.OrderStatus;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.service.OrderService;
-import com.english.api.notification.service.NotificationService;
 import com.english.api.user.model.User;
 import com.english.api.user.service.UserService;
 import lombok.RequiredArgsConstructor;

@@ -5,11 +5,11 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.forum.dto.request.ForumPostCreateRequest;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.entity.ForumPost;
-import com.english.api.forum.repo.ForumPostRepository;
-import com.english.api.forum.repo.ForumReportRepository;
+import com.english.api.forum.repository.ForumPostRepository;
+import com.english.api.forum.repository.ForumReportRepository;
+import com.english.api.forum.repository.ForumThreadRepository;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
-import com.english.api.forum.repo.ForumThreadRepository;
 import com.english.api.forum.service.ForumPostService;
 import com.english.api.notification.service.NotificationService;
 

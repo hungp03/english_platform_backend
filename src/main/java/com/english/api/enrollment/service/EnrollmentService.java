@@ -3,11 +3,9 @@ package com.english.api.enrollment.service;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.response.LessonResponse;
 import com.english.api.enrollment.dto.response.EnrollmentDetailResponse;
-import com.english.api.enrollment.dto.response.LessonWithProgressResponse;
 import com.english.api.order.model.Order;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.UUID;
 
 /**

@@ -1,4 +1,4 @@
-package com.english.api.forum.repo;
+package com.english.api.forum.repository;
 
 import com.english.api.forum.entity.ForumReport;
 import com.english.api.forum.entity.ReportTargetType;

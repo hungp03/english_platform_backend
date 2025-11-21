@@ -4,7 +4,7 @@ import com.english.api.forum.dto.request.ForumCategoryCreateRequest;
 import com.english.api.forum.dto.request.ForumCategoryUpdateRequest;
 import com.english.api.forum.dto.response.ForumCategoryResponse;
 import com.english.api.forum.entity.ForumCategory;
-import com.english.api.forum.repo.ForumCategoryRepository;
+import com.english.api.forum.repository.ForumCategoryRepository;
 import com.english.api.forum.service.ForumCategoryService;
 import com.english.api.forum.util.SlugUtil;
 import lombok.RequiredArgsConstructor;

@@ -3,34 +3,11 @@ package com.english.api.admin.service.impl;
 import com.english.api.admin.dto.response.*;
 import com.english.api.admin.repository.DashboardStatsRepositoryCustom;
 import com.english.api.admin.service.AdminOverviewService;
-import com.english.api.assessment.model.QuizAttempt;
-import com.english.api.assessment.model.enums.QuizAttemptStatus;
-import com.english.api.assessment.repository.QuizAttemptRepository;
-import com.english.api.blog.repository.BlogCategoryRepository;
-import com.english.api.blog.repository.BlogCommentRepository;
-import com.english.api.blog.repository.BlogPostRepository;
-import com.english.api.cart.repository.CartItemRepository;
-import com.english.api.course.model.enums.CourseStatus;
-import com.english.api.course.repository.CourseModuleRepository;
-import com.english.api.course.repository.CourseRepository;
-import com.english.api.course.repository.LessonRepository;
-import com.english.api.enrollment.model.enums.EnrollmentStatus;
 import com.english.api.enrollment.repository.EnrollmentRepository;
-import com.english.api.forum.repo.ForumPostRepository;
-import com.english.api.forum.repo.ForumReportRepository;
-import com.english.api.forum.repo.ForumThreadRepository;
-import com.english.api.order.model.enums.CurrencyType;
+import com.english.api.forum.repository.ForumReportRepository;
 import com.english.api.order.model.enums.OrderStatus;
-import com.english.api.order.model.enums.PaymentProvider;
-import com.english.api.order.model.enums.PaymentStatus;
 import com.english.api.order.repository.OrderRepository;
-import com.english.api.order.repository.PaymentRepository;
-import com.english.api.quiz.model.enums.QuizSkill;
-import com.english.api.quiz.model.enums.QuizStatus;
-import com.english.api.quiz.repository.QuestionRepository;
-import com.english.api.quiz.repository.QuizRepository;
 import com.english.api.user.model.InstructorRequest;
-import com.english.api.user.repository.InstructorProfileRepository;
 import com.english.api.user.repository.InstructorRequestRepository;
 import com.english.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -56,22 +33,6 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
     private final OrderRepository orderRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final ForumReportRepository forumReportRepository;
-
-    private final PaymentRepository paymentRepository;
-    private final CartItemRepository cartItemRepository;
-    private final BlogPostRepository blogPostRepository;
-    private final BlogCategoryRepository blogCategoryRepository;
-    private final BlogCommentRepository blogCommentRepository;
-    private final ForumThreadRepository forumThreadRepository;
-    private final ForumPostRepository forumPostRepository;
-    private final CourseRepository courseRepository;
-    private final CourseModuleRepository courseModuleRepository;
-    private final LessonRepository lessonRepository;
-    private final QuizRepository quizRepository;
-    private final QuestionRepository questionRepository;
-    private final QuizAttemptRepository quizAttemptRepository;
-    private final InstructorProfileRepository instructorProfileRepository;
-
     private final DashboardStatsRepositoryCustom dashboardStatsRepository;
 
     @Override

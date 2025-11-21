@@ -8,9 +8,9 @@ import com.english.api.forum.entity.ForumPost;
 import com.english.api.forum.entity.ForumReport;
 import com.english.api.forum.entity.ForumThread;
 import com.english.api.forum.entity.ReportTargetType;
-import com.english.api.forum.repo.ForumPostRepository;
-import com.english.api.forum.repo.ForumReportRepository;
-import com.english.api.forum.repo.ForumThreadRepository;
+import com.english.api.forum.repository.ForumPostRepository;
+import com.english.api.forum.repository.ForumReportRepository;
+import com.english.api.forum.repository.ForumThreadRepository;
 import com.english.api.forum.service.ForumReportService;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.english.api.notification.service.NotificationService;
 import java.time.Instant;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,7 @@ public class ForumReportServiceImpl implements ForumReportService {
     private final ForumThreadRepository threadRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    
     @Override
     @Transactional
     public ForumReportResponse create(ForumReportCreateRequest req) {
@@ -42,7 +45,7 @@ public class ForumReportServiceImpl implements ForumReportService {
         
         User user = userRepository.getReferenceById(userId);
 
-        var entity = ForumReport.builder()
+        ForumReport entity = ForumReport.builder()
                 .targetType(req.targetType())
                 .targetId(req.targetId())
                 .user(user)
@@ -60,39 +63,39 @@ public class ForumReportServiceImpl implements ForumReportService {
                 ? reportRepository.findByTargetTypeAndResolvedAtIsNull(type, pageable)
                 : reportRepository.findByTargetType(type, pageable);
 
-        var reports = page.getContent();
+        List<ForumReport> reports = page.getContent();
 
-        var postIds = reports.stream()
+        List<UUID> postIds = reports.stream()
                 .filter(r -> r.getTargetType() == ReportTargetType.POST)
                 .map(ForumReport::getTargetId)
                 .distinct()
                 .toList();
 
-        var threadIds = reports.stream()
+        List<UUID> threadIds = reports.stream()
                 .filter(r -> r.getTargetType() == ReportTargetType.THREAD)
                 .map(ForumReport::getTargetId)
                 .distinct()
                 .toList();
 
 
-        var postMap = postRepository.findAllById(postIds).stream()
+        Map<UUID, ForumPost> postMap = postRepository.findAllById(postIds).stream()
                 .collect(Collectors.toMap(p -> p.getId(), p -> p));
 
-        var threadMap = threadRepository.findAllById(threadIds).stream()
+        Map<UUID, ForumThread> threadMap = threadRepository.findAllById(threadIds).stream()
                 .collect(Collectors.toMap(t -> t.getId(), t -> t));
 
-        var mapped = reports.stream().map(r -> {
+        List<ForumReportResponse> mapped = reports.stream().map(r -> {
             String preview = null;
             Boolean targetPublished = null;
 
             if (r.getTargetType() == ReportTargetType.POST) {
-                var p = postMap.get(r.getTargetId());
+                ForumPost p = postMap.get(r.getTargetId());
                 if (p != null) {
                     preview = p.getBodyMd();
                     targetPublished = p.isPublished();
                 }
             } else if (r.getTargetType() == ReportTargetType.THREAD) {
-                var t = threadMap.get(r.getTargetId());
+                ForumThread t = threadMap.get(r.getTargetId());
                 if (t != null) {
                     preview = t.getSlug();
                     targetPublished = !t.isLocked();
@@ -114,7 +117,6 @@ public class ForumReportServiceImpl implements ForumReportService {
                     targetPublished,
                     r.getCreatedAt(),
                     r.getResolvedAt(),
-                    // r.getResolvedBy() != null ? r.getResolvedBy().getId() : null
                     r.getResolvedBy() != null ? r.getResolvedBy().getFullName() : null // Lấy ID admin
             );
         }).toList();
@@ -128,7 +130,7 @@ public class ForumReportServiceImpl implements ForumReportService {
         UUID adminId = SecurityUtil.getCurrentUserId();
         User admin = userRepository.getReferenceById(adminId);
 
-        var r = reportRepository.findById(reportId).orElseThrow();
+        ForumReport r = reportRepository.findById(reportId).orElseThrow();
         r.setResolvedAt(Instant.now());
         r.setResolvedBy(admin); // Set entity Admin
 
@@ -149,13 +151,13 @@ public class ForumReportServiceImpl implements ForumReportService {
         
         // Fetch lẻ target (dùng cho create/update đơn lẻ)
         if (r.getTargetType() == ReportTargetType.POST) {
-            var p = postRepository.findById(r.getTargetId()).orElse(null);
+            ForumPost p = postRepository.findById(r.getTargetId()).orElse(null);
             if (p != null) {
                 preview = p.getBodyMd();
                 targetPublished = p.isPublished();
             }
         } else if (r.getTargetType() == ReportTargetType.THREAD) {
-            var t = threadRepository.findById(r.getTargetId()).orElse(null);
+            ForumThread t = threadRepository.findById(r.getTargetId()).orElse(null);
             if (t != null) {
                 preview = t.getTitle();
                 targetPublished = !t.isLocked();
