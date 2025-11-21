@@ -24,13 +24,8 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     @Query("SELECT p FROM Payment p WHERE p.providerTxn = :providerTxn")
     Optional<Payment> findByProviderTxnWithOrderDetails(@Param("providerTxn") String providerTxn);
 
-    Optional<Payment> findByProviderAndProviderTxn(PaymentProvider provider, String providerTxn);
 
     @EntityGraph(attributePaths = {"order", "order.user", "order.items"})
     @Query("SELECT p FROM Payment p WHERE p.provider = :provider AND p.providerTxn = :providerTxn")
     Optional<Payment> findByProviderAndProviderTxnWithOrderDetails(@Param("provider") PaymentProvider provider, @Param("providerTxn") String providerTxn);
-
-    Long countByProvider(PaymentProvider provider);
-    Long countByStatus(PaymentStatus status);
-
 }

@@ -12,6 +12,7 @@ import com.english.api.forum.repository.ForumPostRepository;
 import com.english.api.forum.repository.ForumReportRepository;
 import com.english.api.forum.repository.ForumThreadRepository;
 import com.english.api.forum.service.ForumReportService;
+import com.english.api.forum.mapper.ForumReportMapper;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class ForumReportServiceImpl implements ForumReportService {
     private final ForumThreadRepository threadRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ForumReportMapper reportMapper;
     
     @Override
     @Transactional
@@ -53,7 +55,7 @@ public class ForumReportServiceImpl implements ForumReportService {
                 .build();
         
         entity = reportRepository.save(entity);
-        return toDto(entity);
+        return reportMapper.toResponse(entity);
     }
 
     @Override
@@ -79,10 +81,10 @@ public class ForumReportServiceImpl implements ForumReportService {
 
 
         Map<UUID, ForumPost> postMap = postRepository.findAllById(postIds).stream()
-                .collect(Collectors.toMap(p -> p.getId(), p -> p));
+                .collect(Collectors.toMap(ForumPost::getId, p -> p));
 
         Map<UUID, ForumThread> threadMap = threadRepository.findAllById(threadIds).stream()
-                .collect(Collectors.toMap(t -> t.getId(), t -> t));
+                .collect(Collectors.toMap(ForumThread::getId, t -> t));
 
         List<ForumReportResponse> mapped = reports.stream().map(r -> {
             String preview = null;
@@ -105,6 +107,7 @@ public class ForumReportServiceImpl implements ForumReportService {
             String reporterName = r.getUser() != null ? r.getUser().getFullName() : "Unknown";
             String reporterEmail = r.getUser() != null ? r.getUser().getEmail() : null;
 
+            assert r.getUser() != null;
             return new ForumReportResponse(
                     r.getId(),
                     r.getTargetType(),
@@ -142,42 +145,6 @@ public class ForumReportServiceImpl implements ForumReportService {
            );
        }
         
-        return toDto(reportRepository.save(r));
-    }
-
-    private ForumReportResponse toDto(ForumReport r) {
-        String preview = null;
-        Boolean targetPublished = null;
-        
-        // Fetch lẻ target (dùng cho create/update đơn lẻ)
-        if (r.getTargetType() == ReportTargetType.POST) {
-            ForumPost p = postRepository.findById(r.getTargetId()).orElse(null);
-            if (p != null) {
-                preview = p.getBodyMd();
-                targetPublished = p.isPublished();
-            }
-        } else if (r.getTargetType() == ReportTargetType.THREAD) {
-            ForumThread t = threadRepository.findById(r.getTargetId()).orElse(null);
-            if (t != null) {
-                preview = t.getTitle();
-                targetPublished = !t.isLocked();
-            }
-        }
-
-        return new ForumReportResponse(
-                r.getId(),
-                r.getTargetType(),
-                r.getTargetId(),
-                r.getUser() != null ? r.getUser().getId() : null,
-                r.getUser() != null ? r.getUser().getFullName() : null,
-                r.getUser() != null ? r.getUser().getEmail() : null,
-                r.getReason(),
-                preview,
-                targetPublished,
-                r.getCreatedAt(),
-                r.getResolvedAt(),
-                // r.getResolvedBy() != null ? r.getResolvedBy().getId() : null
-                r.getResolvedBy() != null ? r.getResolvedBy().getFullName() : null
-        );
+        return reportMapper.toResponse(reportRepository.save(r));
     }
 }

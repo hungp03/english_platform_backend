@@ -132,25 +132,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     
     Long countByStatus(OrderStatus status);
-    Long countByCreatedAtAfter(OffsetDateTime createdAt);
-
-    @Query("SELECT COALESCE(SUM(o.totalCents), 0) FROM Order o WHERE o.status = :status AND o.createdAt BETWEEN :start AND :end")
-    Long sumTotalCentsByStatusAndCreatedAtBetween(
-        @Param("status") OrderStatus status,
-        @Param("start") OffsetDateTime start,
-        @Param("end") OffsetDateTime end
-    );
-
-    @Query("SELECT COALESCE(SUM(o.totalCents), 0) FROM Order o WHERE o.currency = :currency AND o.status = :status")
-    Long sumTotalCentsByCurrencyAndStatus(
-        @Param("currency") CurrencyType currency,
-        @Param("status") OrderStatus status
-    );
-
-    @Query("SELECT COALESCE(SUM(o.totalCents), 0) FROM Order o WHERE o.status = :status")
-    Long sumTotalCentsByStatus(@Param("status") OrderStatus status);
-
-    List<Order> findTop15ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(OrderStatus status, OffsetDateTime createdAt);
 
     @Query("""
         SELECT oi.entityId as courseId, 

@@ -70,16 +70,4 @@ public interface InstructorRequestRepository extends JpaRepository<InstructorReq
     Optional<InstructorRequest> findByIdWithDetails(@Param("requestId") UUID requestId);
 
     Long countByStatus(InstructorRequest.Status status);
-
-    @Query("SELECT COUNT(ir) FROM InstructorRequest ir WHERE ir.status = 'PENDING' AND ir.requestedAt < :before")
-    Long countPendingOver7Days(@Param("before") Instant before);
-
-    @Query("SELECT COUNT(ir) FROM InstructorRequest ir WHERE ir.status = 'PENDING' AND ir.requestedAt BETWEEN :start AND :end")
-    Long countPendingBetween(@Param("start") Instant start, @Param("end") Instant end);
-
-    @Query("SELECT COUNT(ir) FROM InstructorRequest ir WHERE ir.status = 'PENDING' AND ir.requestedAt > :after")
-    Long countPendingAfter(@Param("after") Instant after);
-
-    List<InstructorRequest> findTop15ByStatusOrderByRequestedAtAsc(InstructorRequest.Status status);
-
 }
