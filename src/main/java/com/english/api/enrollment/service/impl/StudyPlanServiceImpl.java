@@ -3,9 +3,14 @@ package com.english.api.enrollment.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceNotFoundException;
+import com.english.api.assessment.model.QuizAttempt;
+import com.english.api.assessment.repository.QuizAttemptRepository;
+import com.english.api.enrollment.dto.request.AIStudyPlanContextRequest;
 import com.english.api.enrollment.dto.request.AIStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanScheduleRequest;
+import com.english.api.enrollment.dto.request.EnrollmentProgressData;
+import com.english.api.enrollment.dto.request.QuizPerformanceData;
 import com.english.api.enrollment.dto.request.StudyPlanScheduleRequest;
 import com.english.api.enrollment.dto.request.UpdateStudyPlanRequest;
 import com.english.api.enrollment.dto.request.UpdateStudyPlanScheduleRequest;
@@ -13,8 +18,10 @@ import com.english.api.enrollment.dto.response.StudyPlanDetailResponse;
 import com.english.api.enrollment.dto.response.StudyPlanResponse;
 import com.english.api.enrollment.dto.response.StudyPlanScheduleResponse;
 import com.english.api.enrollment.mapper.StudyPlanMapper;
+import com.english.api.enrollment.model.Enrollment;
 import com.english.api.enrollment.model.StudyPlan;
 import com.english.api.enrollment.model.StudyPlanSchedule;
+import com.english.api.enrollment.repository.EnrollmentRepository;
 import com.english.api.enrollment.repository.StudyPlanRepository;
 import com.english.api.enrollment.repository.StudyPlanScheduleRepository;
 import com.english.api.enrollment.service.GoogleCalendarService;
@@ -24,7 +31,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -44,6 +53,8 @@ import java.util.stream.Collectors;
 public class StudyPlanServiceImpl implements StudyPlanService {
     private final StudyPlanRepository studyPlanRepository;
     private final StudyPlanScheduleRepository studyPlanScheduleRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final StudyPlanMapper studyPlanMapper;
     private final GoogleCalendarService googleCalendarService;
     private final RestTemplate restTemplate;
@@ -288,13 +299,52 @@ public class StudyPlanServiceImpl implements StudyPlanService {
 
     @Override
     public Object generateAIPlan(AIStudyPlanRequest request) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        log.debug("Gathering context for AI plan generation for user: {}", userId);
+
+        // 1. Fetch recent quiz attempts (last 10)
+        Page<QuizAttempt> recentQuizzes = quizAttemptRepository.findByUser_Id(
+            userId, 
+            PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"))
+        );
+        
+        List<QuizPerformanceData> quizData = recentQuizzes.getContent().stream()
+            .map(q -> new QuizPerformanceData(
+                q.getQuiz().getTitle(),
+                q.getSkill().name(),
+                q.getScore(),
+                q.getMaxScore(),
+                q.getStatus().name()
+            ))
+            .collect(Collectors.toList());
+
+        // 2. Fetch active enrollments
+        Page<Enrollment> enrollments = enrollmentRepository.findByUserIdWithCourse(
+            userId, 
+            PageRequest.of(0, 5)
+        );
+
+        List<EnrollmentProgressData> enrollmentData = enrollments.getContent().stream()
+            .map(e -> new EnrollmentProgressData(
+                e.getCourse().getTitle(),
+                e.getProgressPercent()
+            ))
+            .collect(Collectors.toList());
+
+        // 3. Construct Enriched Payload
+        AIStudyPlanContextRequest contextRequest = new AIStudyPlanContextRequest(
+            request,
+            quizData,
+            enrollmentData
+        );
+
         log.debug("Calling n8n AI plan generation with goal: {}", request.goal());
         
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + n8nApiKey);
         headers.set("Content-Type", "application/json");
 
-        HttpEntity<AIStudyPlanRequest> requestEntity = new HttpEntity<>(request, headers);
+        HttpEntity<AIStudyPlanContextRequest> requestEntity = new HttpEntity<>(contextRequest, headers);
 
         try {
             ResponseEntity<Object> response = restTemplate.exchange(
