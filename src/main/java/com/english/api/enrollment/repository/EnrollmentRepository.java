@@ -124,7 +124,16 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     BigDecimal calculateAverageProgress();
 
     // Get top courses by enrollment count
-    @Query("SELECT e.course.id, COUNT(e) FROM Enrollment e GROUP BY e.course.id ORDER BY COUNT(e) DESC")
+    @Query("SELECT e.course.id, e.course.title, e.course.slug, e.course.thumbnail, " +
+           "e.course.createdBy.fullName, e.course.createdBy.id, " +
+           "COUNT(e), " +
+           "SUM(CASE WHEN e.status = 'COMPLETED' THEN 1 ELSE 0 END), " +
+           "AVG(e.progressPercent), " +
+           "e.course.priceCents " +
+           "FROM Enrollment e " +
+           "GROUP BY e.course.id, e.course.title, e.course.slug, e.course.thumbnail, " +
+           "e.course.createdBy.fullName, e.course.createdBy.id, e.course.priceCents " +
+           "ORDER BY COUNT(e) DESC")
     List<Object[]> findTopCoursesByEnrollmentCount(Pageable pageable);
 
     // Get completion rate by course

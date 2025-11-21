@@ -134,14 +134,18 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Long countByStatus(OrderStatus status);
 
     @Query("""
-        SELECT oi.entityId as courseId, 
+        SELECT c.id, c.title, c.slug, u.fullName, 
                SUM(oi.unitPriceCents * oi.quantity) as totalRevenue, 
-               COUNT(DISTINCT o.id) as orderCount
+               c.currency,
+               COUNT(DISTINCT o.id) as orderCount,
+               (SELECT COUNT(e) FROM Enrollment e WHERE e.course.id = c.id) as enrollmentCount
         FROM Order o 
         JOIN o.items oi 
+        JOIN Course c ON c.id = oi.entityId
+        JOIN c.createdBy u
         WHERE o.status = 'PAID' 
           AND oi.entity = 'COURSE'
-        GROUP BY oi.entityId 
+        GROUP BY c.id, c.title, c.slug, u.fullName, c.currency
         ORDER BY totalRevenue DESC
         """)
     List<Object[]> findTopCoursesByRevenue(Pageable pageable);

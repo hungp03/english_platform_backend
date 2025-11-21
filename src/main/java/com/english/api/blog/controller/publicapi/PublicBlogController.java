@@ -1,7 +1,6 @@
 package com.english.api.blog.controller.publicapi;
 
 import com.english.api.blog.dto.request.PostFilterRequest;
-import com.english.api.blog.dto.response.BlogCategoryResponse;
 import com.english.api.blog.dto.response.PublicPostDetailResponse;
 import com.english.api.blog.service.BlogCategoryService;
 import com.english.api.blog.service.BlogCommentService;

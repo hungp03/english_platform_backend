@@ -98,9 +98,6 @@ public class DashboardSummaryResponse {
         private String currency;
         private BigDecimal growthPercentage;
         private Long totalCentsVND;
-        private Long totalCentsUSD;
-        private BigDecimal vndPercentage;
-        private BigDecimal usdPercentage;
     }
     
     @Data

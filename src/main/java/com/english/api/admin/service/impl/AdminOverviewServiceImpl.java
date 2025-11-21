@@ -61,8 +61,6 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
             ? BigDecimal.valueOf(revenueThisMonth).divide(BigDecimal.valueOf(ordersPaid), 2, RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
-        long totalVndUsd = get(stats, "REVENUE_VND_TOTAL") + get(stats, "REVENUE_USD_TOTAL");
-
         return DashboardSummaryResponse.builder()
             .users(DashboardSummaryResponse.UserStats.builder()
                 .total(get(stats, "USERS_TOTAL"))
@@ -105,9 +103,6 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 .totalCentsThisMonth(revenueThisMonth)
                 .growthPercentage(growth(revenueThisMonth, get(stats, "REVENUE_PREV_MONTH")))
                 .totalCentsVND(get(stats, "REVENUE_VND_TOTAL"))
-                .totalCentsUSD(get(stats, "REVENUE_USD_TOTAL"))
-                .vndPercentage(pct(get(stats, "REVENUE_VND_TOTAL"), totalVndUsd))
-                .usdPercentage(pct(get(stats, "REVENUE_USD_TOTAL"), totalVndUsd))
                 .build())
             .orders(DashboardSummaryResponse.OrderStats.builder()
                 .totalOrdersThisMonth(get(stats, "ORDERS_THIS_MONTH"))
@@ -236,7 +231,8 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         }
 
         for (Object[] row : data) {
-            String monthStr = ((LocalDateTime) row[0]).toLocalDate().withDayOfMonth(1)
+            OffsetDateTime dateTime = (OffsetDateTime) row[0];
+            String monthStr = dateTime.toLocalDate().withDayOfMonth(1)
                     .format(DateTimeFormatter.ofPattern("MM-yyyy"));
             Long vnd = (Long) row[1];
             Long usd = (Long) row[2];
@@ -283,7 +279,8 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         }
 
         for (Object[] row : data) {
-            String monthStr = ((LocalDateTime) row[0]).toLocalDate().withDayOfMonth(1)
+            OffsetDateTime dateTime = (OffsetDateTime) row[0];
+            String monthStr = dateTime.toLocalDate().withDayOfMonth(1)
                     .format(DateTimeFormatter.ofPattern("MM-yyyy"));
             Long newEnroll = (Long) row[1];
             Long completed = (Long) row[2];
@@ -313,10 +310,42 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         List<Object[]> data = enrollmentRepository.findTopCoursesByEnrollmentCount(PageRequest.of(0, limit));
         List<TopPerformersResponse.TopCourse> list = data.stream().map(row -> {
             UUID courseId = (UUID) row[0];
-            Long count = (Long) row[1];
+            String title = (String) row[1];
+            String slug = (String) row[2];
+            String thumbnail = (String) row[3];
+            String instructorName = (String) row[4];
+            UUID instructorId = (UUID) row[5];
+            Long enrollmentCount = (Long) row[6];
+            Long completionCount = (Long) row[7];
+            Double avgProgress = (Double) row[8];
+            Long priceCents = (Long) row[9];
+            
+            BigDecimal completionRate = enrollmentCount > 0
+                    ? BigDecimal.valueOf(completionCount * 100.0 / enrollmentCount).setScale(2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+            
             return TopPerformersResponse.TopCourse.builder()
-                    .id(courseId).enrollmentCount(count).rank(0).build();
+                    .id(courseId)
+                    .title(title)
+                    .slug(slug)
+                    .thumbnail(thumbnail)
+                    .instructorName(instructorName)
+                    .instructorId(instructorId)
+                    .enrollmentCount(enrollmentCount)
+                    .completionCount(completionCount)
+                    .completionRate(completionRate)
+                    .averageRating(null) // Rating calculation would require a separate query
+                    .totalRevenueCents(priceCents != null ? priceCents * enrollmentCount : 0L)
+                    .currency("VND")
+                    .rank(0)
+                    .build();
         }).collect(Collectors.toList());
+        
+        // Set ranks
+        for (int i = 0; i < list.size(); i++) {
+            list.get(i).setRank(i + 1);
+        }
+        
         TopPerformersResponse response = new TopPerformersResponse();
         response.setTopCourses(list);
         return response;
@@ -367,11 +396,37 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         List<Object[]> data = orderRepository.findTopCoursesByRevenue(PageRequest.of(0, limit));
         List<TopPerformersResponse.TopRevenueCourse> list = data.stream().map(row -> {
             UUID courseId = (UUID) row[0];
-            Long revenue = (Long) row[1];
-            Long orders = (Long) row[2];
+            String title = (String) row[1];
+            String slug = (String) row[2];
+            String instructorName = (String) row[3];
+            Long revenue = (Long) row[4];
+            String currency = (String) row[5];
+            Long orders = (Long) row[6];
+            Long enrollmentCount = (Long) row[7];
+            
+            BigDecimal avgOrderValue = orders > 0
+                    ? BigDecimal.valueOf(revenue).divide(BigDecimal.valueOf(orders), 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+            
             return TopPerformersResponse.TopRevenueCourse.builder()
-                    .id(courseId).totalRevenueCents(revenue).totalOrders(orders).rank(0).build();
+                    .id(courseId)
+                    .title(title)
+                    .slug(slug)
+                    .instructorName(instructorName)
+                    .totalRevenueCents(revenue)
+                    .currency(currency)
+                    .totalOrders(orders)
+                    .enrollmentCount(enrollmentCount)
+                    .averageOrderValue(avgOrderValue)
+                    .rank(0)
+                    .build();
         }).collect(Collectors.toList());
+        
+        // Set ranks
+        for (int i = 0; i < list.size(); i++) {
+            list.get(i).setRank(i + 1);
+        }
+        
         TopPerformersResponse response = new TopPerformersResponse();
         response.setTopRevenueCourses(list);
         return response;
