@@ -15,16 +15,13 @@ import com.english.api.blog.service.BlogCommentService;
 import com.english.api.user.model.User;
 import com.english.api.user.service.UserService;
 import com.english.api.notification.service.NotificationService;
-
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class BlogCommentServiceImpl implements BlogCommentService {
@@ -58,14 +55,22 @@ public class BlogCommentServiceImpl implements BlogCommentService {
                 .published(true)
                 .build();
         c = commentRepository.save(c);
-        
-        // Notify blog owner if someone else commented on their post
-        if (post.getAuthor() != null && !post.getAuthor().getId().equals(currentUserId)) {
-            String commentType = parent != null ? "phản hồi" : "bình luận";
+
+        // Send notification to post author (if commenter is not the author)
+        if (!post.getAuthor().getId().equals(currentUserId)) {
             notificationService.sendNotification(
                 post.getAuthor().getId(),
-                "Bình luận mới trên bài viết",
-                author.getFullName() + " đã " + commentType + " trên bài viết \"" + post.getTitle() + "\" của bạn."
+                "Bình luận mới trong bài viết của bạn",
+                author.getFullName() + " đã bình luận trong bài viết của bạn: \"" + post.getTitle() + "\""
+            );
+        }
+        
+        // If this is a reply, send notification to parent comment author
+        if (parent != null && !parent.getAuthor().getId().equals(currentUserId)) {
+            notificationService.sendNotification(
+                parent.getAuthor().getId(),
+                "Phản hồi mới cho bình luận của bạn",
+                author.getFullName() + " đã phản hồi trong bình luận của bạn: \"" + post.getTitle() + "\""
             );
         }
         
@@ -117,8 +122,8 @@ public class BlogCommentServiceImpl implements BlogCommentService {
         return blogMapper.toCommentResponse(c);
     }
 
-     @Override
-     public PaginationResponse listByPost(UUID postId, Pageable pageable, boolean includeUnpublished) {
+        @Override
+        public PaginationResponse listByPost(UUID postId, Pageable pageable, boolean includeUnpublished) {
         BlogPost post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
 

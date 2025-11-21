@@ -5,6 +5,7 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.forum.dto.request.ForumPostCreateRequest;
 import com.english.api.forum.dto.request.ForumReportCreateRequest;
 import com.english.api.forum.dto.request.ForumThreadCreateRequest;
+import com.english.api.forum.dto.request.ForumThreadUpdateRequest;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.dto.response.ForumReportResponse;
 import com.english.api.forum.dto.response.ForumThreadResponse;
@@ -95,5 +96,20 @@ public class AppForumController {
         PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
         UUID uid = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(threadService.listByAuthor(uid, pageable));
+    }
+
+    @PutMapping("/threads/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ForumThreadResponse> updateMyThread(
+            @PathVariable UUID id,
+            @RequestBody ForumThreadUpdateRequest req) {
+        return ResponseEntity.ok(threadService.updateByOwner(id, req));
+    }
+
+    @DeleteMapping("/threads/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteMyThread(@PathVariable UUID id) {
+        threadService.deleteByOwner(id);
+        return ResponseEntity.noContent().build();
     }
 }

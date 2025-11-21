@@ -8,7 +8,6 @@ import com.english.api.forum.entity.ForumPost;
 import com.english.api.forum.entity.ForumReport;
 import com.english.api.forum.entity.ForumThread;
 import com.english.api.forum.entity.ReportTargetType;
-import com.english.api.forum.mapper.ForumReportMapper;
 import com.english.api.forum.repo.ForumPostRepository;
 import com.english.api.forum.repo.ForumReportRepository;
 import com.english.api.forum.repo.ForumThreadRepository;
@@ -21,11 +20,9 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.english.api.notification.service.NotificationService;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
+
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -33,81 +30,152 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ForumReportServiceImpl implements ForumReportService {
 
-    private final ForumReportRepository reportRepo;
-    private final ForumPostRepository postRepo;
-    private final ForumThreadRepository threadRepo;
-    private final UserRepository userRepo;
-    private final ForumReportMapper forumReportMapper;
-
+    private final ForumReportRepository reportRepository;
+    private final ForumPostRepository postRepository;
+    private final ForumThreadRepository threadRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
     @Override
     @Transactional
-    public ForumReportResponse create(ForumReportCreateRequest request) {
+    public ForumReportResponse create(ForumReportCreateRequest req) {
         UUID userId = SecurityUtil.getCurrentUserId();
-        var report = ForumReport.builder()
-                .targetType(request.targetType())
-                .targetId(request.targetId())
-                .userId(userId)
-                .reason(request.reason())
+        
+        User user = userRepository.getReferenceById(userId);
+
+        var entity = ForumReport.builder()
+                .targetType(req.targetType())
+                .targetId(req.targetId())
+                .user(user)
+                .reason(req.reason())
                 .build();
-        report = reportRepo.save(report);
-        return forumReportMapper.toResponseWithFetch(report);
+        
+        entity = reportRepository.save(entity);
+        return toDto(entity);
     }
 
     @Override
     public PaginationResponse list(ReportTargetType type, boolean onlyOpen, Pageable pageable) {
+
         Page<ForumReport> page = onlyOpen
-                ? reportRepo.findByTargetTypeAndResolvedAtIsNull(type, pageable)
-                : reportRepo.findByTargetType(type, pageable);
+                ? reportRepository.findByTargetTypeAndResolvedAtIsNull(type, pageable)
+                : reportRepository.findByTargetType(type, pageable);
 
         var reports = page.getContent();
 
         var postIds = reports.stream()
-                .filter(report -> report.getTargetType() == ReportTargetType.POST)
+                .filter(r -> r.getTargetType() == ReportTargetType.POST)
                 .map(ForumReport::getTargetId)
                 .distinct()
                 .toList();
 
         var threadIds = reports.stream()
-                .filter(report -> report.getTargetType() == ReportTargetType.THREAD)
+                .filter(r -> r.getTargetType() == ReportTargetType.THREAD)
                 .map(ForumReport::getTargetId)
                 .distinct()
                 .toList();
 
-        var userIds = reports.stream()
-                .map(ForumReport::getUserId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
 
-        Map<UUID, ForumPost> postMap = postIds.isEmpty()
-                ? Collections.emptyMap()
-                : postRepo.findAllById(postIds).stream()
-                .collect(Collectors.toMap(ForumPost::getId, post -> post));
+        var postMap = postRepository.findAllById(postIds).stream()
+                .collect(Collectors.toMap(p -> p.getId(), p -> p));
 
-        Map<UUID, ForumThread> threadMap = threadIds.isEmpty()
-                ? Collections.emptyMap()
-                : threadRepo.findAllById(threadIds).stream()
-                .collect(Collectors.toMap(ForumThread::getId, thread -> thread));
+        var threadMap = threadRepository.findAllById(threadIds).stream()
+                .collect(Collectors.toMap(t -> t.getId(), t -> t));
 
-        Map<UUID, User> userMap = userIds.isEmpty()
-                ? Collections.emptyMap()
-                : userRepo.findAllById(userIds).stream()
-                .collect(Collectors.toMap(User::getId, user -> user));
+        var mapped = reports.stream().map(r -> {
+            String preview = null;
+            Boolean targetPublished = null;
 
-        var reportResponses = reports.stream()
-                .map(report -> forumReportMapper.toResponse(report, userMap, postMap, threadMap))
-                .toList();
+            if (r.getTargetType() == ReportTargetType.POST) {
+                var p = postMap.get(r.getTargetId());
+                if (p != null) {
+                    preview = p.getBodyMd();
+                    targetPublished = p.isPublished();
+                }
+            } else if (r.getTargetType() == ReportTargetType.THREAD) {
+                var t = threadMap.get(r.getTargetId());
+                if (t != null) {
+                    preview = t.getSlug();
+                    targetPublished = !t.isLocked();
+                }
+            }
 
-        return PaginationResponse.from(new PageImpl<>(reportResponses, pageable, page.getTotalElements()), pageable);
+            String reporterName = r.getUser() != null ? r.getUser().getFullName() : "Unknown";
+            String reporterEmail = r.getUser() != null ? r.getUser().getEmail() : null;
+
+            return new ForumReportResponse(
+                    r.getId(),
+                    r.getTargetType(),
+                    r.getTargetId(),
+                    r.getUser().getId(), // Lấy ID từ object User
+                    reporterName,
+                    reporterEmail,
+                    r.getReason(),
+                    preview,
+                    targetPublished,
+                    r.getCreatedAt(),
+                    r.getResolvedAt(),
+                    // r.getResolvedBy() != null ? r.getResolvedBy().getId() : null
+                    r.getResolvedBy() != null ? r.getResolvedBy().getFullName() : null // Lấy ID admin
+            );
+        }).toList();
+
+        return PaginationResponse.from(new PageImpl<>(mapped, pageable, page.getTotalElements()), pageable);
     }
 
     @Override
     @Transactional
     public ForumReportResponse resolve(UUID reportId) {
         UUID adminId = SecurityUtil.getCurrentUserId();
-        var report = reportRepo.findById(reportId).orElseThrow();
-        report.setResolvedAt(Instant.now());
-        report.setResolvedBy(adminId);
-        return forumReportMapper.toResponseWithFetch(reportRepo.save(report));
+        User admin = userRepository.getReferenceById(adminId);
+
+        var r = reportRepository.findById(reportId).orElseThrow();
+        r.setResolvedAt(Instant.now());
+        r.setResolvedBy(admin); // Set entity Admin
+
+        if (r.getUser() != null) {
+            notificationService.sendNotification(
+               r.getUser().getId(),
+               "Report Resolved",
+               "Your report regarding a " + r.getTargetType().toString().toLowerCase() + " has been reviewed and resolved."
+           );
+       }
+        
+        return toDto(reportRepository.save(r));
+    }
+
+    private ForumReportResponse toDto(ForumReport r) {
+        String preview = null;
+        Boolean targetPublished = null;
+        
+        // Fetch lẻ target (dùng cho create/update đơn lẻ)
+        if (r.getTargetType() == ReportTargetType.POST) {
+            var p = postRepository.findById(r.getTargetId()).orElse(null);
+            if (p != null) {
+                preview = p.getBodyMd();
+                targetPublished = p.isPublished();
+            }
+        } else if (r.getTargetType() == ReportTargetType.THREAD) {
+            var t = threadRepository.findById(r.getTargetId()).orElse(null);
+            if (t != null) {
+                preview = t.getTitle();
+                targetPublished = !t.isLocked();
+            }
+        }
+
+        return new ForumReportResponse(
+                r.getId(),
+                r.getTargetType(),
+                r.getTargetId(),
+                r.getUser() != null ? r.getUser().getId() : null,
+                r.getUser() != null ? r.getUser().getFullName() : null,
+                r.getUser() != null ? r.getUser().getEmail() : null,
+                r.getReason(),
+                preview,
+                targetPublished,
+                r.getCreatedAt(),
+                r.getResolvedAt(),
+                // r.getResolvedBy() != null ? r.getResolvedBy().getId() : null
+                r.getResolvedBy() != null ? r.getResolvedBy().getFullName() : null
+        );
     }
 }

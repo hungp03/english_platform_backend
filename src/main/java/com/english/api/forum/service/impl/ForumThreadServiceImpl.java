@@ -4,6 +4,7 @@ import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.forum.dto.request.ForumThreadCreateRequest;
+import com.english.api.forum.dto.request.ForumThreadUpdateRequest;
 import com.english.api.forum.dto.response.ForumCategoryResponse;
 import com.english.api.forum.dto.response.ForumThreadListResponse;
 import com.english.api.forum.dto.response.ForumThreadResponse;
@@ -11,6 +12,8 @@ import com.english.api.forum.entity.ForumCategory;
 import com.english.api.forum.entity.ForumThread;
 import com.english.api.forum.entity.ForumThreadCategory;
 import com.english.api.forum.repo.ForumCategoryRepository;
+import com.english.api.forum.repo.ForumPostRepository;
+import com.english.api.forum.repo.ForumReportRepository;
 import com.english.api.forum.repo.ForumThreadCategoryRepository;
 import com.english.api.forum.repo.ForumThreadRepository;
 import com.english.api.forum.service.ForumThreadService;
@@ -24,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.english.api.notification.service.NotificationService;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +42,9 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     private final UserRepository userRepo;
     private final ForumCategoryRepository categoryRepo;
     private final ForumThreadCategoryRepository threadCatRepo;
+    private final ForumPostRepository postRepo;
+    private final NotificationService notificationService; 
+    private final ForumReportRepository reportRepo;
 
     @Override
     public PaginationResponse listPublic(String keyword, UUID categoryId, Boolean locked, Pageable pageable) {
@@ -183,4 +190,115 @@ public class ForumThreadServiceImpl implements ForumThreadService {
                 thread.getCreatedAt(), thread.getUpdatedAt(), categoryResponses
         );
     }
+
+    @Override
+    @Transactional
+    public ForumThreadResponse updateByOwner(UUID id, ForumThreadUpdateRequest req) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        var thread = threadRepo.findById(id).orElseThrow();
+
+        if (thread.getAuthorId() == null || !thread.getAuthorId().equals(currentUserId)) {
+            throw new AccessDeniedException("Bạn không có quyền sửa bài viết này");
+        }
+        
+        if (thread.isLocked()) {
+             throw new IllegalStateException("Bài viết đang bị khóa, không thể chỉnh sửa");
+        }
+
+        // 3. Cập nhật Title & Slug (nếu title thay đổi)
+        if (req.title() != null && !req.title().isBlank() && !req.title().equals(thread.getTitle())) {
+            thread.setTitle(req.title());
+
+            String newSlug = SlugUtil.ensureUnique(SlugUtil.slugify(req.title()),
+                    s -> threadRepo.findBySlug(s).isPresent());
+            thread.setSlug(newSlug);
+        }
+
+        // 4. Cập nhật Body
+        if (req.bodyMd() != null) {
+            thread.setBodyMd(req.bodyMd());
+        }
+
+        if (req.categoryIds() != null) {
+            var oldLinks = threadCatRepo.findByThread(thread);
+            threadCatRepo.deleteAll(oldLinks);
+
+            if (!req.categoryIds().isEmpty()) {
+                List<ForumCategory> categories = categoryRepo.findAllById(req.categoryIds());
+                for (ForumCategory category : categories) {
+                    threadCatRepo.save(ForumThreadCategory.builder()
+                            .thread(thread)
+                            .category(category)
+                            .build());
+                }
+            }
+        }
+
+        thread = threadRepo.save(thread);
+        return toDto(thread);
+    }
+
+    @Override
+    @Transactional
+    public void deleteByOwner(UUID id) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        var thread = threadRepo.findById(id).orElseThrow(() -> new RuntimeException("Thread not found"));
+
+        if (thread.getAuthorId() == null || !thread.getAuthorId().equals(currentUserId)) {
+            throw new AccessDeniedException("Bạn không có quyền xóa bài viết này");
+        }
+        
+        if (thread.isLocked()) {
+            throw new IllegalStateException("Không thể xóa bài viết đang bị khóa");
+        }
+        List<UUID> postIds = postRepo.findIdsByThread(thread);
+        if (!postIds.isEmpty()) {
+            reportRepo.deleteByTargetIds(postIds);
+        }
+        // 2. Xóa report của chính thread này
+        reportRepo.deleteByTargetId(thread.getId());
+
+        threadCatRepo.deleteByThread(thread);
+        postRepo.unlinkParentsByThread(thread); 
+        postRepo.deleteAllByThread(thread);   
+        threadRepo.delete(thread);
+    }
+
+    @Override
+    @Transactional
+    public void adminDelete(UUID id) {
+        var thread = threadRepo.findById(id).orElseThrow(() -> new RuntimeException("Thread not found"));
+
+        UUID adminId = SecurityUtil.getCurrentUserId();
+        var adminUser = userRepo.findById(adminId).orElse(null);
+        String adminName = adminUser != null ? adminUser.getFullName() : "Quản trị viên";
+
+        UUID threadAuthorId = thread.getAuthorId();
+        String threadTitle = thread.getTitle() != null ? thread.getTitle() : "";
+
+        threadCatRepo.deleteByThread(thread);
+        postRepo.unlinkParentsByThread(thread);
+        postRepo.deleteAllByThread(thread);
+        threadRepo.delete(thread);
+
+        List<UUID> postIds = postRepo.findIdsByThread(thread);
+        if (!postIds.isEmpty()) {
+            reportRepo.deleteByTargetIds(postIds);
+        }
+
+        reportRepo.deleteByTargetId(thread.getId());
+
+        if (threadAuthorId != null && !threadAuthorId.equals(adminId)) {
+            String title = "Chủ đề của bạn đã bị xóa bởi quản trị";
+            String body = adminName + " đã xóa chủ đề của bạn";
+            if (!threadTitle.isBlank()) {
+                body += ": \"" + threadTitle + "\".";
+            } else {
+                body += ".";
+            }
+            notificationService.sendNotification(threadAuthorId, title, body);
+        }
+    }
+
+
 }

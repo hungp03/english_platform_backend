@@ -1,6 +1,7 @@
 package com.english.api.order.repository;
 
 import com.english.api.order.model.Order;
+import com.english.api.order.model.enums.CurrencyType;
 import com.english.api.order.model.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -128,4 +130,75 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         AND oi.entityId IN :courseIds
         """)
     Set<UUID> findPurchasedCourseIds(@Param("userId") UUID userId, @Param("courseIds") List<UUID> courseIds);
+
+    
+    Long countByStatus(OrderStatus status);
+    Long countByCreatedAtAfter(OffsetDateTime createdAt);
+
+    @Query("SELECT COALESCE(SUM(o.totalCents), 0) FROM Order o WHERE o.status = :status AND o.createdAt BETWEEN :start AND :end")
+    Long sumTotalCentsByStatusAndCreatedAtBetween(
+        @Param("status") OrderStatus status,
+        @Param("start") OffsetDateTime start,
+        @Param("end") OffsetDateTime end
+    );
+
+    @Query("SELECT COALESCE(SUM(o.totalCents), 0) FROM Order o WHERE o.currency = :currency AND o.status = :status")
+    Long sumTotalCentsByCurrencyAndStatus(
+        @Param("currency") CurrencyType currency,
+        @Param("status") OrderStatus status
+    );
+
+    @Query("SELECT COALESCE(SUM(o.totalCents), 0) FROM Order o WHERE o.status = :status")
+    Long sumTotalCentsByStatus(@Param("status") OrderStatus status);
+
+    List<Order> findTop15ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(OrderStatus status, OffsetDateTime createdAt);
+
+    @Query("""
+        SELECT oi.entityId as courseId, 
+               SUM(oi.unitPriceCents * oi.quantity) as totalRevenue, 
+               COUNT(DISTINCT o.id) as orderCount
+        FROM Order o 
+        JOIN o.items oi 
+        WHERE o.status = 'PAID' 
+          AND oi.entity = 'COURSE'
+        GROUP BY oi.entityId 
+        ORDER BY totalRevenue DESC
+        """)
+    List<Object[]> findTopCoursesByRevenue(Pageable pageable);
+    
+    // Get top instructors by revenue
+
+    @Query("""
+        SELECT 
+            u.id, u.fullName, u.email, u.avatarUrl,
+            SUM(oi.unitPriceCents * oi.quantity),
+            COUNT(DISTINCT c.id),
+            COUNT(DISTINCT e.id)
+        FROM Order o 
+        JOIN o.items oi 
+        JOIN Course c ON oi.entityId = c.id AND oi.entity = 'COURSE'
+        JOIN c.createdBy u
+        LEFT JOIN c.enrollments e
+        WHERE o.status = 'PAID'
+        GROUP BY u.id, u.fullName, u.email, u.avatarUrl
+        ORDER BY SUM(oi.unitPriceCents * oi.quantity) DESC
+        """)
+    List<Object[]> findTopInstructorsByRevenue(Pageable pageable);
+
+
+    @Query("""
+        SELECT 
+           FUNCTION('DATE_TRUNC', 'month', o.createdAt) as month, 
+           SUM(CASE WHEN o.currency = 'VND' THEN o.totalCents ELSE 0 END) as revenueVND, 
+           SUM(CASE WHEN o.currency = 'USD' THEN o.totalCents ELSE 0 END) as revenueUSD, 
+           COUNT(o) as orderCount 
+        FROM Order o 
+        WHERE o.status = 'PAID' 
+          AND o.createdAt >= :startDate 
+        GROUP BY FUNCTION('DATE_TRUNC', 'month', o.createdAt) 
+        ORDER BY month DESC
+        """)
+    List<Object[]> getRevenueByMonth(@Param("startDate") OffsetDateTime startDate);
+
+
 }

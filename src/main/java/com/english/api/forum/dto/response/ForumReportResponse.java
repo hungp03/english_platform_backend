@@ -17,6 +17,7 @@ public record ForumReportResponse(
         Boolean targetPublished,
         Instant createdAt,
         Instant resolvedAt,
-        UUID resolvedBy
+        // UUID resolvedBy
+        String resolvedBy
 ) {
 }

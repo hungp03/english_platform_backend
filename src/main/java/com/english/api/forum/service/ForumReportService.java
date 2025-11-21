@@ -14,4 +14,5 @@ public interface ForumReportService {
     PaginationResponse list(ReportTargetType type, boolean onlyOpen, Pageable pageable);
 
     ForumReportResponse resolve(UUID reportId);
+
 }

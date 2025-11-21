@@ -219,14 +219,12 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         course.setStatus(status);
-
         // Set publishedAt when status is PUBLISHED
         if (status == CourseStatus.PUBLISHED) {
             course.setPublishedAt(Instant.now());
         } else {
             course.setPublishedAt(null);
         }
-
         return mapper.toResponse(courseRepository.save(course));
     }
 
@@ -257,27 +255,6 @@ public class CourseServiceImpl implements CourseService {
         return PaginationResponse.from(page, pageable);
     }
 
-    @Override
-    public PaginationResponse getPublishedByInstructor(UUID instructorId, Pageable pageable, String keyword, String[] skills) {
-        var page = courseRepository.searchByOwnerWithStats(instructorId, keyword, "PUBLISHED", skills, pageable)
-                .map(projection -> new CourseWithStatsResponse(
-                        projection.getId(),
-                        projection.getTitle(),
-                        projection.getSlug(),
-                        projection.getDescription(),
-                        projection.getLanguage(),
-                        projection.getThumbnail(),
-                        projection.getSkillFocus(),
-                        projection.getPriceCents(),
-                        projection.getCurrency(),
-                        projection.getStatus(),
-                        projection.getModuleCount(),
-                        projection.getLessonCount(),
-                        projection.getCreatedAt(),
-                        projection.getUpdatedAt()
-                ));
-        return PaginationResponse.from(page, pageable);
-    }
 
     /**
      * Gets minimal course information needed for checkout payment display.
@@ -382,4 +359,27 @@ public class CourseServiceImpl implements CourseService {
                 .periods(periods)
                 .build();
     }
+
+    @Override
+    public PaginationResponse getPublishedByInstructor(UUID instructorId, Pageable pageable, String keyword, String[] skills) {
+        var page = courseRepository.searchByOwnerWithStats(instructorId, keyword, "PUBLISHED", skills, pageable)
+                .map(projection -> new CourseWithStatsResponse(
+                        projection.getId(),
+                        projection.getTitle(),
+                        projection.getSlug(),
+                        projection.getDescription(),
+                        projection.getLanguage(),
+                        projection.getThumbnail(),
+                        projection.getSkillFocus(),
+                        projection.getPriceCents(),
+                        projection.getCurrency(),
+                        projection.getStatus(),
+                        projection.getModuleCount(),
+                        projection.getLessonCount(),
+                        projection.getCreatedAt(),
+                        projection.getUpdatedAt()
+                ));
+        return PaginationResponse.from(page, pageable);
+    }
+
 }

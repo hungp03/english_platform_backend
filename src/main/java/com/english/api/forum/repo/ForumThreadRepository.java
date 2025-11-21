@@ -14,20 +14,25 @@ public interface ForumThreadRepository extends JpaRepository<ForumThread, UUID> 
 
     Optional<ForumThread> findBySlug(String slug);
 
-    @Query("""
-            
-              SELECT DISTINCT t FROM ForumThread t
-                LEFT JOIN com.english.api.forum.entity.ForumThreadCategory tc ON tc.thread = t
-               WHERE (:categoryId IS NULL OR tc.category.id = :categoryId)
-                 AND (:locked IS NULL OR t.locked = :locked)
-                 AND (LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                      OR LOWER(t.bodyMd) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                      OR :keyword IS NULL)
-            """)
-    Page<ForumThread> search(@Param("keyword") String keyword,
-                             @Param("categoryId") UUID categoryId,
-                             @Param("locked") Boolean locked,
-                             Pageable pageable);
+  @Query("""
 
-    Page<ForumThread> findByAuthorIdOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
+    SELECT DISTINCT t FROM ForumThread t
+      LEFT JOIN com.english.api.forum.entity.ForumThreadCategory tc ON tc.thread = t
+     WHERE (:categoryId IS NULL OR tc.category.id = :categoryId)
+       AND (:locked IS NULL OR t.locked = :locked)
+       AND (LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(t.bodyMd) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR :keyword IS NULL)
+  """)
+  Page<ForumThread> search(@Param("keyword") String keyword,
+                           @Param("categoryId") UUID categoryId,
+                           @Param("locked") Boolean locked,
+                           Pageable pageable);
+  
+  Page<ForumThread> findByAuthorIdOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
+
+  Long countByLocked(boolean locked);
+
+  @Query("SELECT COALESCE(SUM(ft.viewCount), 0) FROM ForumThread ft")
+  Long sumAllViewCounts();
 }

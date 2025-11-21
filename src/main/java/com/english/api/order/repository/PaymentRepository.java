@@ -2,6 +2,8 @@ package com.english.api.order.repository;
 
 import com.english.api.order.model.Payment;
 import com.english.api.order.model.enums.PaymentProvider;
+import com.english.api.order.model.enums.PaymentStatus;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +29,8 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     @EntityGraph(attributePaths = {"order", "order.user", "order.items"})
     @Query("SELECT p FROM Payment p WHERE p.provider = :provider AND p.providerTxn = :providerTxn")
     Optional<Payment> findByProviderAndProviderTxnWithOrderDetails(@Param("provider") PaymentProvider provider, @Param("providerTxn") String providerTxn);
+
+    Long countByProvider(PaymentProvider provider);
+    Long countByStatus(PaymentStatus status);
+
 }

@@ -3,6 +3,7 @@ package com.english.api.course.repository;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.dto.response.CourseDetailResponse;
 import com.english.api.course.model.Course;
+import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.course.repository.custom.CourseRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -36,6 +37,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
             c.priceCents,
             c.currency,
             c.status,
+            cb.id,
             cb.fullName,
             c.updatedAt,
             COALESCE((SELECT COUNT(m) FROM CourseModule m WHERE m.course.id = c.id), 0L),
@@ -60,6 +62,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
             c.priceCents,
             c.currency,
             c.status,
+            cb.id,
             cb.fullName,
             c.updatedAt,
             COALESCE((SELECT COUNT(m) FROM CourseModule m WHERE m.course.id = c.id AND m.published = true), 0L),
@@ -187,4 +190,6 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
         @Param("year") Integer year,
         @Param("month") Integer month
     );
+
+    Long countByStatus(CourseStatus status);
 }

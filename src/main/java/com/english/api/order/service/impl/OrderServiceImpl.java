@@ -21,6 +21,7 @@ import com.english.api.order.model.enums.OrderItemEntityType;
 import com.english.api.order.model.enums.OrderStatus;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.order.service.OrderService;
+import com.english.api.notification.service.NotificationService;
 import com.english.api.user.model.User;
 import com.english.api.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -89,7 +90,6 @@ public class OrderServiceImpl implements OrderService {
         // Save order
         Order savedOrder = orderRepository.save(order);
         // If order is from cart, remove the purchased items from cart after successful
-        // order creation
         if (request.orderSource() == OrderSource.CART) {
             removeOrderedItemsFromCart(request.items());
         }
@@ -122,6 +122,14 @@ public class OrderServiceImpl implements OrderService {
         if (newStatus == OrderStatus.CANCELLED) {
             order.setCancelReason(cancelReason);
             order.setCancelAt(OffsetDateTime.now());
+            
+            // Send notification about order cancellation
+            notificationService.sendNotification(
+                order.getUser().getId(),
+                "Đã hủy đơn hàng",
+                "Đơn hàng #" + order.getId() + " đã được hủy. " + 
+                (cancelReason != null ? "Lý do: " + cancelReason : "")
+            );
         }
         Order savedOrder = orderRepository.save(order);
         return orderMapper.toOrderResponse(savedOrder);
