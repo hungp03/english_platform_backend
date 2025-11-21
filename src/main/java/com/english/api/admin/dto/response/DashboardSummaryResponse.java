@@ -127,13 +127,13 @@ public class DashboardSummaryResponse {
     @AllArgsConstructor
     public static class PaymentStats {
         private Long totalPayments;
-        private Long byStripe;
+        private Long byPayPal; 
         private Long byPayOS;
         private Long succeeded;
         private Long failed;
         private Long refunded;
         private BigDecimal successRate;
-        private BigDecimal stripePercentage;
+        private BigDecimal payPalPercentage;
         private BigDecimal payOSPercentage;
     }
     

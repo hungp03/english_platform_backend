@@ -75,7 +75,7 @@ public class DashboardStatsRepositoryCustom {
                
                 -- Payments
                 UNION ALL SELECT 'PAYMENTS_TOTAL', COUNT(*) FROM payments
-                UNION ALL SELECT 'PAYMENTS_STRIPE', COUNT(*) FROM payments WHERE provider = 'STRIPE'
+                UNION ALL SELECT 'PAYMENTS_PAYPAL', COUNT(*) FROM payments WHERE provider = 'PAYPAL'
                 UNION ALL SELECT 'PAYMENTS_PAYOS', COUNT(*) FROM payments WHERE provider = 'PAYOS'
                 UNION ALL SELECT 'PAYMENTS_SUCCESS', COUNT(*) FROM payments WHERE status = 'SUCCESS'
                 UNION ALL SELECT 'PAYMENTS_FAILED', COUNT(*) FROM payments WHERE status = 'FAILED'
