@@ -44,7 +44,7 @@ public class Question {
     @PrePersist
     public void prePersist() {
         if (id == null) {
-            id = UuidCreator.getTimeOrdered();
+            id = UuidCreator.getTimeOrderedEpoch();
         }
         if (orderIndex == null) {
             orderIndex = 0;

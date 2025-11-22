@@ -23,7 +23,6 @@ import java.util.UUID;
 public class Quiz {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)
@@ -67,7 +66,7 @@ public class Quiz {
     @PrePersist
     public void prePersist() {
         if (id == null) {
-            id = UuidCreator.getTimeOrdered();
+            id = UuidCreator.getTimeOrderedEpoch();
         }
         if (status == null) {
             status = QuizStatus.DRAFT;

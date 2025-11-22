@@ -40,7 +40,7 @@ public class QuizType {
     @PrePersist
     public void prePersist() {
         if (id == null) {
-            id = UuidCreator.getTimeOrdered();
+            id = UuidCreator.getTimeOrderedEpoch();
         }
         Instant now = Instant.now();
         createdAt = now;

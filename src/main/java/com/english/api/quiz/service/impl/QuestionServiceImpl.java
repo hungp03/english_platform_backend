@@ -73,6 +73,9 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
         if (req.orderIndex() != null) q.setOrderIndex(req.orderIndex());
 
         if (req.options() != null) {
+            if (q.getOptions() == null) {
+                q.setOptions(new java.util.LinkedHashSet<>());
+            }
             q.getOptions().clear();
             for (QuestionOptionCreateRequest o : req.options()) {
                 QuestionOption op = QuestionOption.builder()
@@ -111,9 +114,11 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
     }
 
     private QuestionResponse toResponse(Question e) {
-        List<QuestionOptionResponse> options = e.getOptions().stream()
-                .map(op -> new QuestionOptionResponse(op.getId(), op.getContent(), op.isCorrect(), op.getExplanation(), op.getOrderIndex()))
-                .collect(java.util.stream.Collectors.toList());
+        List<QuestionOptionResponse> options = e.getOptions() != null 
+                ? e.getOptions().stream()
+                    .map(op -> new QuestionOptionResponse(op.getId(), op.getContent(), op.isCorrect(), op.getExplanation(), op.getOrderIndex()))
+                    .collect(java.util.stream.Collectors.toList())
+                : new ArrayList<>();
         return new QuestionResponse(
                 e.getId(),
                 e.getQuiz().getId(),
