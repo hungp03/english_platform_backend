@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 // import com.english.api.admin.repository.DashboardStatsRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -431,5 +432,242 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         response.setTopRevenueCourses(list);
         return response;
     }
-    
+
+    // === 5. EXPORT ===
+    @Override
+    public byte[] exportDashboardData(String type) {
+        StringBuilder csv = new StringBuilder();
+
+        switch (type.toLowerCase()) {
+            case "summary":
+                csv.append(exportSummaryData());
+                break;
+            case "user-growth":
+                csv.append(exportUserGrowthData());
+                break;
+            case "revenue":
+                csv.append(exportRevenueData());
+                break;
+            case "enrollments":
+                csv.append(exportEnrollmentData());
+                break;
+            case "top-courses":
+                csv.append(exportTopCoursesData());
+                break;
+            case "top-instructors":
+                csv.append(exportTopInstructorsData());
+                break;
+            case "top-revenue-courses":
+                csv.append(exportTopRevenueCoursesData());
+                break;
+            default:
+                csv.append(exportSummaryData());
+                break;
+        }
+
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String exportSummaryData() {
+        DashboardSummaryResponse summary = getDashboardSummary();
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("Dashboard Summary Export\n");
+        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+
+        // Users
+        csv.append("=== USERS ===\n");
+        csv.append("Metric,Value\n");
+        csv.append("Total Users,").append(summary.getUsers().getTotal()).append("\n");
+        csv.append("Active Users,").append(summary.getUsers().getActive()).append("\n");
+        csv.append("Verified Users,").append(summary.getUsers().getVerified()).append("\n");
+        csv.append("Inactive Users,").append(summary.getUsers().getInactive()).append("\n");
+        csv.append("Week Growth,").append(summary.getUsers().getWeekGrowth()).append("\n");
+        csv.append("Active Percentage,").append(summary.getUsers().getActivePercentage()).append("%\n");
+        csv.append("Verified Percentage,").append(summary.getUsers().getVerifiedPercentage()).append("%\n\n");
+
+        // Instructors
+        csv.append("=== INSTRUCTORS ===\n");
+        csv.append("Metric,Value\n");
+        csv.append("Total Instructors,").append(summary.getInstructors().getTotalInstructors()).append("\n");
+        csv.append("Pending Requests,").append(summary.getInstructors().getPendingRequests()).append("\n");
+        csv.append("Pending Over 7 Days,").append(summary.getInstructors().getPendingOver7Days()).append("\n");
+        csv.append("Pending 3-7 Days,").append(summary.getInstructors().getPending3To7Days()).append("\n");
+        csv.append("Pending Under 3 Days,").append(summary.getInstructors().getPendingUnder3Days()).append("\n\n");
+
+        // Courses
+        csv.append("=== COURSES ===\n");
+        csv.append("Metric,Value\n");
+        csv.append("Total Courses,").append(summary.getCourses().getTotalCourses()).append("\n");
+        csv.append("Published Courses,").append(summary.getCourses().getPublished()).append("\n");
+        csv.append("Draft Courses,").append(summary.getCourses().getDraft()).append("\n");
+        csv.append("Archived Courses,").append(summary.getCourses().getArchived()).append("\n");
+        csv.append("Total Modules,").append(summary.getCourses().getTotalModules()).append("\n");
+        csv.append("Total Lessons,").append(summary.getCourses().getTotalLessons()).append("\n");
+        csv.append("Free Lessons,").append(summary.getCourses().getFreeLessons()).append("\n");
+        csv.append("Published Percentage,").append(summary.getCourses().getPublishedPercentage()).append("%\n\n");
+
+        // Revenue
+        csv.append("=== REVENUE ===\n");
+        csv.append("Metric,Value\n");
+        csv.append("Total Revenue This Month (cents),").append(summary.getRevenue().getTotalCentsThisMonth()).append("\n");
+        csv.append("Growth Percentage,").append(summary.getRevenue().getGrowthPercentage()).append("%\n");
+        csv.append("Total Revenue VND (cents),").append(summary.getRevenue().getTotalCentsVND()).append("\n\n");
+
+        // Orders
+        csv.append("=== ORDERS ===\n");
+        csv.append("Metric,Value\n");
+        csv.append("Total Orders This Month,").append(summary.getOrders().getTotalOrdersThisMonth()).append("\n");
+        csv.append("Completed Orders,").append(summary.getOrders().getCompleted()).append("\n");
+        csv.append("Pending Orders,").append(summary.getOrders().getPending()).append("\n");
+        csv.append("Cancelled Orders,").append(summary.getOrders().getCancelled()).append("\n");
+        csv.append("Unpaid Carts,").append(summary.getOrders().getUnpaidCarts()).append("\n");
+        csv.append("Completed Percentage,").append(summary.getOrders().getCompletedPercentage()).append("%\n");
+        csv.append("Average Order Value,").append(summary.getOrders().getAverageOrderValue()).append("\n\n");
+
+        // Payments
+        csv.append("=== PAYMENTS ===\n");
+        csv.append("Metric,Value\n");
+        csv.append("Total Payments,").append(summary.getPayments().getTotalPayments()).append("\n");
+        csv.append("PayPal Payments,").append(summary.getPayments().getByPayPal()).append("\n");
+        csv.append("PayOS Payments,").append(summary.getPayments().getByPayOS()).append("\n");
+        csv.append("Succeeded Payments,").append(summary.getPayments().getSucceeded()).append("\n");
+        csv.append("Failed Payments,").append(summary.getPayments().getFailed()).append("\n");
+        csv.append("Refunded Payments,").append(summary.getPayments().getRefunded()).append("\n");
+        csv.append("Success Rate,").append(summary.getPayments().getSuccessRate()).append("%\n\n");
+
+        return csv.toString();
+    }
+
+    private String exportUserGrowthData() {
+        UserGrowthResponse data = getUserGrowthChart(12);
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("User Growth Report\n");
+        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        csv.append("Month,New Users,Active Users\n");
+
+        for (UserGrowthResponse.MonthlyData monthly : data.getMonthlyData()) {
+            csv.append(monthly.getMonth()).append(",")
+               .append(monthly.getNewUsers()).append(",")
+               .append(monthly.getActiveUsers()).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    private String exportRevenueData() {
+        RevenueChartResponse data = getRevenueChart(12);
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("Revenue Report\n");
+        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        csv.append("Month,Revenue VND (cents),Revenue USD (cents),Total Orders,Average Order Value\n");
+
+        for (RevenueChartResponse.MonthlyRevenue monthly : data.getMonthlyRevenue()) {
+            csv.append(monthly.getMonth()).append(",")
+               .append(monthly.getRevenueVND()).append(",")
+               .append(monthly.getRevenueUSD()).append(",")
+               .append(monthly.getTotalOrders()).append(",")
+               .append(monthly.getAverageOrderValue()).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    private String exportEnrollmentData() {
+        EnrollmentChartResponse data = getEnrollmentChart(12);
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("Enrollment Report\n");
+        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        csv.append("Month,New Enrollments,Completed Enrollments,Completion Rate (%),Average Progress (%)\n");
+
+        for (EnrollmentChartResponse.MonthlyEnrollment monthly : data.getMonthlyEnrollment()) {
+            csv.append(monthly.getMonth()).append(",")
+               .append(monthly.getNewEnrollments()).append(",")
+               .append(monthly.getCompletedEnrollments()).append(",")
+               .append(monthly.getCompletionRate()).append(",")
+               .append(monthly.getAverageProgress()).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    private String exportTopCoursesData() {
+        TopPerformersResponse data = getTopCourses(50);
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("Top Courses Report\n");
+        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        csv.append("Rank,Course ID,Title,Slug,Instructor,Enrollments,Completions,Completion Rate (%),Revenue (cents),Currency\n");
+
+        for (TopPerformersResponse.TopCourse course : data.getTopCourses()) {
+            csv.append(course.getRank()).append(",")
+               .append(course.getId()).append(",")
+               .append("\"").append(escapeCSV(course.getTitle())).append("\",")
+               .append(course.getSlug()).append(",")
+               .append("\"").append(escapeCSV(course.getInstructorName())).append("\",")
+               .append(course.getEnrollmentCount()).append(",")
+               .append(course.getCompletionCount()).append(",")
+               .append(course.getCompletionRate()).append(",")
+               .append(course.getTotalRevenueCents()).append(",")
+               .append(course.getCurrency()).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    private String exportTopInstructorsData() {
+        TopPerformersResponse data = getTopInstructors(50);
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("Top Instructors Report\n");
+        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        csv.append("Rank,Instructor ID,Full Name,Email,Total Courses,Total Enrollments,Total Revenue (cents)\n");
+
+        for (TopPerformersResponse.TopInstructor instructor : data.getTopInstructors()) {
+            csv.append(instructor.getRank()).append(",")
+               .append(instructor.getId()).append(",")
+               .append("\"").append(escapeCSV(instructor.getFullName())).append("\",")
+               .append(instructor.getEmail()).append(",")
+               .append(instructor.getTotalCourses()).append(",")
+               .append(instructor.getTotalEnrollments()).append(",")
+               .append(instructor.getTotalRevenueCents()).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    private String exportTopRevenueCoursesData() {
+        TopPerformersResponse data = getTopRevenueCourses(50);
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("Top Revenue Courses Report\n");
+        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        csv.append("Rank,Course ID,Title,Slug,Instructor,Total Revenue (cents),Currency,Total Orders,Enrollments,Average Order Value\n");
+
+        for (TopPerformersResponse.TopRevenueCourse course : data.getTopRevenueCourses()) {
+            csv.append(course.getRank()).append(",")
+               .append(course.getId()).append(",")
+               .append("\"").append(escapeCSV(course.getTitle())).append("\",")
+               .append(course.getSlug()).append(",")
+               .append("\"").append(escapeCSV(course.getInstructorName())).append("\",")
+               .append(course.getTotalRevenueCents()).append(",")
+               .append(course.getCurrency()).append(",")
+               .append(course.getTotalOrders()).append(",")
+               .append(course.getEnrollmentCount()).append(",")
+               .append(course.getAverageOrderValue()).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    private String escapeCSV(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\"", "\"\"");
+    }
+
 }

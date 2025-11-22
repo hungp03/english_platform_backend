@@ -57,9 +57,10 @@ public class AdminOverviewController {
 
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportDashboardData(@RequestParam(defaultValue = "summary") String type) {
-        // TODO: Implement export
+        byte[] csvData = adminOverviewService.exportDashboardData(type);
         return ResponseEntity.ok()
+                .header("Content-Type", "text/csv; charset=UTF-8")
                 .header("Content-Disposition", "attachment; filename=dashboard_" + type + ".csv")
-                .body("exported".getBytes());
+                .body(csvData);
     }
 }

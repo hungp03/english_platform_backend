@@ -24,4 +24,7 @@ public interface AdminOverviewService {
 
     TopPerformersResponse getTopRevenueCourses(int limit);
 
+    // === 5. EXPORT ===
+    byte[] exportDashboardData(String type);
+
 }
