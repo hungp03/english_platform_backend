@@ -165,6 +165,7 @@ public class InstructorServiceImpl implements InstructorService {
             instructorProfile.setExpertise(request.getExpertise());
             instructorProfile.setExperienceYears(request.getExperienceYears());
             instructorProfile.setQualification(request.getQualification());
+            instructorProfile.setActive(true);
 
             instructorProfileRepository.save(instructorProfile);
             log.info("Created/updated instructor profile for user: {}", requestUser.getEmail());
@@ -400,5 +401,71 @@ public class InstructorServiceImpl implements InstructorService {
             instructors = instructorProfileRepository.findAllBasicInfoWithSearch(search.trim(), pageable);
         }
         return PaginationResponse.from(instructors, pageable);
+    }
+
+    @Override
+    public void manageInstructorRole(UUID userId, com.english.api.user.dto.request.RevokeInstructorRoleRequest.Action action, String reason) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        Role instructorRole = roleRepository.findByCode("INSTRUCTOR")
+                .orElseThrow(() -> new ResourceNotFoundException("INSTRUCTOR role not found"));
+
+        String userName = user.getFullName() != null ? user.getFullName() : user.getEmail();
+
+        if (action == com.english.api.user.dto.request.RevokeInstructorRoleRequest.Action.REVOKE) {
+            // Revoke instructor permissions
+            if (user.getRoles().contains(instructorRole)) {
+                user.getRoles().remove(instructorRole);
+                userRepository.save(user);
+                log.info("Removed INSTRUCTOR role from user: {}", user.getEmail());
+
+                // Set instructor profile to inactive
+                instructorProfileRepository.findByUserId(userId).ifPresent(profile -> {
+                    profile.setActive(false);
+                    instructorProfileRepository.save(profile);
+                    log.info("Set instructor profile to inactive for user: {}", user.getEmail());
+                });
+
+                // Send email notification to user
+                mailService.sendInstructorRoleRevokedEmail(user.getEmail(), userName, reason);
+                
+                // Send in-app notification
+                notificationService.sendNotification(
+                        user.getId(),
+                        "Quyền giảng viên đã bị thu hồi",
+                        "Quyền giảng viên của bạn đã bị thu hồi. Lý do: " + reason);
+            } else {
+                log.warn("User {} does not have INSTRUCTOR role to revoke", user.getEmail());
+                throw new ResourceInvalidException("User does not have INSTRUCTOR role");
+            }
+        } else {
+            // Restore instructor permissions
+            if (!user.getRoles().contains(instructorRole)) {
+                user.getRoles().add(instructorRole);
+                userRepository.save(user);
+                log.info("Restored INSTRUCTOR role to user: {}", user.getEmail());
+
+                // Set instructor profile to active
+                InstructorProfile instructorProfile = instructorProfileRepository.findByUserId(userId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Instructor profile not found for user"));
+                
+                instructorProfile.setActive(true);
+                instructorProfileRepository.save(instructorProfile);
+                log.info("Set instructor profile to active for user: {}", user.getEmail());
+
+                // Send email notification to user
+                mailService.sendInstructorRoleRestoredEmail(user.getEmail(), userName, reason);
+                
+                // Send in-app notification
+                notificationService.sendNotification(
+                        user.getId(),
+                        "Quyền giảng viên đã được khôi phục",
+                        "Chúc mừng! Quyền giảng viên của bạn đã được khôi phục. Lý do: " + reason);
+            } else {
+                log.warn("User {} already has INSTRUCTOR role", user.getEmail());
+                throw new ResourceInvalidException("User already has INSTRUCTOR role");
+            }
+        }
     }
 }

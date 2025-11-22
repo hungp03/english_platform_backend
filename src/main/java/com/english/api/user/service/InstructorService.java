@@ -3,6 +3,7 @@ package com.english.api.user.service;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.user.dto.request.CreateInstructorRequest;
 import com.english.api.user.dto.request.ReviewInstructorRequest;
+import com.english.api.user.dto.request.RevokeInstructorRoleRequest;
 import com.english.api.user.dto.request.UpdateInstructorRequest;
 import com.english.api.user.dto.request.UploadCertificateProofRequest;
 import com.english.api.user.dto.response.CertificateProofResponse;
@@ -46,4 +47,6 @@ public interface InstructorService {
     void deleteRequest(UUID requestId);
     
     PaginationResponse getAllInstructors(String search, Pageable pageable);
+    
+    void manageInstructorRole(UUID userId, RevokeInstructorRoleRequest.Action action, String reason);
 }

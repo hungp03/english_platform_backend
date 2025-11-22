@@ -2,7 +2,6 @@ package com.english.api.order.repository;
 
 import com.english.api.order.model.Payment;
 import com.english.api.order.model.enums.PaymentProvider;
-import com.english.api.order.model.enums.PaymentStatus;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;

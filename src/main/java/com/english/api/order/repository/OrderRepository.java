@@ -1,7 +1,6 @@
 package com.english.api.order.repository;
 
 import com.english.api.order.model.Order;
-import com.english.api.order.model.enums.CurrencyType;
 import com.english.api.order.model.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

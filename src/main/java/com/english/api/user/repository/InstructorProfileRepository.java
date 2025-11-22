@@ -25,12 +25,12 @@ public interface InstructorProfileRepository extends JpaRepository<InstructorPro
     void deleteByUserId(UUID userId);
     
     @Query("SELECT new com.english.api.user.dto.response.InstructorBasicInfoResponse(" +
-           "i.id, i.user.id, i.user.fullName, i.user.email, i.user.avatarUrl, i.experienceYears, i.createdAt) " +
+           "i.id, i.user.id, i.user.fullName, i.user.email, i.user.avatarUrl, i.experienceYears, i.isActive, i.createdAt) " +
            "FROM InstructorProfile i")
     Page<InstructorBasicInfoResponse> findAllBasicInfo(Pageable pageable);
     
     @Query("SELECT new com.english.api.user.dto.response.InstructorBasicInfoResponse(" +
-           "i.id, i.user.id, i.user.fullName, i.user.email, i.user.avatarUrl, i.experienceYears, i.createdAt) " +
+           "i.id, i.user.id, i.user.fullName, i.user.email, i.user.avatarUrl, i.experienceYears, i.isActive, i.createdAt) " +
            "FROM InstructorProfile i " +
            "WHERE LOWER(i.user.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(i.user.fullName) LIKE LOWER(CONCAT('%', :search, '%'))")

@@ -5,6 +5,7 @@ import com.english.api.course.dto.response.InstructorStatsResponse;
 import com.english.api.course.service.CourseService;
 import com.english.api.user.dto.request.CreateInstructorRequest;
 import com.english.api.user.dto.request.ReviewInstructorRequest;
+import com.english.api.user.dto.request.RevokeInstructorRoleRequest;
 import com.english.api.user.dto.request.UpdateInstructorRequest;
 import com.english.api.user.dto.request.UploadCertificateProofRequest;
 import com.english.api.common.dto.PaginationResponse;
@@ -183,5 +184,17 @@ public class InstructorController {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         PaginationResponse instructors = instructorService.getAllInstructors(search, pageable);
         return ResponseEntity.ok(instructors);
+    }
+
+    /**
+     * Manage INSTRUCTOR role - revoke or restore permissions (admin only)
+     */
+    @PatchMapping("/admin/{userId}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> manageInstructorRole(
+            @PathVariable UUID userId,
+            @Valid @RequestBody RevokeInstructorRoleRequest request) {
+        instructorService.manageInstructorRole(userId, request.action(), request.reason());
+        return ResponseEntity.noContent().build();
     }
 }

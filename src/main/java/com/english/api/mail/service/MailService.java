@@ -10,4 +10,6 @@ public interface MailService {
     void sendPaymentSuccessEmail(String email, Object order, Object payment, String templateName);
     void sendInstructorRequestReviewEmail(String email, String userName, boolean isApproved, String adminNotes);
     void sendInvoiceEmail(String email, Object order, Object payment, Object invoice);
+    void sendInstructorRoleRevokedEmail(String email, String userName, String reason);
+    void sendInstructorRoleRestoredEmail(String email, String userName, String reason);
 }

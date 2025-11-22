@@ -14,6 +14,7 @@ public record InstructorBasicInfoResponse(
         String email,
         String avatarUrl,
         Integer experienceYears,
+        boolean isActive,
         Instant createdAt
 ) {
 }

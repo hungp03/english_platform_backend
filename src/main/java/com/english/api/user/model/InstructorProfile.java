@@ -46,6 +46,10 @@ public class InstructorProfile {
     @Column(name = "qualification", columnDefinition = "TEXT")
     private String qualification;
 
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private boolean isActive = true;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
     private Instant createdAt;

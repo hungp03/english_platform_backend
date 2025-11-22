@@ -112,4 +112,35 @@ public class MailServiceImpl implements MailService {
         this.sendEmail(email, "Hóa đơn thanh toán - English Pro", content, false, true);
     }
 
+    @Async
+    @Override
+    public void sendInstructorRoleRevokedEmail(String email, String userName, String reason) {
+        StringBuilder content = new StringBuilder();
+        content.append("Kính gửi ").append(userName).append(",\n\n");
+        content.append("Chúng tôi xin thông báo rằng quyền giảng viên của bạn trên nền tảng English Pro đã bị thu hồi.\n\n");
+        content.append("Lý do thu hồi:\n");
+        content.append(reason).append("\n\n");
+        content.append("Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với đội ngũ quản trị viên của chúng tôi.\n\n");
+        content.append("Trân trọng,\n");
+        content.append("Đội ngũ English Pro");
+        
+        this.sendEmail(email, "Thông báo thu hồi quyền giảng viên - English Pro", content.toString(), false, false);
+    }
+
+    @Async
+    @Override
+    public void sendInstructorRoleRestoredEmail(String email, String userName, String reason) {
+        StringBuilder content = new StringBuilder();
+        content.append("Kính gửi ").append(userName).append(",\n\n");
+        content.append("Chúng tôi xin thông báo rằng quyền giảng viên của bạn trên nền tảng English Pro đã được khôi phục.\n\n");
+        content.append("Lý do khôi phục:\n");
+        content.append(reason).append("\n\n");
+        content.append("Bạn có thể tiếp tục tạo và quản lý các khóa học của mình trên nền tảng.\n\n");
+        content.append("Cảm ơn bạn đã tiếp tục đồng hành cùng chúng tôi.\n\n");
+        content.append("Trân trọng,\n");
+        content.append("Đội ngũ English Pro");
+        
+        this.sendEmail(email, "Thông báo khôi phục quyền giảng viên - English Pro", content.toString(), false, false);
+    }
+
 }
