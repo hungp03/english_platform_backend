@@ -2,6 +2,7 @@ package com.english.api.quiz.model;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.*;
 
 import java.time.Instant;
@@ -32,6 +33,7 @@ public class QuestionOption {
     @Column(length = 2000)
     private String explanation;
 
+    @Min(1)
     @Column(nullable = false)
     private Integer orderIndex;
 
@@ -47,7 +49,7 @@ public class QuestionOption {
             id = UuidCreator.getTimeOrderedEpoch();
         }
         if (orderIndex == null) {
-            orderIndex = 0;
+            orderIndex = 1;
         }
         Instant now = Instant.now();
         createdAt = now;

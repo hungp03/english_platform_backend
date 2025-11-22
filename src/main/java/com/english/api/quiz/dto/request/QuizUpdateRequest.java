@@ -15,6 +15,5 @@ public record QuizUpdateRequest(
         String contextText,
         String questionText,
         String explanation
-
 ) {
 }

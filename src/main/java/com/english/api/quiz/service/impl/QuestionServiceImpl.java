@@ -34,6 +34,12 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
     public QuestionResponse create(QuestionCreateRequest req) {
         Quiz quiz = quizRepository.findById(req.quizId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quiz not found"));
+        
+        if (questionRepository.existsByQuiz_IdAndOrderIndex(req.quizId(), req.orderIndex())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Question with orderIndex " + req.orderIndex() + " already exists in this quiz");
+        }
+        
         Question q = Question.builder()
                 .quiz(quiz)
                 .content(req.content())
@@ -48,7 +54,7 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
                         .content(o.content())
                         .correct(Boolean.TRUE.equals(o.correct()))
                         .explanation(o.explanation())
-                        .orderIndex(o.orderIndex() == null ? 0 : o.orderIndex())
+                        .orderIndex(o.orderIndex() == null ? 1 : o.orderIndex())
                         .build();
                 opts.add(op);
             }
@@ -70,7 +76,15 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
             q.setQuiz(quiz);
         }
         if (req.content() != null) q.setContent(req.content());
-        if (req.orderIndex() != null) q.setOrderIndex(req.orderIndex());
+        if (req.orderIndex() != null) {
+            UUID quizId = req.quizId() != null ? req.quizId() : q.getQuiz().getId();
+            if (!req.orderIndex().equals(q.getOrderIndex()) && 
+                questionRepository.existsByQuiz_IdAndOrderIndex(quizId, req.orderIndex())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "Question with orderIndex " + req.orderIndex() + " already exists in this quiz");
+            }
+            q.setOrderIndex(req.orderIndex());
+        }
 
         if (req.options() != null) {
             if (q.getOptions() == null) {
@@ -83,7 +97,7 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
                         .content(o.content())
                         .correct(Boolean.TRUE.equals(o.correct()))
                         .explanation(o.explanation())
-                        .orderIndex(o.orderIndex() == null ? 0 : o.orderIndex())
+                        .orderIndex(o.orderIndex() == null ? 1 : o.orderIndex())
                         .build();
                 q.getOptions().add(op);
             }

@@ -16,4 +16,6 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
 
     @EntityGraph(attributePaths = {"options"})
     Page<Question> findByQuiz_QuizSection_Id(UUID sectionId, Pageable pageable);
+
+    boolean existsByQuiz_IdAndOrderIndex(UUID quizId, Integer orderIndex);
 }
