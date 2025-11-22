@@ -66,7 +66,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public CourseResponse create(CourseRequest req) {
         // TEMPORARY: Only allow VND currency for new courses
-        // TODO: Remove this restriction when multiple currencies are fully supported
+        // Remove this restriction when multiple currencies are fully supported
         if (!"VND".equalsIgnoreCase(req.currency())) {
             throw new com.english.api.common.exception.ResourceInvalidException(
                 "Currently, only VND currency is supported for course creation");
@@ -129,7 +129,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public CourseResponse update(UUID id, CourseRequest req) {
         // TEMPORARY: Only allow VND currency for courses
-        // TODO: Remove this restriction when multiple currencies are fully supported
+        // Remove this restriction when multiple currencies are fully supported
         if (!"VND".equalsIgnoreCase(req.currency())) {
             throw new ResourceInvalidException(
                 "Currently, only VND currency is supported for courses");

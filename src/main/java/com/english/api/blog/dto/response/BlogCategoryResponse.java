@@ -1,5 +1,6 @@
 package com.english.api.blog.dto.response;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -8,5 +9,5 @@ public record BlogCategoryResponse(
         String name,
         String slug,
         String description,
-        Instant createdAt) {
+        Instant createdAt) implements Serializable {
 }

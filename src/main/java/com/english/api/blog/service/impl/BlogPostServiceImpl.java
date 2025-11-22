@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -73,6 +75,7 @@ public class BlogPostServiceImpl implements BlogPostService{
 
     @Override
     @Transactional
+    @CacheEvict(value = "blog_posts", key = "#id")
     public PostResponse update(UUID id, PostUpdateRequest req) {
         BlogPost post = postRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
@@ -93,6 +96,7 @@ public class BlogPostServiceImpl implements BlogPostService{
     }
 
     @Override
+    @CacheEvict(value = "blog_posts", key = "#id")
     public void delete(UUID id) {
         if (!postRepository.existsById(id)) throw new ResourceNotFoundException("Post not found");
         // Xóa toàn bộ comment của post trước
@@ -156,6 +160,7 @@ public class BlogPostServiceImpl implements BlogPostService{
 
     @Override
     @Transactional
+    @CacheEvict(value = "blog_posts", key = "#id")
     public PostResponse publish(UUID id) {
         BlogPost post = postRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
@@ -171,6 +176,7 @@ public class BlogPostServiceImpl implements BlogPostService{
 
     @Override
     @Transactional
+    @CacheEvict(value = "blog_posts", key = "#id")
     public PostResponse unpublish(UUID id) {
         BlogPost post = postRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
@@ -231,6 +237,7 @@ public class BlogPostServiceImpl implements BlogPostService{
     }
 
     @Override
+    @CachePut(value = "blog_posts", key = "#result.id()", unless = "#result == null")
     public PublicPostDetailResponse publicDetailBySlug(String slug) {
         BlogPost post = postRepository.findBySlugAndPublishedIsTrue(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found"));

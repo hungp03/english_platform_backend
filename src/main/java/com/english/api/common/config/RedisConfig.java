@@ -90,6 +90,10 @@ public class RedisConfig {
                 .entryTtl(Duration.ofHours(1))
                 .disableCachingNullValues());
 
+        cacheConfigurations.put("blog_posts", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(6))
+                .disableCachingNullValues());
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
                 .withInitialCacheConfigurations(cacheConfigurations)

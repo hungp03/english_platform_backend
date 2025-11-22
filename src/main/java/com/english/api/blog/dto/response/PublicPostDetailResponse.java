@@ -1,5 +1,6 @@
 package com.english.api.blog.dto.response;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -15,5 +16,5 @@ public record PublicPostDetailResponse(
         String authorName,
         String authorAvatarUrl,
         List<BlogCategoryResponse> categories
-) {
+) implements Serializable {
 }
