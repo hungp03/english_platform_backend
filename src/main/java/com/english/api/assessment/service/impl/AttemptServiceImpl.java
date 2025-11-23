@@ -3,11 +3,14 @@ package com.english.api.assessment.service.impl;
 import com.english.api.assessment.dto.request.SubmitAnswerDto;
 import com.english.api.assessment.dto.request.SubmitAttemptRequest;
 import com.english.api.assessment.dto.response.*;
+import com.english.api.assessment.event.WritingSubmissionCreatedEvent;
 import com.english.api.assessment.model.QuizAttempt;
 import com.english.api.assessment.model.QuizAttemptAnswer;
+import com.english.api.assessment.model.WritingSubmission;
 import com.english.api.assessment.model.enums.QuizAttemptStatus;
 import com.english.api.assessment.repository.QuizAttemptAnswerRepository;
 import com.english.api.assessment.repository.QuizAttemptRepository;
+import com.english.api.assessment.repository.WritingSubmissionRepository;
 import com.english.api.assessment.service.AttemptService;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
@@ -21,20 +24,20 @@ import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AttemptServiceImpl implements AttemptService {
     private final QuizAttemptRepository attemptRepo;
     private final QuizAttemptAnswerRepository answerRepo;
@@ -42,6 +45,8 @@ public class AttemptServiceImpl implements AttemptService {
     private final QuizRepository quizRepo;
     private final UserRepository userRepo;
     private final QuestionRepository questionRepo;
+    private final WritingSubmissionRepository writingSubmissionRepo;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public AttemptResponse submitOneShot(SubmitAttemptRequest req) {
@@ -68,7 +73,8 @@ public class AttemptServiceImpl implements AttemptService {
 
         if (skill == QuizSkill.READING || skill == QuizSkill.LISTENING) {
             for (SubmitAnswerDto a : arr) {
-                if (a == null || a.questionId() == null) continue;
+                if (a == null || a.questionId() == null)
+                    continue;
                 total++;
 
                 var question = questionRepo.findById(a.questionId())
@@ -79,10 +85,12 @@ public class AttemptServiceImpl implements AttemptService {
 
                 if (a.selectedOptionId() != null) {
                     var opt = optionRepo.findById(a.selectedOptionId())
-                            .orElseThrow(() -> new EntityNotFoundException("Option not found: " + a.selectedOptionId()));
+                            .orElseThrow(
+                                    () -> new EntityNotFoundException("Option not found: " + a.selectedOptionId()));
 
                     ans.setSelectedOption(opt);
-                    if (opt.isCorrect()) correct++;
+                    if (opt.isCorrect())
+                        correct++;
                 } else {
                     ans.setSelectedOption(null);
                 }
@@ -100,8 +108,11 @@ public class AttemptServiceImpl implements AttemptService {
 
         } else {
             // WRITING / SPEAKING
+            List<QuizAttemptAnswer> savedAnswers = new ArrayList<>();
+
             for (SubmitAnswerDto a : arr) {
-                if (a == null || a.questionId() == null) continue;
+                if (a == null || a.questionId() == null)
+                    continue;
 
                 var question = questionRepo.findById(a.questionId())
                         .orElseThrow(() -> new EntityNotFoundException("Question not found: " + a.questionId()));
@@ -112,7 +123,8 @@ public class AttemptServiceImpl implements AttemptService {
                 ans.setSelectedOption(null); // luôn null
                 ans.setAnswerText(a.answerText());
                 ans.setTimeSpentMs(a.timeSpentMs());
-                answerRepo.save(ans);
+                QuizAttemptAnswer savedAns = answerRepo.save(ans);
+                savedAnswers.add(savedAns);
             }
 
             savedAttempt.setStatus(QuizAttemptStatus.SUBMITTED);
@@ -120,11 +132,31 @@ public class AttemptServiceImpl implements AttemptService {
             savedAttempt.setTotalCorrect(0);
             savedAttempt.setScore(0d);
             savedAttempt.setMaxScore(0d);
-        }
+            // Auto-create WritingSubmission for WRITING skill
+            if (skill == QuizSkill.WRITING) {
+                for (QuizAttemptAnswer answer : savedAnswers) {
+                    // Check if writing text exists
+                    if (answer.getAnswerText() != null && !answer.getAnswerText().isBlank()) {
+                        // Check if submission already exists
+                        if (!writingSubmissionRepo.existsByAttemptAnswer_Id(answer.getId())) {
+                            // Create WritingSubmission
+                            WritingSubmission submission = WritingSubmission.builder()
+                                    .attemptAnswer(answer)
+                                    .build();
 
+                            WritingSubmission saved = writingSubmissionRepo.save(submission);
+
+                            // Publish event - trigger will run after transaction commits
+                            eventPublisher.publishEvent(new WritingSubmissionCreatedEvent(saved.getId()));
+
+                            log.info("Auto-created WritingSubmission for answer: {}", answer.getId());
+                        }
+                    }
+                }
+            }
+        }
         savedAttempt.setSubmittedAt(Instant.now());
         attemptRepo.save(savedAttempt);
-
         return toDto(savedAttempt);
     }
 
@@ -160,6 +192,14 @@ public class AttemptServiceImpl implements AttemptService {
     }
 
     private AttemptResponse toDto(QuizAttempt a) {
+        // Fetch answers for this attempt
+        List<AnswerBrief> answers = answerRepo.findByAttempt_Id(a.getId())
+                .stream()
+                .map(answer -> new AnswerBrief(
+                        answer.getId(),
+                        answer.getQuestion().getId()))
+                .toList();
+
         return new AttemptResponse(
                 a.getId(),
                 a.getQuiz().getId(),
@@ -174,10 +214,9 @@ public class AttemptServiceImpl implements AttemptService {
                 a.getScore(),
                 a.getMaxScore(),
                 a.getStartedAt(),
-                a.getSubmittedAt()
-        );
+                a.getSubmittedAt(),
+                answers);
     }
-
 
     @Transactional(readOnly = true)
     public AttemptAnswersResponse getAttemptAnswers(UUID attemptId) {
@@ -216,13 +255,13 @@ public class AttemptServiceImpl implements AttemptService {
             }
 
             var optionReviews = opts.stream()
-                    .sorted(Comparator.comparing(QuestionOption::getOrderIndex, Comparator.nullsLast(Integer::compareTo)))
+                    .sorted(Comparator.comparing(QuestionOption::getOrderIndex,
+                            Comparator.nullsLast(Integer::compareTo)))
                     .map(o -> new OptionReview(
                             o.getId(),
                             o.getContent(),
                             o.isCorrect(),
-                            selected != null && o.getId().equals(selected.getId())
-                    ))
+                            selected != null && o.getId().equals(selected.getId())))
                     .toList();
 
             items.add(new AttemptAnswerItem(
@@ -235,8 +274,7 @@ public class AttemptServiceImpl implements AttemptService {
                     isCorrect,
                     a.getAnswerText(),
                     a.getTimeSpentMs(),
-                    optionReviews
-            ));
+                    optionReviews));
         }
 
         Integer totalCorrect = (attempt.getSkill() == QuizSkill.LISTENING || attempt.getSkill() == QuizSkill.READING)
@@ -263,8 +301,7 @@ public class AttemptServiceImpl implements AttemptService {
                 attempt.getSubmittedAt(),
                 quiz.getContextText(),
                 quiz.getExplanation(),
-                items
-        );
+                items);
     }
 
 }

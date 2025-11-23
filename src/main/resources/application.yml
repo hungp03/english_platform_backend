@@ -123,6 +123,12 @@ n8n:
   webhook:
     ai-plan-url: ${N8N_AI_PLAN_URL}
     api-key: ${N8N_API_KEY}
+    speaking:
+      url: ${N8N_SPEAKING_WEBHOOK_URL:http://localhost:5678/webhook/speaking/grade}
+    writing:
+      url: ${N8N_WRITING_WEBHOOK_URL:http://localhost:5678/webhook/writing/grade}
+  callback:
+    secret: ${N8N_CALLBACK_SECRET}
 
 logging:
  level:

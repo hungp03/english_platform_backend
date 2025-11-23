@@ -6,6 +6,7 @@ import com.english.api.assessment.dto.response.SpeakingSubmissionResponse;
 import com.english.api.assessment.service.SpeakingSubmissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,9 @@ import java.util.UUID;
 public class SpeakingSubmissionController {
 
     private final SpeakingSubmissionService speakingSubmissionService;
+
+    @Value("${n8n.callback.secret}")
+    private String n8nCallbackSecret;
 
     @PostMapping("/attempts/{attemptId}/answers/{answerId}/speaking")
     public SpeakingSubmissionResponse submitAudio(@PathVariable UUID attemptId, @PathVariable UUID answerId, @Valid @RequestBody SpeakingSubmissionRequest request) {
@@ -46,7 +50,14 @@ public class SpeakingSubmissionController {
 
     @PostMapping("/ai-callback/speaking")
     @ResponseStatus(HttpStatus.OK)
-    public void handleAICallback(@Valid @RequestBody AICallbackSpeakingRequest request) {
+    public void handleAICallback(
+            @RequestHeader("X-N8N-Secret") String secret,
+            @Valid @RequestBody AICallbackSpeakingRequest request) {
+
+        if (!secret.equals(n8nCallbackSecret)) {
+            throw new SecurityException("Invalid callback secret");
+        }
+
         speakingSubmissionService.handleAICallback(request);
     }
 }

@@ -33,8 +33,6 @@ public class QuizAttemptAnswer {
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
-    // @Column(name = "selected_option_id")
-    // private UUID selectedOptionId;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "selected_option_id", foreignKey = @ForeignKey(name = "fk_attempt_answer_option"))
     private QuestionOption selectedOption;

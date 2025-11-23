@@ -11,21 +11,34 @@ import com.english.api.assessment.repository.QuizAttemptRepository;
 import com.english.api.assessment.repository.SpeakingSubmissionRepository;
 import com.english.api.assessment.service.SpeakingSubmissionService;
 import com.english.api.auth.util.SecurityUtil;
+import com.english.api.quiz.model.Question;
+import com.english.api.quiz.model.Quiz;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService {
 
     private final SpeakingSubmissionRepository submissionRepo;
     private final QuizAttemptRepository attemptRepo;
     private final QuizAttemptAnswerRepository answerRepo;
+    private final RestTemplate restTemplate;
+
+    @Value("${n8n.webhook.speaking.url}")
+    private String n8nSpeakingWebhookUrl;
 
     @Override
     @Transactional
@@ -57,6 +70,9 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
                 .build();
 
         SpeakingSubmission saved = submissionRepo.save(submission);
+
+        // Trigger n8n workflow asynchronously
+        triggerSpeakingGrading(saved);
 
         return toResponse(saved);
     }
@@ -109,6 +125,9 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
             throw new SecurityException("Not authorized to access this submission");
         }
 
+        // Trigger n8n workflow again for retry
+        triggerSpeakingGrading(submission);
+
         return toResponse(submission);
     }
 
@@ -157,5 +176,55 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
                 .feedback(submission.getFeedback())
                 .createdAt(submission.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * Trigger n8n workflow to grade speaking submission
+     */
+    @Async
+    private void triggerSpeakingGrading(SpeakingSubmission submission) {
+        try {
+            QuizAttemptAnswer answer = submission.getAttemptAnswer();
+            Question question = answer.getQuestion();
+            Quiz quiz = question.getQuiz();
+
+            Map<String, Object> payload = Map.of(
+                    "submissionId", submission.getId().toString(),
+                    "audioUrl", submission.getAudioUrl(),
+                    "context", buildContext(quiz, question)
+            );
+
+            log.info("Triggering n8n speaking workflow for submission: {}", submission.getId());
+            restTemplate.postForEntity(n8nSpeakingWebhookUrl, payload, Void.class);
+            log.info("Successfully triggered n8n speaking workflow for submission: {}", submission.getId());
+
+        } catch (Exception e) {
+            // Log error but don't fail the submission
+            log.error("Failed to trigger n8n speaking workflow for submission: {}",
+                    submission.getId(), e);
+        }
+    }
+
+    /**
+     * Build context for n8n workflow
+     */
+    private Map<String, Object> buildContext(Quiz quiz, Question question) {
+        Map<String, Object> context = new HashMap<>();
+
+        if (quiz.getContextText() != null) {
+            context.put("quizContextText", quiz.getContextText());
+        }
+        if (quiz.getQuestionText() != null) {
+            context.put("questionText", quiz.getQuestionText());
+        }
+        context.put("questionContent", question.getContent());
+
+        // TODO: Add imageUrls from MediaAsset if needed
+        // List<String> imageUrls = getImageUrls(quiz);
+        // if (!imageUrls.isEmpty()) {
+        //     context.put("imageUrls", imageUrls);
+        // }
+
+        return context;
     }
 }

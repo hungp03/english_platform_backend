@@ -1,11 +1,11 @@
 package com.english.api.assessment.controller;
 
 import com.english.api.assessment.dto.request.AICallbackWritingRequest;
-import com.english.api.assessment.dto.request.WritingSubmissionRequest;
 import com.english.api.assessment.dto.response.WritingSubmissionResponse;
 import com.english.api.assessment.service.WritingSubmissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,10 +18,8 @@ public class WritingSubmissionController {
 
     private final WritingSubmissionService writingSubmissionService;
 
-    @PostMapping("/attempts/{attemptId}/answers/{answerId}/writing")
-    public WritingSubmissionResponse submitWriting(@PathVariable UUID attemptId, @PathVariable UUID answerId, @Valid @RequestBody WritingSubmissionRequest request) {
-        return writingSubmissionService.submitWriting(attemptId, answerId, request);
-    }
+    @Value("${n8n.callback.secret}")
+    private String n8nCallbackSecret;
 
     @GetMapping("/writing-submissions/{submissionId}")
     public WritingSubmissionResponse getSubmission(@PathVariable UUID submissionId) {
@@ -46,7 +44,14 @@ public class WritingSubmissionController {
 
     @PostMapping("/ai-callback/writing")
     @ResponseStatus(HttpStatus.OK)
-    public void handleAICallback(@Valid @RequestBody AICallbackWritingRequest request) {
+    public void handleAICallback(
+            @RequestHeader("X-N8N-Secret") String secret,
+            @Valid @RequestBody AICallbackWritingRequest request) {
+
+        if (!secret.equals(n8nCallbackSecret)) {
+            throw new SecurityException("Invalid callback secret");
+        }
+
         writingSubmissionService.handleAICallback(request);
     }
 }
