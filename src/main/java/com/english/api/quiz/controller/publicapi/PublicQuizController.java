@@ -28,7 +28,7 @@ public class PublicQuizController {
             @RequestParam(defaultValue = "20") int pageSize
     ) {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), pageSize,
-                Sort.by(Sort.Direction.DESC, "createdAt"));
+                Sort.by(Sort.Direction.ASC, "createdAt"));
         return quizService.listPublishedBySection(sectionId, pageable);
     }
 

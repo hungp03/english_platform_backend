@@ -25,7 +25,6 @@ public class PublicQuizSectionController {
     ) {
         List<QuizSectionResponse> sections = sectionService.listByQuizType(quizTypeId);
         if (skill != null) {
-            // QuizSectionResponse.skill là String -> so sánh theo name() của enum
             sections = sections.stream()
                     .filter(s -> skill.name().equalsIgnoreCase(s.skill()))
                     .collect(Collectors.toList());

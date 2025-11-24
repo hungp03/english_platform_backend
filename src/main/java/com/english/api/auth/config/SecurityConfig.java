@@ -51,7 +51,9 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/api/media/callback"
+            "/api/media/callback",
+            "/api/assessment/ai-callback/speaking",
+            "/api/assessment/ai-callback/writing"
     };
 
     @Bean

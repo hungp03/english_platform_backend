@@ -3,6 +3,7 @@ package com.english.api.assessment.dto.response;
 import com.english.api.quiz.model.enums.QuizSkill;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record AttemptResponse(
@@ -19,6 +20,7 @@ public record AttemptResponse(
         Double score,
         Double maxScore,
         Instant startedAt,
-        Instant submittedAt
+        Instant submittedAt,
+        List<AnswerBrief> answers
 ) {
 }

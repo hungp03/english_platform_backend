@@ -18,9 +18,6 @@ public class AttemptController {
 
     private final AttemptService attemptService;
 
-    /**
-     * One-shot submit: tạo attempt + lưu câu trả lời + auto grade (nếu MCQ)
-     */
     @PostMapping("/submit")
     public AttemptResponse submit(@RequestBody SubmitAttemptRequest req) {
         return attemptService.submitOneShot(req);
