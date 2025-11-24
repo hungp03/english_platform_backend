@@ -50,12 +50,18 @@ public class MediaServiceImpl implements MediaService {
             "application/pdf"
     );
 
+    // Audio file types for speaking assessments
+    private static final Set<String> AUDIO_MIME_TYPES = Set.of(
+            "audio/mpeg", "audio/wav", "audio/ogg", "audio/x-wav", "audio/mp4", "audio/webm"
+    );
+
     private static final Map<String, FolderRule> FOLDER_RULES = Map.of(
             "users", new FolderRule(2 * 1024 * 1024, IMAGE_MIME_TYPES), // 2MB, chỉ ảnh
             "certificate_proofs", new FolderRule(5 * 1024 * 1024, PROOF_MIME_TYPES),
             "forums", new FolderRule(50 * 1024 * 1024, ALLOWED_MIME_TYPES), // 50MB, tất cả loại hợp lệ
             "course_thumbnail", new FolderRule(2 * 1024 * 1024, IMAGE_MIME_TYPES) ,// 2MB, chỉ ảnh
-            "invoices", new FolderRule(2 * 1024 * 1024, INVOICE_MIME_TYPES)
+            "invoices", new FolderRule(2 * 1024 * 1024, INVOICE_MIME_TYPES),
+            "speaking_assessments", new FolderRule(20 * 1024 * 1024, AUDIO_MIME_TYPES) // 20MB, audio only
     );
 
     // Inner class chứa rule cho từng folder

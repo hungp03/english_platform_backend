@@ -1,9 +1,12 @@
 package com.english.api.assessment.service.impl;
 
 import com.english.api.assessment.dto.request.AICallbackSpeakingRequest;
-import com.english.api.assessment.dto.request.SpeakingSubmissionRequest;
 import com.english.api.assessment.dto.response.SpeakingSubmissionResponse;
+import com.english.api.assessment.event.SpeakingSubmissionCreatedEvent;
+import com.english.api.assessment.mapper.SpeakingSubmissionMapper;
 import com.english.api.assessment.model.QuizAttempt;
+import com.english.api.common.dto.MediaUploadResponse;
+import com.english.api.common.service.MediaService;
 import com.english.api.assessment.model.QuizAttemptAnswer;
 import com.english.api.assessment.model.SpeakingSubmission;
 import com.english.api.assessment.repository.QuizAttemptAnswerRepository;
@@ -11,19 +14,15 @@ import com.english.api.assessment.repository.QuizAttemptRepository;
 import com.english.api.assessment.repository.SpeakingSubmissionRepository;
 import com.english.api.assessment.service.SpeakingSubmissionService;
 import com.english.api.auth.util.SecurityUtil;
-import com.english.api.quiz.model.Question;
-import com.english.api.quiz.model.Quiz;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,16 +34,16 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     private final SpeakingSubmissionRepository submissionRepo;
     private final QuizAttemptRepository attemptRepo;
     private final QuizAttemptAnswerRepository answerRepo;
-    private final RestTemplate restTemplate;
-
-    @Value("${n8n.webhook.speaking.url}")
-    private String n8nSpeakingWebhookUrl;
+    private final SpeakingSubmissionMapper mapper;
+    private final MediaService mediaService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
-    public SpeakingSubmissionResponse submitAudio(UUID attemptId, UUID answerId, SpeakingSubmissionRequest request) {
+    public SpeakingSubmissionResponse uploadAndSubmitAudio(UUID attemptId, UUID answerId, MultipartFile audioFile) throws IOException {
         UUID userId = SecurityUtil.getCurrentUserId();
 
+        // Validate attempt and answer ownership
         QuizAttempt attempt = attemptRepo.findById(attemptId)
                 .orElseThrow(() -> new EntityNotFoundException("Attempt not found: " + attemptId));
 
@@ -64,17 +63,35 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
             throw new IllegalStateException("A speaking submission already exists for this answer. Use retryGrading to reprocess or delete the existing submission first.");
         }
 
+        // Validate audio file
+        if (audioFile.isEmpty()) {
+            throw new IllegalArgumentException("Audio file is empty");
+        }
+
+        // Check file type
+        String contentType = audioFile.getContentType();
+        if (contentType == null || !contentType.startsWith("audio/")) {
+            throw new IllegalArgumentException("File must be an audio file");
+        }
+
+        // Upload audio to S3
+        String folder = String.format("speaking_assessments/%s/%s", attemptId, answerId);
+        MediaUploadResponse uploadResponse = mediaService.uploadFile(audioFile, folder);
+
+        log.info("Uploaded audio for attempt {} answer {} to S3: {}", attemptId, answerId, uploadResponse.url());
+
+        // Create submission with uploaded audio URL
         SpeakingSubmission submission = SpeakingSubmission.builder()
                 .attemptAnswer(answer)
-                .audioUrl(request.audioUrl())
+                .audioUrl(uploadResponse.url())
                 .build();
 
         SpeakingSubmission saved = submissionRepo.save(submission);
 
-        // Trigger n8n workflow asynchronously
-        triggerSpeakingGrading(saved);
+        // Publish event - trigger will run after transaction commits
+        eventPublisher.publishEvent(new SpeakingSubmissionCreatedEvent(saved.getId()));
 
-        return toResponse(saved);
+        return mapper.toResponse(saved);
     }
 
     @Override
@@ -88,7 +105,7 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
             throw new SecurityException("Not authorized to access this submission");
         }
 
-        return toResponse(submission);
+        return mapper.toResponse(submission);
     }
 
     @Override
@@ -111,7 +128,7 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
         }
 
         return submissionRepo.findByAttemptAnswer_Id(answerId)
-                .map(this::toResponse);
+                .map(mapper::toResponse);
     }
 
     @Override
@@ -125,10 +142,10 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
             throw new SecurityException("Not authorized to access this submission");
         }
 
-        // Trigger n8n workflow again for retry
-        triggerSpeakingGrading(submission);
+        // Publish event - trigger will run after transaction commits
+        eventPublisher.publishEvent(new SpeakingSubmissionCreatedEvent(submission.getId()));
 
-        return toResponse(submission);
+        return mapper.toResponse(submission);
     }
 
     @Override
@@ -160,71 +177,5 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
         submission.setFeedback(request.feedback());
 
         submissionRepo.save(submission);
-    }
-
-    private SpeakingSubmissionResponse toResponse(SpeakingSubmission submission) {
-        return SpeakingSubmissionResponse.builder()
-                .id(submission.getId())
-                .attemptAnswerId(submission.getAttemptAnswer().getId())
-                .audioUrl(submission.getAudioUrl())
-                .transcript(submission.getTranscript())
-                .aiFluency(submission.getAiFluency())
-                .aiPronunciation(submission.getAiPronunciation())
-                .aiGrammar(submission.getAiGrammar())
-                .aiVocabulary(submission.getAiVocabulary())
-                .aiScore(submission.getAiScore())
-                .feedback(submission.getFeedback())
-                .createdAt(submission.getCreatedAt())
-                .build();
-    }
-
-    /**
-     * Trigger n8n workflow to grade speaking submission
-     */
-    @Async
-    private void triggerSpeakingGrading(SpeakingSubmission submission) {
-        try {
-            QuizAttemptAnswer answer = submission.getAttemptAnswer();
-            Question question = answer.getQuestion();
-            Quiz quiz = question.getQuiz();
-
-            Map<String, Object> payload = Map.of(
-                    "submissionId", submission.getId().toString(),
-                    "audioUrl", submission.getAudioUrl(),
-                    "context", buildContext(quiz, question)
-            );
-
-            log.info("Triggering n8n speaking workflow for submission: {}", submission.getId());
-            restTemplate.postForEntity(n8nSpeakingWebhookUrl, payload, Void.class);
-            log.info("Successfully triggered n8n speaking workflow for submission: {}", submission.getId());
-
-        } catch (Exception e) {
-            // Log error but don't fail the submission
-            log.error("Failed to trigger n8n speaking workflow for submission: {}",
-                    submission.getId(), e);
-        }
-    }
-
-    /**
-     * Build context for n8n workflow
-     */
-    private Map<String, Object> buildContext(Quiz quiz, Question question) {
-        Map<String, Object> context = new HashMap<>();
-
-        if (quiz.getContextText() != null) {
-            context.put("quizContextText", quiz.getContextText());
-        }
-        if (quiz.getQuestionText() != null) {
-            context.put("questionText", quiz.getQuestionText());
-        }
-        context.put("questionContent", question.getContent());
-
-        // TODO: Add imageUrls from MediaAsset if needed
-        // List<String> imageUrls = getImageUrls(quiz);
-        // if (!imageUrls.isEmpty()) {
-        //     context.put("imageUrls", imageUrls);
-        // }
-
-        return context;
     }
 }

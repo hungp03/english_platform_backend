@@ -2,6 +2,7 @@ package com.english.api.assessment.service.impl;
 
 import com.english.api.assessment.dto.request.AICallbackWritingRequest;
 import com.english.api.assessment.dto.response.WritingSubmissionResponse;
+import com.english.api.assessment.mapper.WritingSubmissionMapper;
 import com.english.api.assessment.model.QuizAttempt;
 import com.english.api.assessment.model.QuizAttemptAnswer;
 import com.english.api.assessment.model.WritingSubmission;
@@ -35,6 +36,7 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
     private final QuizAttemptRepository attemptRepo;
     private final QuizAttemptAnswerRepository answerRepo;
     private final RestTemplate restTemplate;
+    private final WritingSubmissionMapper mapper;
 
     @Value("${n8n.webhook.writing.url}")
     private String n8nWritingWebhookUrl;
@@ -50,7 +52,7 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
             throw new SecurityException("Not authorized to access this submission");
         }
 
-        return toResponse(submission);
+        return mapper.toResponse(submission);
     }
 
     @Override
@@ -73,7 +75,7 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
         }
 
         return submissionRepo.findByAttemptAnswer_Id(answerId)
-                .map(this::toResponse);
+                .map(mapper::toResponse);
     }
 
     @Override
@@ -90,7 +92,7 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
         // Trigger n8n workflow again for retry
         triggerWritingGrading(submission);
 
-        return toResponse(submission);
+        return mapper.toResponse(submission);
     }
 
     @Override
@@ -121,20 +123,6 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
         submission.setFeedback(request.feedback());
 
         submissionRepo.save(submission);
-    }
-
-    private WritingSubmissionResponse toResponse(WritingSubmission submission) {
-        return WritingSubmissionResponse.builder()
-                .id(submission.getId())
-                .attemptAnswerId(submission.getAttemptAnswer().getId())
-                .aiTaskResponse(submission.getAiTaskResponse())
-                .aiCoherence(submission.getAiCoherence())
-                .aiGrammar(submission.getAiGrammar())
-                .aiVocabulary(submission.getAiVocabulary())
-                .aiScore(submission.getAiScore())
-                .feedback(submission.getFeedback())
-                .createdAt(submission.getCreatedAt())
-                .build();
     }
 
     /**

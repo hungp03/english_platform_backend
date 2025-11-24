@@ -4,6 +4,7 @@ import com.english.api.assessment.dto.request.SubmitAnswerDto;
 import com.english.api.assessment.dto.request.SubmitAttemptRequest;
 import com.english.api.assessment.dto.response.*;
 import com.english.api.assessment.event.WritingSubmissionCreatedEvent;
+import com.english.api.assessment.mapper.AttemptMapper;
 import com.english.api.assessment.model.QuizAttempt;
 import com.english.api.assessment.model.QuizAttemptAnswer;
 import com.english.api.assessment.model.WritingSubmission;
@@ -47,6 +48,7 @@ public class AttemptServiceImpl implements AttemptService {
     private final QuestionRepository questionRepo;
     private final WritingSubmissionRepository writingSubmissionRepo;
     private final ApplicationEventPublisher eventPublisher;
+    private final AttemptMapper attemptMapper;
 
     @Transactional
     public AttemptResponse submitOneShot(SubmitAttemptRequest req) {
@@ -68,6 +70,7 @@ public class AttemptServiceImpl implements AttemptService {
         QuizAttempt savedAttempt = attemptRepo.save(attempt);
 
         List<SubmitAnswerDto> arr = req.answers() == null ? List.of() : req.answers();
+        List<QuizAttemptAnswer> savedAnswers = new ArrayList<>();
         int total = 0;
         int correct = 0;
 
@@ -97,7 +100,8 @@ public class AttemptServiceImpl implements AttemptService {
 
                 ans.setAnswerText(null);
                 ans.setTimeSpentMs(a.timeSpentMs());
-                answerRepo.save(ans);
+                QuizAttemptAnswer savedAns = answerRepo.save(ans);
+                savedAnswers.add(savedAns);
             }
 
             savedAttempt.setTotalQuestions(total);
@@ -108,8 +112,6 @@ public class AttemptServiceImpl implements AttemptService {
 
         } else {
             // WRITING / SPEAKING
-            List<QuizAttemptAnswer> savedAnswers = new ArrayList<>();
-
             for (SubmitAnswerDto a : arr) {
                 if (a == null || a.questionId() == null)
                     continue;
@@ -157,14 +159,16 @@ public class AttemptServiceImpl implements AttemptService {
         }
         savedAttempt.setSubmittedAt(Instant.now());
         attemptRepo.save(savedAttempt);
-        return toDto(savedAttempt);
+        return attemptMapper.toResponse(savedAttempt, savedAnswers);
     }
 
     @Override
     @Transactional(readOnly = true)
     public AttemptResponse getAttempt(UUID attemptId) {
-        return attemptRepo.findById(attemptId).map(this::toDto)
+        QuizAttempt attempt = attemptRepo.findById(attemptId)
                 .orElseThrow(() -> new EntityNotFoundException("Attempt not found: " + attemptId));
+        List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attemptId);
+        return attemptMapper.toResponse(attempt, answers);
     }
 
     @Override
@@ -173,7 +177,10 @@ public class AttemptServiceImpl implements AttemptService {
         UUID me = SecurityUtil.getCurrentUserId();
         Page<QuizAttempt> page = attemptRepo.findByUser_Id(me, pageable);
 
-        return PaginationResponse.from(page.map(this::toDto), pageable);
+        return PaginationResponse.from(page.map(attempt -> {
+            List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attempt.getId());
+            return attemptMapper.toResponse(attempt, answers);
+        }), pageable);
     }
 
     @Override
@@ -181,41 +188,20 @@ public class AttemptServiceImpl implements AttemptService {
     public PaginationResponse listAttemptsByUserAndQuiz(UUID quizId, Pageable pageable) {
         UUID me = SecurityUtil.getCurrentUserId();
         Page<QuizAttempt> page = attemptRepo.findByQuiz_IdAndUser_Id(quizId, me, pageable);
-        return PaginationResponse.from(page.map(this::toDto), pageable);
+        return PaginationResponse.from(page.map(attempt -> {
+            List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attempt.getId());
+            return attemptMapper.toResponse(attempt, answers);
+        }), pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaginationResponse listAttemptsByQuiz(UUID quizId, Pageable pageable) {
         Page<QuizAttempt> page = attemptRepo.findByQuiz_Id(quizId, pageable);
-        return PaginationResponse.from(page.map(this::toDto), pageable);
-    }
-
-    private AttemptResponse toDto(QuizAttempt a) {
-        // Fetch answers for this attempt
-        List<AnswerBrief> answers = answerRepo.findByAttempt_Id(a.getId())
-                .stream()
-                .map(answer -> new AnswerBrief(
-                        answer.getId(),
-                        answer.getQuestion().getId()))
-                .toList();
-
-        return new AttemptResponse(
-                a.getId(),
-                a.getQuiz().getId(),
-                a.getUser().getId(),
-                a.getQuiz().getQuizType().getName(),
-                a.getQuiz().getQuizSection().getName(),
-                a.getQuiz().getTitle(),
-                a.getSkill(),
-                a.getStatus().name(),
-                a.getTotalQuestions(),
-                a.getTotalCorrect(),
-                a.getScore(),
-                a.getMaxScore(),
-                a.getStartedAt(),
-                a.getSubmittedAt(),
-                answers);
+        return PaginationResponse.from(page.map(attempt -> {
+            List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attempt.getId());
+            return attemptMapper.toResponse(attempt, answers);
+        }), pageable);
     }
 
     @Transactional(readOnly = true)

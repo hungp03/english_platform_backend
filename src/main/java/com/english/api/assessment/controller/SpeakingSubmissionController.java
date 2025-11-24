@@ -1,15 +1,17 @@
 package com.english.api.assessment.controller;
 
 import com.english.api.assessment.dto.request.AICallbackSpeakingRequest;
-import com.english.api.assessment.dto.request.SpeakingSubmissionRequest;
 import com.english.api.assessment.dto.response.SpeakingSubmissionResponse;
 import com.english.api.assessment.service.SpeakingSubmissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -22,9 +24,17 @@ public class SpeakingSubmissionController {
     @Value("${n8n.callback.secret}")
     private String n8nCallbackSecret;
 
-    @PostMapping("/attempts/{attemptId}/answers/{answerId}/speaking")
-    public SpeakingSubmissionResponse submitAudio(@PathVariable UUID attemptId, @PathVariable UUID answerId, @Valid @RequestBody SpeakingSubmissionRequest request) {
-        return speakingSubmissionService.submitAudio(attemptId, answerId, request);
+    /**
+     * Upload audio file and create speaking submission
+     * Accepts audio file directly, uploads to S3, and creates submission automatically
+     */
+    @PostMapping(value = "/attempts/{attemptId}/answers/{answerId}/speaking",
+                 consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public SpeakingSubmissionResponse uploadAndSubmitAudio(
+            @PathVariable UUID attemptId,
+            @PathVariable UUID answerId,
+            @RequestParam("audio") MultipartFile audioFile) throws IOException {
+        return speakingSubmissionService.uploadAndSubmitAudio(attemptId, answerId, audioFile);
     }
 
     @GetMapping("/speaking-submissions/{submissionId}")
