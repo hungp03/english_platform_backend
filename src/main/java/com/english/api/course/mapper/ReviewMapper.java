@@ -1,8 +1,8 @@
-package com.english.api.review.mapper;
+package com.english.api.course.mapper;
 
-import com.english.api.review.dto.response.ReviewResponse;
-import com.english.api.review.dto.response.ReviewSummaryResponse;
-import com.english.api.review.model.CourseReview;
+import com.english.api.course.dto.response.ReviewResponse;
+import com.english.api.course.dto.response.ReviewSummaryResponse;
+import com.english.api.course.model.CourseReview;
 import org.springframework.stereotype.Component;
 
 @Component

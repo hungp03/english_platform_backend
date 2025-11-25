@@ -1,6 +1,6 @@
-package com.english.api.review.repository;
+package com.english.api.course.repository;
 
-import com.english.api.review.model.CourseReview;
+import com.english.api.course.model.CourseReview;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

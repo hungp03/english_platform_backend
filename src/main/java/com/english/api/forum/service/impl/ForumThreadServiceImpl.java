@@ -3,6 +3,8 @@ package com.english.api.forum.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.common.exception.ResourceInvalidException;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.forum.dto.request.ForumThreadCreateRequest;
 import com.english.api.forum.dto.request.ForumThreadUpdateRequest;
 import com.english.api.forum.dto.response.ForumCategoryResponse;
@@ -19,6 +21,8 @@ import com.english.api.forum.repository.ForumThreadRepository;
 import com.english.api.forum.service.ForumThreadService;
 import com.english.api.forum.util.SlugUtil;
 import com.english.api.user.repository.UserRepository;
+import com.google.rpc.context.AttributeContext.Resource;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -202,7 +206,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
         }
         
         if (thread.isLocked()) {
-             throw new IllegalStateException("Bài viết đang bị khóa, không thể chỉnh sửa");
+             throw new ResourceInvalidException("Bài viết đang bị khóa, không thể chỉnh sửa");
         }
 
         // 3. Cập nhật Title & Slug (nếu title thay đổi)
@@ -242,15 +246,15 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     @Transactional
     public void deleteByOwner(UUID id) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        var thread = threadRepo.findById(id).orElseThrow(() -> new RuntimeException("Thread not found"));
+        var thread = threadRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Thread not found"));
 
         if (thread.getAuthorId() == null || !thread.getAuthorId().equals(currentUserId)) {
             throw new AccessDeniedException("Bạn không có quyền xóa bài viết này");
         }
         
-        if (thread.isLocked()) {
-            throw new IllegalStateException("Không thể xóa bài viết đang bị khóa");
-        }
+        // if (thread.isLocked()) {
+        //     throw new ResourceInvalidException("Không thể xóa bài viết đang bị khóa");
+        // }
         List<UUID> postIds = postRepo.findIdsByThread(thread);
         if (!postIds.isEmpty()) {
             reportRepo.deleteByTargetIds(postIds);
@@ -267,7 +271,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     @Override
     @Transactional
     public void adminDelete(UUID id) {
-        var thread = threadRepo.findById(id).orElseThrow(() -> new RuntimeException("Thread not found"));
+        var thread = threadRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Thread not found"));
 
         UUID adminId = SecurityUtil.getCurrentUserId();
         var adminUser = userRepo.findById(adminId).orElse(null);
@@ -299,6 +303,4 @@ public class ForumThreadServiceImpl implements ForumThreadService {
             notificationService.sendNotification(threadAuthorId, title, body);
         }
     }
-
-
 }

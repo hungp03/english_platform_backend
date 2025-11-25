@@ -1,21 +1,21 @@
-package com.english.api.review.service.impl;
+package com.english.api.course.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.*;
 import com.english.api.course.model.Course;
 import com.english.api.course.repository.CourseRepository;
-import com.english.api.enrollment.model.Enrollment;
+
 import com.english.api.enrollment.repository.EnrollmentRepository;
-import com.english.api.review.dto.request.CreateReviewRequest;
-import com.english.api.review.dto.request.UpdateReviewRequest;
-import com.english.api.review.dto.response.CourseRatingStatsResponse;
-import com.english.api.review.dto.response.ReviewResponse;
-import com.english.api.review.dto.response.ReviewSummaryResponse;
-import com.english.api.review.mapper.ReviewMapper;
-import com.english.api.review.model.CourseReview;
-import com.english.api.review.repository.CourseReviewRepository;
-import com.english.api.review.service.ReviewService;
+import com.english.api.course.dto.request.CreateReviewRequest;
+import com.english.api.course.dto.request.UpdateReviewRequest;
+import com.english.api.course.dto.response.CourseRatingStatsResponse;
+import com.english.api.course.dto.response.ReviewResponse;
+import com.english.api.course.dto.response.ReviewSummaryResponse;
+import com.english.api.course.mapper.ReviewMapper;
+import com.english.api.course.model.CourseReview;
+import com.english.api.course.repository.CourseReviewRepository;
+import com.english.api.course.service.ReviewService;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -158,22 +158,6 @@ public class ReviewServiceImpl implements ReviewService {
         
         Page<ReviewSummaryResponse> responsePage = reviewsPage
             .map(reviewMapper::toSummaryResponse);
-        
-        return PaginationResponse.from(responsePage, pageable);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public PaginationResponse getAllReviewsForCourse(UUID courseId, int page, int size) {
-        // Check if course exists
-        if (!courseRepository.existsById(courseId)) {
-            throw new ResourceNotFoundException("Course not found with ID: " + courseId);
-        }
-        
-        Pageable pageable = PageRequest.of(page, size);
-        Page<CourseReview> reviewsPage = reviewRepository.findByCourseId(courseId, pageable);
-        
-        Page<ReviewResponse> responsePage = reviewsPage.map(reviewMapper::toResponse);
         
         return PaginationResponse.from(responsePage, pageable);
     }

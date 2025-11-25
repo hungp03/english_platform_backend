@@ -9,7 +9,7 @@ import com.english.api.common.exception.AccessDeniedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -25,34 +25,35 @@ public class WritingSubmissionController {
     private String n8nCallbackSecret;
 
     @GetMapping("/writing-submissions/{submissionId}")
-    public WritingSubmissionResponse getSubmission(@PathVariable UUID submissionId) {
-        return writingSubmissionService.getSubmission(submissionId);
+    public ResponseEntity<WritingSubmissionResponse> getSubmission(@PathVariable UUID submissionId) {
+        return ResponseEntity.ok(writingSubmissionService.getSubmission(submissionId));
     }
 
     @GetMapping("/attempts/{attemptId}/answers/{answerId}/writing")
-    public WritingSubmissionResponse getSubmissionByAnswer(@PathVariable UUID attemptId, @PathVariable UUID answerId) {
-        return writingSubmissionService.getSubmissionByAnswer(attemptId, answerId).orElse(null);
+    public ResponseEntity<WritingSubmissionResponse> getSubmissionByAnswer(
+            @PathVariable UUID attemptId,
+            @PathVariable UUID answerId) {
+        return ResponseEntity.ok(writingSubmissionService.getSubmissionByAnswer(attemptId, answerId).orElse(null));
     }
 
     @GetMapping("/attempts/{attemptId}/writing-submissions")
-    public WritingSubmissionsWithMetadataResponse getSubmissionsByAttemptId(@PathVariable UUID attemptId) {
-        return writingSubmissionService.getSubmissionsWithMetadata(attemptId);
+    public ResponseEntity<WritingSubmissionsWithMetadataResponse> getSubmissionsByAttemptId(@PathVariable UUID attemptId) {
+        return ResponseEntity.ok(writingSubmissionService.getSubmissionsWithMetadata(attemptId));
     }
 
     @PostMapping("/writing-submissions/{submissionId}/retry")
-    public WritingSubmissionResponse retryGrading(@PathVariable UUID submissionId) {
-        return writingSubmissionService.retryGrading(submissionId);
+    public ResponseEntity<WritingSubmissionResponse> retryGrading(@PathVariable UUID submissionId) {
+        return ResponseEntity.ok(writingSubmissionService.retryGrading(submissionId));
     }
 
     @DeleteMapping("/writing-submissions/{submissionId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSubmission(@PathVariable UUID submissionId) {
+    public ResponseEntity<Void> deleteSubmission(@PathVariable UUID submissionId) {
         writingSubmissionService.deleteSubmission(submissionId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/ai-callback/writing")
-    @ResponseStatus(HttpStatus.OK)
-    public void handleAICallback(
+    public ResponseEntity<Void> handleAICallback(
             @RequestHeader("X-N8N-Secret") String secret,
             @Valid @RequestBody AICallbackWritingRequest request) {
 
@@ -61,5 +62,6 @@ public class WritingSubmissionController {
         }
 
         writingSubmissionService.handleAICallback(request);
+        return ResponseEntity.ok().build();
     }
 }

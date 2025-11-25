@@ -1,6 +1,8 @@
 package com.english.api.quiz.service.impl;
 
 import com.english.api.common.exception.ResourceAlreadyExistsException;
+import com.english.api.common.exception.ResourceInvalidException;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.quiz.dto.request.QuizTypeCreateRequest;
 import com.english.api.quiz.dto.request.QuizTypeUpdateRequest;
 import com.english.api.quiz.dto.response.QuizTypeResponse;
@@ -37,13 +39,13 @@ public class QuizTypeServiceImpl implements com.english.api.quiz.service.QuizTyp
     @Transactional
     public QuizTypeResponse update(UUID id, QuizTypeUpdateRequest req) {
         QuizType entity = quizTypeRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QuizType not found"));
+                .orElseThrow(() -> new ResourceNotFoundException( "QuizType not found"));
         if (req.name() != null) {
             if (req.name().trim().isEmpty()) {
-                throw new IllegalArgumentException("Quiz type name cannot be empty");
+                throw new ResourceInvalidException("Quiz type name cannot be empty");
             }
             if (quizTypeRepository.existsByNameIgnoreCase(req.name().trim())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "QuizType name already exists");
+                throw new ResourceAlreadyExistsException("QuizType name already exists");
             }
             entity.setName(req.name().trim());
         }
@@ -54,14 +56,14 @@ public class QuizTypeServiceImpl implements com.english.api.quiz.service.QuizTyp
     @Transactional
     public void delete(UUID id) {
         QuizType entity = quizTypeRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QuizType not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
         quizTypeRepository.delete(entity);
     }
 
     @Transactional(readOnly = true)
     public QuizTypeResponse get(UUID id) {
         QuizType entity = quizTypeRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "QuizType not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
         return toResponse(entity);
     }
 

@@ -148,17 +148,17 @@ public class QuizServiceImpl implements QuizService {
     @Override
     public PublicQuizDetailResponse getPublicQuiz(UUID id) {
         var quiz = quizRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Quiz not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
         
         QuizSkill skill = quiz.getQuizSection() != null ? quiz.getQuizSection().getSkill() : null;
         boolean shouldLoadOptions = skill != QuizSkill.SPEAKING && skill != QuizSkill.WRITING;
         
         if (shouldLoadOptions) {
             quiz = quizRepository.findWithTreeById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Quiz not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
         } else {
             quiz = quizRepository.findWithTreeByIdWithoutOptions(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Quiz not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
         }
 
         var deduplicatedQuestions = deduplicateQuestions(quiz.getQuestions());

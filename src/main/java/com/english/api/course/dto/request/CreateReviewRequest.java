@@ -1,4 +1,4 @@
-package com.english.api.review.dto.request;
+package com.english.api.course.dto.request;
 
 import jakarta.validation.constraints.*;
 

@@ -1,11 +1,10 @@
-package com.english.api.review.controller;
+package com.english.api.course.controller;
 
 import com.english.api.common.dto.PaginationResponse;
-import com.english.api.review.dto.request.CreateReviewRequest;
-import com.english.api.review.dto.request.UpdateReviewRequest;
-import com.english.api.review.dto.response.CourseRatingStatsResponse;
-import com.english.api.review.dto.response.ReviewResponse;
-import com.english.api.review.service.ReviewService;
+import com.english.api.course.dto.request.CreateReviewRequest;
+import com.english.api.course.dto.request.UpdateReviewRequest;
+import com.english.api.course.dto.response.ReviewResponse;
+import com.english.api.course.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

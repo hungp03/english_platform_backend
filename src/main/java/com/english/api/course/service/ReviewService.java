@@ -1,10 +1,10 @@
-package com.english.api.review.service;
+package com.english.api.course.service;
 
 import com.english.api.common.dto.PaginationResponse;
-import com.english.api.review.dto.request.CreateReviewRequest;
-import com.english.api.review.dto.request.UpdateReviewRequest;
-import com.english.api.review.dto.response.CourseRatingStatsResponse;
-import com.english.api.review.dto.response.ReviewResponse;
+import com.english.api.course.dto.request.CreateReviewRequest;
+import com.english.api.course.dto.request.UpdateReviewRequest;
+import com.english.api.course.dto.response.CourseRatingStatsResponse;
+import com.english.api.course.dto.response.ReviewResponse;
 
 import java.util.UUID;
 
@@ -70,16 +70,6 @@ public interface ReviewService {
      * @return Paginated reviews
      */
     PaginationResponse getReviewsForCourse(UUID courseId, int page, int size);
-    
-    /**
-     * Get all reviews for a course including unpublished (admin only)
-     * 
-     * @param courseId Course ID
-     * @param page Page number
-     * @param size Page size
-     * @return Paginated reviews
-     */
-    PaginationResponse getAllReviewsForCourse(UUID courseId, int page, int size);
     
     /**
      * Get all reviews by current user

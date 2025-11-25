@@ -1,8 +1,8 @@
-package com.english.api.review.controller;
+package com.english.api.course.controller;
 
 import com.english.api.common.dto.PaginationResponse;
-import com.english.api.review.dto.response.CourseRatingStatsResponse;
-import com.english.api.review.service.ReviewService;
+import com.english.api.course.dto.response.CourseRatingStatsResponse;
+import com.english.api.course.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

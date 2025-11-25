@@ -2,6 +2,9 @@ package com.english.api.forum.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.common.exception.ResourceInvalidException;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.forum.dto.request.ForumPostCreateRequest;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.entity.ForumPost;
@@ -97,7 +100,7 @@ public class ForumPostServiceImpl implements ForumPostService {
         var t = threadRepo.findById(threadId).orElseThrow();
 
         if (t.isLocked()) {
-            throw new IllegalStateException("Thread is locked");
+            throw new ResourceInvalidException("Thread is locked");
         }
 
         var p = ForumPost.builder()
@@ -124,7 +127,7 @@ public class ForumPostServiceImpl implements ForumPostService {
         }
         // Lấy thông tin người đang comment để hiển thị tên trong thông báo
         User currentUser = userRepo.findById(currentUserId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         // 1. Gửi thông báo cho chủ thread (nếu người comment không phải chủ thread)
         if (t.getAuthorId() != null && !t.getAuthorId().equals(currentUserId)) {
             notificationService.sendNotification(
@@ -201,7 +204,7 @@ public class ForumPostServiceImpl implements ForumPostService {
         var p = postRepo.findById(postId).orElseThrow();
 
         if (p.getAuthorId() == null || !p.getAuthorId().equals(uid)) {
-            throw new org.springframework.security.access.AccessDeniedException("Only author can delete this post");
+            throw new AccessDeniedException("Only author can delete this post");
         }
 
         performDelete(p);

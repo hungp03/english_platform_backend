@@ -1,6 +1,7 @@
 package com.english.api.quiz.service.impl;
 
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.quiz.dto.request.QuizSectionCreateRequest;
 import com.english.api.quiz.dto.request.QuizSectionUpdateRequest;
 import com.english.api.quiz.dto.response.QuizSectionResponse;
@@ -32,7 +33,7 @@ public class QuizSectionServiceImpl implements QuizSectionService {
     @Transactional
     public QuizSectionResponse create(QuizSectionCreateRequest req) {
         var quizType = typeRepo.findById(req.quizTypeId())
-                .orElseThrow(() -> new IllegalArgumentException("QuizType not found: " + req.quizTypeId()));
+                .orElseThrow(() -> new ResourceNotFoundException("QuizType not found: " + req.quizTypeId()));
 
         var section = QuizSection.builder()
                 .name(req.name())
@@ -49,14 +50,14 @@ public class QuizSectionServiceImpl implements QuizSectionService {
     @Transactional
     public QuizSectionResponse update(UUID id, QuizSectionUpdateRequest req) {
         var section = sectionRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("QuizSection not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found: " + id));
 
         if (req.name() != null) section.setName(req.name());
         if (req.description() != null) section.setDescription(req.description());
         if (req.skill() != null) section.setSkill(req.skill());
         if (req.quizTypeId() != null) {
             var quizType = typeRepo.findById(req.quizTypeId())
-                    .orElseThrow(() -> new IllegalArgumentException("QuizType not found: " + req.quizTypeId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("QuizType not found: " + req.quizTypeId()));
             section.setQuizType(quizType);
         }
 
@@ -74,7 +75,7 @@ public class QuizSectionServiceImpl implements QuizSectionService {
     @Transactional(readOnly = true)
     public QuizSectionResponse get(UUID id) {
         var section = sectionRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("QuizSection not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found: " + id));
         return toDto(section);
     }
 

@@ -16,6 +16,7 @@ import com.english.api.assessment.service.AttemptService;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceNotFoundException;
+import com.english.api.quiz.model.Question;
 import com.english.api.quiz.model.QuestionOption;
 import com.english.api.quiz.model.Quiz;
 import com.english.api.quiz.model.enums.QuizSkill;
@@ -80,14 +81,14 @@ public class AttemptServiceImpl implements AttemptService {
                     continue;
                 total++;
 
-                var question = questionRepo.findById(a.questionId())
+                Question question = questionRepo.findById(a.questionId())
                         .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + a.questionId()));
 
                 QuizAttemptAnswer ans = answerRepo.findByAttempt_IdAndQuestion_Id(savedAttempt.getId(), a.questionId())
                         .orElseGet(() -> QuizAttemptAnswer.of(savedAttempt, question));
 
                 if (a.selectedOptionId() != null) {
-                    var opt = optionRepo.findById(a.selectedOptionId())
+                    QuestionOption opt = optionRepo.findById(a.selectedOptionId())
                             .orElseThrow(
                                     () -> new ResourceNotFoundException("Option not found: " + a.selectedOptionId()));
 
@@ -116,7 +117,7 @@ public class AttemptServiceImpl implements AttemptService {
                 if (a == null || a.questionId() == null)
                     continue;
 
-                var question = questionRepo.findById(a.questionId())
+                Question question = questionRepo.findById(a.questionId())
                         .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + a.questionId()));
 
                 QuizAttemptAnswer ans = answerRepo.findByAttempt_IdAndQuestion_Id(savedAttempt.getId(), a.questionId())

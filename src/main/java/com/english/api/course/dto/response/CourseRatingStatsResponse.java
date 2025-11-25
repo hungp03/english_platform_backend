@@ -1,4 +1,4 @@
-package com.english.api.review.dto.response;
+package com.english.api.course.dto.response;
 
 /**
  * Response DTO for course rating statistics

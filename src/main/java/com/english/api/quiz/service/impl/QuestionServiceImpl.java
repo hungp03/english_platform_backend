@@ -1,6 +1,8 @@
 package com.english.api.quiz.service.impl;
 
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.ResourceAlreadyExistsException;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.quiz.dto.request.QuestionCreateRequest;
 import com.english.api.quiz.dto.request.QuestionOptionCreateRequest;
 import com.english.api.quiz.dto.request.QuestionUpdateRequest;
@@ -11,21 +13,20 @@ import com.english.api.quiz.model.QuestionOption;
 import com.english.api.quiz.model.Quiz;
 import com.english.api.quiz.repository.QuestionRepository;
 import com.english.api.quiz.repository.QuizRepository;
+import com.english.api.quiz.service.QuestionService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class QuestionServiceImpl implements com.english.api.quiz.service.QuestionService {
+public class QuestionServiceImpl implements QuestionService {
 
     private final QuizRepository quizRepository;
     private final QuestionRepository questionRepository;
@@ -33,13 +34,13 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
     @Transactional
     public QuestionResponse create(QuestionCreateRequest req) {
         Quiz quiz = quizRepository.findById(req.quizId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quiz not found"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
+
         if (questionRepository.existsByQuiz_IdAndOrderIndex(req.quizId(), req.orderIndex())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                "Question with orderIndex " + req.orderIndex() + " already exists in this quiz");
+            throw new ResourceAlreadyExistsException(
+                    "Question with orderIndex " + req.orderIndex() + " already exists in this quiz");
         }
-        
+
         Question q = Question.builder()
                 .quiz(quiz)
                 .content(req.content())
@@ -68,20 +69,21 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
     @Transactional
     public QuestionResponse update(UUID id, QuestionUpdateRequest req) {
         Question q = questionRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
 
         if (req.quizId() != null) {
             Quiz quiz = quizRepository.findById(req.quizId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quiz not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
             q.setQuiz(quiz);
         }
-        if (req.content() != null) q.setContent(req.content());
+        if (req.content() != null)
+            q.setContent(req.content());
         if (req.orderIndex() != null) {
             UUID quizId = req.quizId() != null ? req.quizId() : q.getQuiz().getId();
-            if (!req.orderIndex().equals(q.getOrderIndex()) && 
-                questionRepository.existsByQuiz_IdAndOrderIndex(quizId, req.orderIndex())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                    "Question with orderIndex " + req.orderIndex() + " already exists in this quiz");
+            if (!req.orderIndex().equals(q.getOrderIndex()) &&
+                    questionRepository.existsByQuiz_IdAndOrderIndex(quizId, req.orderIndex())) {
+                throw new ResourceAlreadyExistsException(
+                        "Question with orderIndex " + req.orderIndex() + " already exists in this quiz");
             }
             q.setOrderIndex(req.orderIndex());
         }
@@ -110,14 +112,14 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
     @Transactional
     public void delete(UUID id) {
         Question q = questionRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         questionRepository.delete(q);
     }
 
     @Transactional(readOnly = true)
     public QuestionResponse get(UUID id) {
         Question q = questionRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         return toResponse(q);
     }
 
@@ -128,10 +130,11 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
     }
 
     private QuestionResponse toResponse(Question e) {
-        List<QuestionOptionResponse> options = e.getOptions() != null 
+        List<QuestionOptionResponse> options = e.getOptions() != null
                 ? e.getOptions().stream()
-                    .map(op -> new QuestionOptionResponse(op.getId(), op.getContent(), op.isCorrect(), op.getExplanation(), op.getOrderIndex()))
-                    .collect(java.util.stream.Collectors.toList())
+                        .map(op -> new QuestionOptionResponse(op.getId(), op.getContent(), op.isCorrect(),
+                                op.getExplanation(), op.getOrderIndex()))
+                        .collect(java.util.stream.Collectors.toList())
                 : new ArrayList<>();
         return new QuestionResponse(
                 e.getId(),
@@ -140,10 +143,8 @@ public class QuestionServiceImpl implements com.english.api.quiz.service.Questio
                 e.getOrderIndex(),
                 options,
                 e.getCreatedAt(),
-                e.getUpdatedAt()
-        );
+                e.getUpdatedAt());
     }
-
 
     @Override
     @Transactional(readOnly = true)

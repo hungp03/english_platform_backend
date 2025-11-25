@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,42 +34,44 @@ public class SpeakingSubmissionController {
      */
     @PostMapping(value = "/attempts/{attemptId}/answers/{answerId}/speaking",
                  consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public SpeakingSubmissionResponse uploadAndSubmitAudio(
+    public ResponseEntity<SpeakingSubmissionResponse> uploadAndSubmitAudio(
             @PathVariable UUID attemptId,
             @PathVariable UUID answerId,
             @RequestParam("audio") MultipartFile audioFile) throws IOException {
-        return speakingSubmissionService.uploadAndSubmitAudio(attemptId, answerId, audioFile);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(speakingSubmissionService.uploadAndSubmitAudio(attemptId, answerId, audioFile));
     }
 
     @GetMapping("/speaking-submissions/{submissionId}")
-    public SpeakingSubmissionResponse getSubmission(@PathVariable UUID submissionId) {
-        return speakingSubmissionService.getSubmission(submissionId);
+    public ResponseEntity<SpeakingSubmissionResponse> getSubmission(@PathVariable UUID submissionId) {
+        return ResponseEntity.ok(speakingSubmissionService.getSubmission(submissionId));
     }
 
     @GetMapping("/attempts/{attemptId}/answers/{answerId}/speaking")
-    public SpeakingSubmissionResponse getSubmissionByAnswer(@PathVariable UUID attemptId, @PathVariable UUID answerId) {
-        return speakingSubmissionService.getSubmissionByAnswer(attemptId, answerId).orElse(null);
+    public ResponseEntity<SpeakingSubmissionResponse> getSubmissionByAnswer(
+            @PathVariable UUID attemptId,
+            @PathVariable UUID answerId) {
+        return ResponseEntity.ok(speakingSubmissionService.getSubmissionByAnswer(attemptId, answerId).orElse(null));
     }
 
     @GetMapping("/attempts/{attemptId}/speaking-submissions")
-    public SpeakingSubmissionsWithMetadataResponse getSubmissionsByAttemptId(@PathVariable UUID attemptId) {
-        return speakingSubmissionService.getSubmissionsWithMetadata(attemptId);
+    public ResponseEntity<SpeakingSubmissionsWithMetadataResponse> getSubmissionsByAttemptId(@PathVariable UUID attemptId) {
+        return ResponseEntity.ok(speakingSubmissionService.getSubmissionsWithMetadata(attemptId));
     }
 
     @PostMapping("/speaking-submissions/{submissionId}/retry")
-    public SpeakingSubmissionResponse retryGrading(@PathVariable UUID submissionId) {
-        return speakingSubmissionService.retryGrading(submissionId);
+    public ResponseEntity<SpeakingSubmissionResponse> retryGrading(@PathVariable UUID submissionId) {
+        return ResponseEntity.ok(speakingSubmissionService.retryGrading(submissionId));
     }
 
     @DeleteMapping("/speaking-submissions/{submissionId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSubmission(@PathVariable UUID submissionId) {
+    public ResponseEntity<Void> deleteSubmission(@PathVariable UUID submissionId) {
         speakingSubmissionService.deleteSubmission(submissionId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/ai-callback/speaking")
-    @ResponseStatus(HttpStatus.OK)
-    public void handleAICallback(
+    public ResponseEntity<Void> handleAICallback(
             @RequestHeader("X-N8N-Secret") String secret,
             @Valid @RequestBody AICallbackSpeakingRequest request) {
 
@@ -77,5 +80,6 @@ public class SpeakingSubmissionController {
         }
 
         speakingSubmissionService.handleAICallback(request);
+        return ResponseEntity.ok().build();
     }
 }

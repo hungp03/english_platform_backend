@@ -1,4 +1,4 @@
-package com.english.api.review.model;
+package com.english.api.course.model;
 
 import com.english.api.course.model.Course;
 import com.english.api.user.model.User;

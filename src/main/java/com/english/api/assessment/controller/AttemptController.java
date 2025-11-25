@@ -8,6 +8,8 @@ import com.english.api.common.dto.PaginationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -20,30 +22,32 @@ public class AttemptController {
     private final AttemptService attemptService;
 
     @PostMapping("/submit")
-    public AttemptResponse submit(@RequestBody SubmitAttemptRequest req) {
-        return attemptService.submitOneShot(req);
+    public ResponseEntity<AttemptResponse> submit(@RequestBody SubmitAttemptRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(attemptService.submitOneShot(req));
     }
 
     @GetMapping("/{attemptId}")
-    public AttemptResponse get(@PathVariable UUID attemptId) {
-        return attemptService.getAttempt(attemptId);
+    public ResponseEntity<AttemptResponse> get(@PathVariable UUID attemptId) {
+        return ResponseEntity.ok(attemptService.getAttempt(attemptId));
     }
 
     @GetMapping("/my")
-    public PaginationResponse myAttempts(@PageableDefault(size = 20) Pageable pageable,
-                                         @RequestParam(value = "quizId", required = false) UUID quizId) {
-        if (quizId != null) return attemptService.listAttemptsByUserAndQuiz(quizId, pageable);
-        return attemptService.listAttemptsByUser(pageable);
+    public ResponseEntity<PaginationResponse> myAttempts(@PageableDefault(size = 20) Pageable pageable,
+                                                          @RequestParam(value = "quizId", required = false) UUID quizId) {
+        if (quizId != null) {
+            return ResponseEntity.ok(attemptService.listAttemptsByUserAndQuiz(quizId, pageable));
+        }
+        return ResponseEntity.ok(attemptService.listAttemptsByUser(pageable));
     }
 
     @GetMapping
-    public PaginationResponse listByQuiz(@RequestParam("quizId") UUID quizId,
-                                         @PageableDefault(size = 20) Pageable pageable) {
-        return attemptService.listAttemptsByQuiz(quizId, pageable);
+    public ResponseEntity<PaginationResponse> listByQuiz(@RequestParam("quizId") UUID quizId,
+                                                          @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(attemptService.listAttemptsByQuiz(quizId, pageable));
     }
 
     @GetMapping("/{attemptId}/answers")
-    public AttemptAnswersResponse getAnswers(@PathVariable UUID attemptId) {
-        return attemptService.getAttemptAnswers(attemptId);
+    public ResponseEntity<AttemptAnswersResponse> getAnswers(@PathVariable UUID attemptId) {
+        return ResponseEntity.ok(attemptService.getAttemptAnswers(attemptId));
     }
 }

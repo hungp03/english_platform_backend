@@ -1,8 +1,8 @@
-package com.english.api.review.controller;
+package com.english.api.course.controller;
 
 import com.english.api.common.dto.PaginationResponse;
-import com.english.api.review.dto.response.ReviewResponse;
-import com.english.api.review.service.ReviewService;
+import com.english.api.course.dto.response.ReviewResponse;
+import com.english.api.course.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,31 +15,12 @@ import java.util.UUID;
  * Admin moderation operations
  */
 @RestController
-@RequestMapping("/api/admin/reviews")
+@RequestMapping("/api/instructor/reviews")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
-public class AdminReviewController {
+@PreAuthorize("hasRole('INSTRUCTOR')")
+public class InstructorReviewController {
     
     private final ReviewService reviewService;
-    
-    /**
-     * Get all reviews for a course (including unpublished)
-     * GET /api/admin/reviews/courses/{courseId}
-     * 
-     * @param courseId Course ID
-     * @param page Page number (default: 0)
-     * @param size Page size (default: 20)
-     * @return Paginated list of all reviews
-     */
-    @GetMapping("/courses/{courseId}")
-    public ResponseEntity<PaginationResponse> getAllReviewsForCourse(
-            @PathVariable UUID courseId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        
-        PaginationResponse reviews = reviewService.getAllReviewsForCourse(courseId, page, size);
-        return ResponseEntity.ok(reviews);
-    }
     
     /**
      * Hide a review (moderation)
