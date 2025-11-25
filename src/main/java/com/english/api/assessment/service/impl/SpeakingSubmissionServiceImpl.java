@@ -168,13 +168,7 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
         SpeakingSubmission submission = submissionRepo.findById(request.submissionId())
                 .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + request.submissionId()));
 
-        submission.setTranscript(request.transcript());
-        submission.setAiFluency(request.aiFluency());
-        submission.setAiPronunciation(request.aiPronunciation());
-        submission.setAiGrammar(request.aiGrammar());
-        submission.setAiVocabulary(request.aiVocabulary());
-        submission.setAiScore(request.aiScore());
-        submission.setFeedback(request.feedback());
+        mapper.updateFromAICallback(request, submission);
 
         submissionRepo.save(submission);
     }

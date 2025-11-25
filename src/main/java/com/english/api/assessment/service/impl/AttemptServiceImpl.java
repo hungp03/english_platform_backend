@@ -206,88 +206,81 @@ public class AttemptServiceImpl implements AttemptService {
 
     @Transactional(readOnly = true)
     public AttemptAnswersResponse getAttemptAnswers(UUID attemptId) {
-        var attempt = attemptRepo.findById(attemptId)
+        QuizAttempt attempt = attemptRepo.findById(attemptId)
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found"));
 
-        var quiz = quizRepo.findById(attempt.getQuiz().getId())
+        UUID quizId = attempt.getQuiz().getId();
+        Quiz quiz = quizRepo.findById(quizId)
                 .orElseThrow(() -> new IllegalArgumentException("Quiz not found"));
 
-        // 1 query: answers + relations (question, selectedOption)
-        var answers = answerRepo.findByAttempt_Id(attemptId);
-        // Collect questionIds
-        var questionIds = answers.stream()
-                .map(a -> a.getQuestion().getId())
+        List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attemptId);
+
+        List<UUID> questionIds = answers.stream()
+                .map(answer -> answer.getQuestion().getId())
                 .distinct()
                 .toList();
-        // 1 query: all options for these questions
-        var allOptions = optionRepo.findByQuestion_IdIn(questionIds);
 
-        // group all options by questionId
-        var allOptsByQid = allOptions.stream()
-                .collect(Collectors.groupingBy(o -> o.getQuestion().getId()));
+        List<QuestionOption> allOptions = optionRepo.findByQuestion_IdIn(questionIds);
 
-        List<AttemptAnswerItem> items = new ArrayList<>();
+        Map<UUID, List<QuestionOption>> optionsByQuestionId = allOptions.stream()
+                .collect(Collectors.groupingBy(option -> option.getQuestion().getId()));
 
-        for (var a : answers) {
-            var q = a.getQuestion();
-            var selected = a.getSelectedOption();
-            var opts = allOptsByQid.getOrDefault(q.getId(), List.of());
-            var correct = opts.stream().filter(QuestionOption::isCorrect).toList();
+        QuizSkill skill = attempt.getSkill();
+        boolean isGradableSkill = (skill == QuizSkill.LISTENING || skill == QuizSkill.READING);
 
-            Boolean isCorrect = null;
-            if (attempt.getSkill() == QuizSkill.LISTENING || attempt.getSkill() == QuizSkill.READING) {
-                var selId = selected != null ? selected.getId() : null;
-                isCorrect = selId != null && correct.stream().anyMatch(c -> c.getId().equals(selId));
-            }
+        List<AttemptAnswerItem> items = answers.stream()
+                .map(answer -> buildAttemptAnswerItem(answer, optionsByQuestionId, isGradableSkill))
+                .toList();
 
-            var optionReviews = opts.stream()
-                    .sorted(Comparator.comparing(QuestionOption::getOrderIndex,
-                            Comparator.nullsLast(Integer::compareTo)))
-                    .map(o -> new OptionReview(
-                            o.getId(),
-                            o.getContent(),
-                            o.isCorrect(),
-                            selected != null && o.getId().equals(selected.getId())))
-                    .toList();
-
-            items.add(new AttemptAnswerItem(
-                    q.getId(),
-                    q.getContent(),
-                    q.getOrderIndex(),
-                    selected != null ? selected.getId() : null,
-                    selected != null ? selected.getContent() : null,
-                    correct.stream().map(c -> new OptionBrief(c.getId(), c.getContent())).toList(),
-                    isCorrect,
-                    a.getAnswerText(),
-                    a.getTimeSpentMs(),
-                    optionReviews));
-        }
-
-        Integer totalCorrect = (attempt.getSkill() == QuizSkill.LISTENING || attempt.getSkill() == QuizSkill.READING)
-                ? (int) items.stream().filter(i -> Boolean.TRUE.equals(i.isCorrect())).count()
+        Integer totalCorrect = isGradableSkill
+                ? (int) items.stream().filter(item -> Boolean.TRUE.equals(item.isCorrect())).count()
                 : null;
 
-        var typeName = quiz.getQuizType() != null ? quiz.getQuizType().getName() : null;
-        var sectionName = quiz.getQuizSection() != null ? quiz.getQuizSection().getName() : null;
-
-        return new AttemptAnswersResponse(
-                attempt.getId(),
-                quiz.getId(),
-                attempt.getUser().getId(),
-                typeName,
-                sectionName,
-                quiz.getTitle(),
-                attempt.getSkill(),
-                attempt.getStatus().name(),
+        return attemptMapper.toAttemptAnswersResponse(
+                attempt,
+                quiz,
                 items.size(),
                 totalCorrect,
-                attempt.getScore(),
-                attempt.getMaxScore(),
-                attempt.getStartedAt(),
-                attempt.getSubmittedAt(),
-                quiz.getContextText(),
-                quiz.getExplanation(),
                 items);
+    }
+
+    private AttemptAnswerItem buildAttemptAnswerItem(
+            QuizAttemptAnswer answer,
+            Map<UUID, List<QuestionOption>> optionsByQuestionId,
+            boolean isGradableSkill) {
+
+        UUID questionId = answer.getQuestion().getId();
+        String questionContent = answer.getQuestion().getContent();
+        Integer questionOrderIndex = answer.getQuestion().getOrderIndex();
+
+        QuestionOption selectedOption = answer.getSelectedOption();
+        UUID selectedOptionId = selectedOption != null ? selectedOption.getId() : null;
+        String selectedOptionContent = selectedOption != null ? selectedOption.getContent() : null;
+
+        List<QuestionOption> questionOptions = optionsByQuestionId.getOrDefault(questionId, List.of());
+
+        List<QuestionOption> correctOptions = questionOptions.stream()
+                .filter(QuestionOption::isCorrect)
+                .toList();
+
+        Boolean isCorrect = attemptMapper.calculateIsCorrect(selectedOptionId, correctOptions, 
+                answer.getAttempt().getSkill());
+
+        List<OptionReview> optionReviews = attemptMapper.toOptionReviewList(questionOptions, selectedOptionId);
+
+        List<OptionBrief> correctOptionBriefs = attemptMapper.toCorrectOptionBriefs(correctOptions);
+
+        return attemptMapper.toAttemptAnswerItem(
+                questionId,
+                questionContent,
+                questionOrderIndex,
+                selectedOptionId,
+                selectedOptionContent,
+                correctOptionBriefs,
+                isCorrect,
+                answer.getAnswerText(),
+                answer.getTimeSpentMs(),
+                optionReviews);
     }
 
 }
