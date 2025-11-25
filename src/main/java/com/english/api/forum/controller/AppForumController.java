@@ -60,7 +60,7 @@ public class AppForumController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ForumReportResponse> reportThread(@PathVariable UUID id,
                                                             @RequestBody ForumReportCreateRequest body) {
-        var req = new ForumReportCreateRequest(ReportTargetType.THREAD, id, body.reason());
+        ForumReportCreateRequest req = new ForumReportCreateRequest(ReportTargetType.THREAD, id, body.reason());
         return ResponseEntity.ok(reportService.create(req));
     }
 
@@ -68,7 +68,7 @@ public class AppForumController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ForumReportResponse> reportPost(@PathVariable UUID id,
                                                           @RequestBody ForumReportCreateRequest body) {
-        var req = new ForumReportCreateRequest(ReportTargetType.POST, id, body.reason());
+        ForumReportCreateRequest req = new ForumReportCreateRequest(ReportTargetType.POST, id, body.reason());
         return ResponseEntity.ok(reportService.create(req));
     }
 

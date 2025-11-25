@@ -8,6 +8,8 @@ import com.english.api.quiz.model.Question;
 import com.english.api.quiz.model.QuestionOption;
 import com.english.api.quiz.repository.QuestionOptionRepository;
 import com.english.api.quiz.repository.QuestionRepository;
+import com.english.api.quiz.service.QuestionOptionService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,53 +17,53 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class QuestionOptionServiceImpl implements com.english.api.quiz.service.QuestionOptionService {
+public class QuestionOptionServiceImpl implements QuestionOptionService {
 
     private final QuestionRepository questionRepository;
     private final QuestionOptionRepository optionRepository;
 
     @Transactional
-    public QuestionOptionResponse create(UUID questionId, QuestionOptionCreateRequest req) {
+    public QuestionOptionResponse create(UUID questionId, QuestionOptionCreateRequest request) {
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
-        QuestionOption op = QuestionOption.builder()
+        QuestionOption option = QuestionOption.builder()
                 .question(question)
-                .content(req.content())
-                .correct(Boolean.TRUE.equals(req.correct()))
-                .explanation(req.explanation())
-                .orderIndex(req.orderIndex() == null ? 0 : req.orderIndex())
+                .content(request.content())
+                .correct(Boolean.TRUE.equals(request.correct()))
+                .explanation(request.explanation())
+                .orderIndex(request.orderIndex() == null ? 0 : request.orderIndex())
                 .build();
-        op = optionRepository.save(op);
-        return toResponse(op);
+        option = optionRepository.save(option);
+        return toResponse(option);
     }
 
     @Transactional
-    public QuestionOptionResponse update(UUID id, QuestionOptionUpdateRequest req) {
-        QuestionOption op = optionRepository.findById(id)
+    public QuestionOptionResponse update(UUID id, QuestionOptionUpdateRequest request) {
+        QuestionOption option = optionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("QuestionOption not found"));
-        if (req.content() != null) op.setContent(req.content());
-        if (req.correct() != null) op.setCorrect(req.correct());
-        if (req.explanation() != null) op.setExplanation(req.explanation());
-        if (req.orderIndex() != null) op.setOrderIndex(req.orderIndex());
-        op = optionRepository.save(op);
-        return toResponse(op);
+        if (request.content() != null) option.setContent(request.content());
+        if (request.correct() != null) option.setCorrect(request.correct());
+        if (request.explanation() != null) option.setExplanation(request.explanation());
+        if (request.orderIndex() != null) option.setOrderIndex(request.orderIndex());
+        option = optionRepository.save(option);
+        return toResponse(option);
     }
 
     @Transactional
     public void delete(UUID id) {
-        QuestionOption op = optionRepository.findById(id)
+        QuestionOption option = optionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("QuestionOption not found"));
-        optionRepository.delete(op);
+        optionRepository.delete(option);
     }
 
     @Transactional(readOnly = true)
     public QuestionOptionResponse get(UUID id) {
-        QuestionOption op = optionRepository.findById(id)
+        QuestionOption option = optionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("QuestionOption not found"));
-        return toResponse(op);
+        return toResponse(option);
     }
 
-    private QuestionOptionResponse toResponse(QuestionOption e) {
-        return new QuestionOptionResponse(e.getId(), e.getContent(), e.isCorrect(), e.getExplanation(), e.getOrderIndex());
+    private QuestionOptionResponse toResponse(QuestionOption option) {
+        return new QuestionOptionResponse(option.getId(), option.getContent(), option.isCorrect(), option.getExplanation(), option.getOrderIndex());
     }
 }

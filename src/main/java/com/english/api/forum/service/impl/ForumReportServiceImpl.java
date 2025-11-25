@@ -42,20 +42,20 @@ public class ForumReportServiceImpl implements ForumReportService {
     
     @Override
     @Transactional
-    public ForumReportResponse create(ForumReportCreateRequest req) {
+    public ForumReportResponse create(ForumReportCreateRequest request) {
         UUID userId = SecurityUtil.getCurrentUserId();
         
         User user = userRepository.getReferenceById(userId);
 
-        ForumReport entity = ForumReport.builder()
-                .targetType(req.targetType())
-                .targetId(req.targetId())
+        ForumReport report = ForumReport.builder()
+                .targetType(request.targetType())
+                .targetId(request.targetId())
                 .user(user)
-                .reason(req.reason())
+                .reason(request.reason())
                 .build();
         
-        entity = reportRepository.save(entity);
-        return reportMapper.toResponse(entity);
+        report = reportRepository.save(report);
+        return reportMapper.toResponse(report);
     }
 
     @Override
@@ -68,59 +68,59 @@ public class ForumReportServiceImpl implements ForumReportService {
         List<ForumReport> reports = page.getContent();
 
         List<UUID> postIds = reports.stream()
-                .filter(r -> r.getTargetType() == ReportTargetType.POST)
+                .filter(report -> report.getTargetType() == ReportTargetType.POST)
                 .map(ForumReport::getTargetId)
                 .distinct()
                 .toList();
 
         List<UUID> threadIds = reports.stream()
-                .filter(r -> r.getTargetType() == ReportTargetType.THREAD)
+                .filter(report -> report.getTargetType() == ReportTargetType.THREAD)
                 .map(ForumReport::getTargetId)
                 .distinct()
                 .toList();
 
 
         Map<UUID, ForumPost> postMap = postRepository.findAllById(postIds).stream()
-                .collect(Collectors.toMap(ForumPost::getId, p -> p));
+                .collect(Collectors.toMap(ForumPost::getId, post -> post));
 
         Map<UUID, ForumThread> threadMap = threadRepository.findAllById(threadIds).stream()
-                .collect(Collectors.toMap(ForumThread::getId, t -> t));
+                .collect(Collectors.toMap(ForumThread::getId, thread -> thread));
 
-        List<ForumReportResponse> mapped = reports.stream().map(r -> {
+        List<ForumReportResponse> mapped = reports.stream().map(report -> {
             String preview = null;
             Boolean targetPublished = null;
 
-            if (r.getTargetType() == ReportTargetType.POST) {
-                ForumPost p = postMap.get(r.getTargetId());
-                if (p != null) {
-                    preview = p.getBodyMd();
-                    targetPublished = p.isPublished();
+            if (report.getTargetType() == ReportTargetType.POST) {
+                ForumPost post = postMap.get(report.getTargetId());
+                if (post != null) {
+                    preview = post.getBodyMd();
+                    targetPublished = post.isPublished();
                 }
-            } else if (r.getTargetType() == ReportTargetType.THREAD) {
-                ForumThread t = threadMap.get(r.getTargetId());
-                if (t != null) {
-                    preview = t.getSlug();
-                    targetPublished = !t.isLocked();
+            } else if (report.getTargetType() == ReportTargetType.THREAD) {
+                ForumThread thread = threadMap.get(report.getTargetId());
+                if (thread != null) {
+                    preview = thread.getSlug();
+                    targetPublished = !thread.isLocked();
                 }
             }
 
-            String reporterName = r.getUser() != null ? r.getUser().getFullName() : "Unknown";
-            String reporterEmail = r.getUser() != null ? r.getUser().getEmail() : null;
+            String reporterName = report.getUser() != null ? report.getUser().getFullName() : "Unknown";
+            String reporterEmail = report.getUser() != null ? report.getUser().getEmail() : null;
 
-            assert r.getUser() != null;
+            assert report.getUser() != null;
             return new ForumReportResponse(
-                    r.getId(),
-                    r.getTargetType(),
-                    r.getTargetId(),
-                    r.getUser().getId(), // Lấy ID từ object User
+                    report.getId(),
+                    report.getTargetType(),
+                    report.getTargetId(),
+                    report.getUser().getId(), // Lấy ID từ object User
                     reporterName,
                     reporterEmail,
-                    r.getReason(),
+                    report.getReason(),
                     preview,
                     targetPublished,
-                    r.getCreatedAt(),
-                    r.getResolvedAt(),
-                    r.getResolvedBy() != null ? r.getResolvedBy().getFullName() : null // Lấy ID admin
+                    report.getCreatedAt(),
+                    report.getResolvedAt(),
+                    report.getResolvedBy() != null ? report.getResolvedBy().getFullName() : null // Lấy ID admin
             );
         }).toList();
 
@@ -133,18 +133,18 @@ public class ForumReportServiceImpl implements ForumReportService {
         UUID adminId = SecurityUtil.getCurrentUserId();
         User admin = userRepository.getReferenceById(adminId);
 
-        ForumReport r = reportRepository.findById(reportId).orElseThrow();
-        r.setResolvedAt(Instant.now());
-        r.setResolvedBy(admin); // Set entity Admin
+        ForumReport report = reportRepository.findById(reportId).orElseThrow();
+        report.setResolvedAt(Instant.now());
+        report.setResolvedBy(admin); // Set entity Admin
 
-        if (r.getUser() != null) {
+        if (report.getUser() != null) {
             notificationService.sendNotification(
-               r.getUser().getId(),
+               report.getUser().getId(),
                "Report Resolved",
-               "Your report regarding a " + r.getTargetType().toString().toLowerCase() + " has been reviewed and resolved."
+               "Your report regarding a " + report.getTargetType().toString().toLowerCase() + " has been reviewed and resolved."
            );
        }
         
-        return reportMapper.toResponse(reportRepository.save(r));
+        return reportMapper.toResponse(reportRepository.save(report));
     }
 }

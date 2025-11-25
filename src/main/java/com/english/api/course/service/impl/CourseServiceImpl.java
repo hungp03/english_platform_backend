@@ -25,6 +25,7 @@ import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -80,7 +81,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public PaginationResponse getCourses(Pageable pageable, String keyword, String status, String[] skills) {
-        var page = courseRepository.searchWithStats(keyword, status, skills, pageable)
+        Page<CourseWithStatsResponse> page = courseRepository.searchWithStats(keyword, status, skills, pageable)
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
@@ -104,7 +105,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public PaginationResponse getCoursesForInstructor(Pageable pageable, String keyword, String status, String[] skills) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        var page = courseRepository.searchByOwnerWithStats(currentUserId, keyword, status, skills, pageable)
+        Page<CourseWithStatsResponse> page = courseRepository.searchByOwnerWithStats(currentUserId, keyword, status, skills, pageable)
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
@@ -235,7 +236,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public PaginationResponse getPublishedCourses(Pageable pageable, String keyword, String[] skills) {
-        var page = courseRepository.searchWithStats(keyword, "PUBLISHED", skills, pageable)
+        Page<CourseWithStatsResponse> page = courseRepository.searchWithStats(keyword, "PUBLISHED", skills, pageable)
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
@@ -362,7 +363,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public PaginationResponse getPublishedByInstructor(UUID instructorId, Pageable pageable, String keyword, String[] skills) {
-        var page = courseRepository.searchByOwnerWithStats(instructorId, keyword, "PUBLISHED", skills, pageable)
+        Page<CourseWithStatsResponse> page = courseRepository.searchByOwnerWithStats(instructorId, keyword, "PUBLISHED", skills, pageable)
                 .map(projection -> new CourseWithStatsResponse(
                         projection.getId(),
                         projection.getTitle(),
