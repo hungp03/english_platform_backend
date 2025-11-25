@@ -15,6 +15,7 @@ import com.english.api.assessment.repository.WritingSubmissionRepository;
 import com.english.api.assessment.service.AttemptService;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.quiz.model.QuestionOption;
 import com.english.api.quiz.model.Quiz;
 import com.english.api.quiz.model.enums.QuizSkill;
@@ -23,7 +24,6 @@ import com.english.api.quiz.repository.QuestionRepository;
 import com.english.api.quiz.repository.QuizRepository;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -54,7 +54,7 @@ public class AttemptServiceImpl implements AttemptService {
     public AttemptResponse submitOneShot(SubmitAttemptRequest req) {
         UUID userId = SecurityUtil.getCurrentUserId();
         Quiz quiz = quizRepo.findById(req.quizId())
-                .orElseThrow(() -> new EntityNotFoundException("Quiz not found: " + req.quizId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz not found: " + req.quizId()));
 
         QuizSkill skill = quiz.getQuizSection().getSkill();
 
@@ -81,7 +81,7 @@ public class AttemptServiceImpl implements AttemptService {
                 total++;
 
                 var question = questionRepo.findById(a.questionId())
-                        .orElseThrow(() -> new EntityNotFoundException("Question not found: " + a.questionId()));
+                        .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + a.questionId()));
 
                 QuizAttemptAnswer ans = answerRepo.findByAttempt_IdAndQuestion_Id(savedAttempt.getId(), a.questionId())
                         .orElseGet(() -> QuizAttemptAnswer.of(savedAttempt, question));
@@ -89,7 +89,7 @@ public class AttemptServiceImpl implements AttemptService {
                 if (a.selectedOptionId() != null) {
                     var opt = optionRepo.findById(a.selectedOptionId())
                             .orElseThrow(
-                                    () -> new EntityNotFoundException("Option not found: " + a.selectedOptionId()));
+                                    () -> new ResourceNotFoundException("Option not found: " + a.selectedOptionId()));
 
                     ans.setSelectedOption(opt);
                     if (opt.isCorrect())
@@ -117,7 +117,7 @@ public class AttemptServiceImpl implements AttemptService {
                     continue;
 
                 var question = questionRepo.findById(a.questionId())
-                        .orElseThrow(() -> new EntityNotFoundException("Question not found: " + a.questionId()));
+                        .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + a.questionId()));
 
                 QuizAttemptAnswer ans = answerRepo.findByAttempt_IdAndQuestion_Id(savedAttempt.getId(), a.questionId())
                         .orElseGet(() -> QuizAttemptAnswer.of(savedAttempt, question));
@@ -166,7 +166,7 @@ public class AttemptServiceImpl implements AttemptService {
     @Transactional(readOnly = true)
     public AttemptResponse getAttempt(UUID attemptId) {
         QuizAttempt attempt = attemptRepo.findById(attemptId)
-                .orElseThrow(() -> new EntityNotFoundException("Attempt not found: " + attemptId));
+                .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
         List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attemptId);
         return attemptMapper.toResponse(attempt, answers);
     }
@@ -207,11 +207,11 @@ public class AttemptServiceImpl implements AttemptService {
     @Transactional(readOnly = true)
     public AttemptAnswersResponse getAttemptAnswers(UUID attemptId) {
         QuizAttempt attempt = attemptRepo.findById(attemptId)
-                .orElseThrow(() -> new IllegalArgumentException("Attempt not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Attempt not found"));
 
         UUID quizId = attempt.getQuiz().getId();
         Quiz quiz = quizRepo.findById(quizId)
-                .orElseThrow(() -> new IllegalArgumentException("Quiz not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
 
         List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attemptId);
 

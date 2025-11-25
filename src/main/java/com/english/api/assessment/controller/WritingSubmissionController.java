@@ -2,7 +2,10 @@ package com.english.api.assessment.controller;
 
 import com.english.api.assessment.dto.request.AICallbackWritingRequest;
 import com.english.api.assessment.dto.response.WritingSubmissionResponse;
+import com.english.api.assessment.dto.response.WritingSubmissionsWithMetadataResponse;
 import com.english.api.assessment.service.WritingSubmissionService;
+import com.english.api.common.exception.AccessDeniedException;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +34,11 @@ public class WritingSubmissionController {
         return writingSubmissionService.getSubmissionByAnswer(attemptId, answerId).orElse(null);
     }
 
+    @GetMapping("/attempts/{attemptId}/writing-submissions")
+    public WritingSubmissionsWithMetadataResponse getSubmissionsByAttemptId(@PathVariable UUID attemptId) {
+        return writingSubmissionService.getSubmissionsWithMetadata(attemptId);
+    }
+
     @PostMapping("/writing-submissions/{submissionId}/retry")
     public WritingSubmissionResponse retryGrading(@PathVariable UUID submissionId) {
         return writingSubmissionService.retryGrading(submissionId);
@@ -49,7 +57,7 @@ public class WritingSubmissionController {
             @Valid @RequestBody AICallbackWritingRequest request) {
 
         if (!secret.equals(n8nCallbackSecret)) {
-            throw new SecurityException("Invalid callback secret");
+            throw new AccessDeniedException("Invalid callback secret");
         }
 
         writingSubmissionService.handleAICallback(request);

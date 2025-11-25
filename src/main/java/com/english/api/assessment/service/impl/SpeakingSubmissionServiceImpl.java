@@ -2,10 +2,15 @@ package com.english.api.assessment.service.impl;
 
 import com.english.api.assessment.dto.request.AICallbackSpeakingRequest;
 import com.english.api.assessment.dto.response.SpeakingSubmissionResponse;
+import com.english.api.assessment.dto.response.SpeakingSubmissionsWithMetadataResponse;
 import com.english.api.assessment.event.SpeakingSubmissionCreatedEvent;
 import com.english.api.assessment.mapper.SpeakingSubmissionMapper;
 import com.english.api.assessment.model.QuizAttempt;
 import com.english.api.common.dto.MediaUploadResponse;
+import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.common.exception.ResourceAlreadyExistsException;
+import com.english.api.common.exception.ResourceInvalidException;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.common.service.MediaService;
 import com.english.api.assessment.model.QuizAttemptAnswer;
 import com.english.api.assessment.model.SpeakingSubmission;
@@ -14,7 +19,6 @@ import com.english.api.assessment.repository.QuizAttemptRepository;
 import com.english.api.assessment.repository.SpeakingSubmissionRepository;
 import com.english.api.assessment.service.SpeakingSubmissionService;
 import com.english.api.auth.util.SecurityUtil;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -23,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,33 +50,33 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
 
         // Validate attempt and answer ownership
         QuizAttempt attempt = attemptRepo.findById(attemptId)
-                .orElseThrow(() -> new EntityNotFoundException("Attempt not found: " + attemptId));
+                .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
 
         if (!attempt.getUser().getId().equals(userId)) {
-            throw new SecurityException("Not authorized to access this attempt");
+            throw new AccessDeniedException("Not authorized to access this attempt");
         }
 
         QuizAttemptAnswer answer = answerRepo.findById(answerId)
-                .orElseThrow(() -> new EntityNotFoundException("Answer not found: " + answerId));
+                .orElseThrow(() -> new ResourceNotFoundException("Answer not found: " + answerId));
 
         if (!answer.getAttempt().getId().equals(attemptId)) {
-            throw new IllegalArgumentException("Answer does not belong to the specified attempt");
+            throw new ResourceInvalidException("Answer does not belong to the specified attempt");
         }
 
         // Check if submission already exists (1-1 relationship)
         if (submissionRepo.existsByAttemptAnswer_Id(answerId)) {
-            throw new IllegalStateException("A speaking submission already exists for this answer. Use retryGrading to reprocess or delete the existing submission first.");
+            throw new ResourceAlreadyExistsException("A speaking submission already exists for this answer. Use retryGrading to reprocess or delete the existing submission first.");
         }
 
         // Validate audio file
         if (audioFile.isEmpty()) {
-            throw new IllegalArgumentException("Audio file is empty");
+            throw new ResourceInvalidException("Audio file is empty");
         }
 
         // Check file type
         String contentType = audioFile.getContentType();
         if (contentType == null || !contentType.startsWith("audio/")) {
-            throw new IllegalArgumentException("File must be an audio file");
+            throw new ResourceInvalidException("File must be an audio file");
         }
 
         // Upload audio to S3
@@ -98,11 +103,11 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     @Transactional(readOnly = true)
     public SpeakingSubmissionResponse getSubmission(UUID submissionId) {
         SpeakingSubmission submission = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + submissionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + submissionId));
 
         UUID userId = SecurityUtil.getCurrentUserId();
         if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
-            throw new SecurityException("Not authorized to access this submission");
+            throw new AccessDeniedException("Not authorized to access this submission");
         }
 
         return mapper.toResponse(submission);
@@ -114,14 +119,14 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
         UUID userId = SecurityUtil.getCurrentUserId();
 
         QuizAttempt attempt = attemptRepo.findById(attemptId)
-                .orElseThrow(() -> new EntityNotFoundException("Attempt not found: " + attemptId));
+                .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
 
         if (!attempt.getUser().getId().equals(userId)) {
-            throw new SecurityException("Not authorized to access this attempt");
+            throw new AccessDeniedException("Not authorized to access this attempt");
         }
 
         QuizAttemptAnswer answer = answerRepo.findById(answerId)
-                .orElseThrow(() -> new EntityNotFoundException("Answer not found: " + answerId));
+                .orElseThrow(() -> new ResourceNotFoundException("Answer not found: " + answerId));
 
         if (!answer.getAttempt().getId().equals(attemptId)) {
             throw new IllegalArgumentException("Answer does not belong to the specified attempt");
@@ -132,14 +137,33 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public SpeakingSubmissionsWithMetadataResponse getSubmissionsWithMetadata(UUID attemptId) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+
+        QuizAttempt attempt = attemptRepo.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
+
+        if (!attempt.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Not authorized to access this attempt");
+        }
+
+        List<SpeakingSubmissionResponse> submissions = submissionRepo.findByAttemptAnswer_Attempt_Id(attemptId).stream()
+                .map(mapper::toResponse)
+                .toList();
+
+        return mapper.toSubmissionsWithMetadataResponse(attempt, submissions);
+    }
+
+    @Override
     @Transactional
     public SpeakingSubmissionResponse retryGrading(UUID submissionId) {
         SpeakingSubmission submission = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + submissionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + submissionId));
 
         UUID userId = SecurityUtil.getCurrentUserId();
         if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
-            throw new SecurityException("Not authorized to access this submission");
+            throw new AccessDeniedException("Not authorized to access this submission");
         }
 
         // Publish event - trigger will run after transaction commits
@@ -152,11 +176,11 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     @Transactional
     public void deleteSubmission(UUID submissionId) {
         SpeakingSubmission submission = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + submissionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + submissionId));
 
         UUID userId = SecurityUtil.getCurrentUserId();
         if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
-            throw new SecurityException("Not authorized to delete this submission");
+            throw new AccessDeniedException("Not authorized to delete this submission");
         }
 
         submissionRepo.delete(submission);
@@ -166,7 +190,7 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     @Transactional
     public void handleAICallback(AICallbackSpeakingRequest request) {
         SpeakingSubmission submission = submissionRepo.findById(request.submissionId())
-                .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + request.submissionId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + request.submissionId()));
 
         mapper.updateFromAICallback(request, submission);
 

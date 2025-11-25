@@ -1,6 +1,7 @@
 package com.english.api.quiz.service.impl;
 
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.quiz.dto.request.QuizCreateRequest;
 import com.english.api.quiz.dto.request.QuizUpdateRequest;
 import com.english.api.quiz.dto.response.PublicQuizDetailResponse;
@@ -15,7 +16,6 @@ import com.english.api.quiz.repository.QuizRepository;
 import com.english.api.quiz.repository.QuizSectionRepository;
 import com.english.api.quiz.repository.QuizTypeRepository;
 import com.english.api.quiz.service.QuizService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,7 +51,7 @@ public class QuizServiceImpl implements QuizService {
 
     public QuizResponse create(QuizCreateRequest r) {
         QuizType type = quizTypeRepo.findById(r.quizTypeId())
-                .orElseThrow(() -> new EntityNotFoundException("QuizType not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
 
         Quiz q = new Quiz();
         q.setTitle(r.title());
@@ -64,7 +64,7 @@ public class QuizServiceImpl implements QuizService {
 
         if (r.quizSectionId() != null) {
             var section = quizSectionRepo.findById(r.quizSectionId())
-                    .orElseThrow(() -> new EntityNotFoundException("QuizSection not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found"));
             q.setQuizSection(section);
         }
 
@@ -86,17 +86,17 @@ public class QuizServiceImpl implements QuizService {
         }
         if (r.quizTypeId() != null) {
             QuizType type = quizTypeRepo.findById(r.quizTypeId())
-                    .orElseThrow(() -> new EntityNotFoundException("QuizType not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
             q.setQuizType(type);
         }
         if (r.quizSectionId() != null) {
             var section = quizSectionRepo.findById(r.quizSectionId())
-                    .orElseThrow(() -> new EntityNotFoundException("QuizSection not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found"));
             q.setQuizSection(section);
         }
         if (r.quizSectionId() != null) {
             var section = quizSectionRepo.findById(r.quizSectionId())
-                    .orElseThrow(() -> new EntityNotFoundException("QuizSection not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found"));
             q.setQuizSection(section);
         }
         if (r.contextText() != null) {
@@ -110,7 +110,7 @@ public class QuizServiceImpl implements QuizService {
         }
         if (r.quizSectionId() != null) {
             var section = quizSectionRepo.findById(r.quizSectionId())
-                    .orElseThrow(() -> new EntityNotFoundException("QuizSection not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found"));
             q.setQuizSection(section);
         }
 
@@ -129,7 +129,7 @@ public class QuizServiceImpl implements QuizService {
 
     private Quiz findById(UUID id) {
         return quizRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Quiz not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
     }
 
     @Override

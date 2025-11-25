@@ -2,7 +2,10 @@ package com.english.api.assessment.controller;
 
 import com.english.api.assessment.dto.request.AICallbackSpeakingRequest;
 import com.english.api.assessment.dto.response.SpeakingSubmissionResponse;
+import com.english.api.assessment.dto.response.SpeakingSubmissionsWithMetadataResponse;
 import com.english.api.assessment.service.SpeakingSubmissionService;
+import com.english.api.common.exception.AccessDeniedException;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +50,11 @@ public class SpeakingSubmissionController {
         return speakingSubmissionService.getSubmissionByAnswer(attemptId, answerId).orElse(null);
     }
 
+    @GetMapping("/attempts/{attemptId}/speaking-submissions")
+    public SpeakingSubmissionsWithMetadataResponse getSubmissionsByAttemptId(@PathVariable UUID attemptId) {
+        return speakingSubmissionService.getSubmissionsWithMetadata(attemptId);
+    }
+
     @PostMapping("/speaking-submissions/{submissionId}/retry")
     public SpeakingSubmissionResponse retryGrading(@PathVariable UUID submissionId) {
         return speakingSubmissionService.retryGrading(submissionId);
@@ -65,7 +73,7 @@ public class SpeakingSubmissionController {
             @Valid @RequestBody AICallbackSpeakingRequest request) {
 
         if (!secret.equals(n8nCallbackSecret)) {
-            throw new SecurityException("Invalid callback secret");
+            throw new AccessDeniedException("Invalid callback secret");
         }
 
         speakingSubmissionService.handleAICallback(request);

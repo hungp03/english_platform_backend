@@ -2,6 +2,7 @@ package com.english.api.assessment.service.impl;
 
 import com.english.api.assessment.dto.request.AICallbackWritingRequest;
 import com.english.api.assessment.dto.response.WritingSubmissionResponse;
+import com.english.api.assessment.dto.response.WritingSubmissionsWithMetadataResponse;
 import com.english.api.assessment.mapper.WritingSubmissionMapper;
 import com.english.api.assessment.model.QuizAttempt;
 import com.english.api.assessment.model.QuizAttemptAnswer;
@@ -11,9 +12,11 @@ import com.english.api.assessment.repository.QuizAttemptRepository;
 import com.english.api.assessment.repository.WritingSubmissionRepository;
 import com.english.api.assessment.service.WritingSubmissionService;
 import com.english.api.auth.util.SecurityUtil;
+import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.common.exception.ResourceInvalidException;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.quiz.model.Question;
 import com.english.api.quiz.model.Quiz;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,11 +49,11 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
     @Transactional(readOnly = true)
     public WritingSubmissionResponse getSubmission(UUID submissionId) {
         WritingSubmission submission = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + submissionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + submissionId));
 
         UUID userId = SecurityUtil.getCurrentUserId();
         if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
-            throw new SecurityException("Not authorized to access this submission");
+            throw new AccessDeniedException("Not authorized to access this submission");
         }
 
         return mapper.toResponse(submission);
@@ -61,17 +65,17 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
         UUID userId = SecurityUtil.getCurrentUserId();
 
         QuizAttempt attempt = attemptRepo.findById(attemptId)
-                .orElseThrow(() -> new EntityNotFoundException("Attempt not found: " + attemptId));
+                .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
 
         if (!attempt.getUser().getId().equals(userId)) {
-            throw new SecurityException("Not authorized to access this attempt");
+            throw new AccessDeniedException("Not authorized to access this attempt");
         }
 
         QuizAttemptAnswer answer = answerRepo.findById(answerId)
-                .orElseThrow(() -> new EntityNotFoundException("Answer not found: " + answerId));
+                .orElseThrow(() -> new ResourceNotFoundException("Answer not found: " + answerId));
 
         if (!answer.getAttempt().getId().equals(attemptId)) {
-            throw new IllegalArgumentException("Answer does not belong to the specified attempt");
+            throw new ResourceInvalidException("Answer does not belong to the specified attempt");
         }
 
         return submissionRepo.findByAttemptAnswer_Id(answerId)
@@ -79,14 +83,33 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public WritingSubmissionsWithMetadataResponse getSubmissionsWithMetadata(UUID attemptId) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+
+        QuizAttempt attempt = attemptRepo.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
+
+        if (!attempt.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Not authorized to access this attempt");
+        }
+
+        List<WritingSubmissionResponse> submissions = submissionRepo.findByAttemptAnswer_Attempt_Id(attemptId).stream()
+                .map(mapper::toResponse)
+                .toList();
+
+        return mapper.toSubmissionsWithMetadataResponse(attempt, submissions);
+    }
+
+    @Override
     @Transactional
     public WritingSubmissionResponse retryGrading(UUID submissionId) {
         WritingSubmission submission = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + submissionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + submissionId));
 
         UUID userId = SecurityUtil.getCurrentUserId();
         if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
-            throw new SecurityException("Not authorized to access this submission");
+            throw new AccessDeniedException("Not authorized to access this submission");
         }
 
         // Trigger n8n workflow again for retry
@@ -99,11 +122,11 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
     @Transactional
     public void deleteSubmission(UUID submissionId) {
         WritingSubmission submission = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + submissionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + submissionId));
 
         UUID userId = SecurityUtil.getCurrentUserId();
         if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
-            throw new SecurityException("Not authorized to delete this submission");
+            throw new AccessDeniedException("Not authorized to delete this submission");
         }
 
         submissionRepo.delete(submission);
@@ -113,7 +136,7 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
     @Transactional
     public void handleAICallback(AICallbackWritingRequest request) {
         WritingSubmission submission = submissionRepo.findById(request.submissionId())
-                .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + request.submissionId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + request.submissionId()));
 
         mapper.updateFromAICallback(request, submission);
 

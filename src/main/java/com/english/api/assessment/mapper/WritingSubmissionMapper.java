@@ -2,10 +2,14 @@ package com.english.api.assessment.mapper;
 
 import com.english.api.assessment.dto.request.AICallbackWritingRequest;
 import com.english.api.assessment.dto.response.WritingSubmissionResponse;
+import com.english.api.assessment.dto.response.WritingSubmissionsWithMetadataResponse;
+import com.english.api.assessment.model.QuizAttempt;
 import com.english.api.assessment.model.WritingSubmission;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+
+import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface WritingSubmissionMapper {
@@ -17,4 +21,18 @@ public interface WritingSubmissionMapper {
     @Mapping(target = "attemptAnswer", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     void updateFromAICallback(AICallbackWritingRequest request, @MappingTarget WritingSubmission submission);
+
+    @Mapping(target = "attemptId", source = "attempt.id")
+    @Mapping(target = "quizId", source = "attempt.quiz.id")
+    @Mapping(target = "quizType", source = "attempt.quiz.quizType.name")
+    @Mapping(target = "quizSection", source = "attempt.quiz.quizSection.name")
+    @Mapping(target = "quizName", source = "attempt.quiz.title")
+    @Mapping(target = "skill", source = "attempt.skill")
+    @Mapping(target = "status", expression = "java(attempt.getStatus().name())")
+    @Mapping(target = "totalQuestions", source = "attempt.totalQuestions")
+    @Mapping(target = "startedAt", source = "attempt.startedAt")
+    @Mapping(target = "submittedAt", source = "attempt.submittedAt")
+    @Mapping(target = "contextText", source = "attempt.quiz.contextText")
+    @Mapping(target = "submissions", source = "submissions")
+    WritingSubmissionsWithMetadataResponse toSubmissionsWithMetadataResponse(QuizAttempt attempt, List<WritingSubmissionResponse> submissions);
 }
