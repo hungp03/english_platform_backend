@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import com.english.api.blog.dto.request.BlogCategoryCreateRequest;
 import com.english.api.blog.dto.request.BlogCategoryUpdateRequest;
 import com.english.api.blog.dto.response.BlogCategoryResponse;
+import com.english.api.blog.mapper.BlogMapper;
 import com.english.api.blog.model.BlogCategory;
 import com.english.api.blog.repository.BlogCategoryRepository;
 import com.english.api.blog.repository.BlogPostRepository;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BlogCategoryServiceImpl implements BlogCategoryService {
     private final BlogCategoryRepository categoryRepository;
     private final BlogPostRepository postRepository;
+    private final BlogMapper blogMapper;
 
     @Override
     @Transactional
@@ -36,9 +38,9 @@ public class BlogCategoryServiceImpl implements BlogCategoryService {
         String slug = generateSlug(req.slug(), req.name());
         validateSlug(slug);
         ensureSlugNotExists(slug);
-        BlogCategory category = buildCategory(req, slug);
+        BlogCategory category = blogMapper.toEntity(req, slug);
         category = categoryRepository.save(category);
-        return toResponse(category);
+        return blogMapper.toResponse(category);
     }
 
     private String generateSlug(String providedSlug, String name) {
@@ -59,20 +61,12 @@ public class BlogCategoryServiceImpl implements BlogCategoryService {
         }
     }
 
-    private BlogCategory buildCategory(BlogCategoryCreateRequest req, String slug) {
-        return BlogCategory.builder()
-                .name(req.name())
-                .slug(slug)
-                .description(req.description())
-                .build();
-    }
-
     @Override
     @Transactional
     public BlogCategoryResponse update(UUID id, BlogCategoryUpdateRequest req) {
         BlogCategory category = findCategoryById(id);
         applyUpdates(category, req);
-        return toResponse(category);
+        return blogMapper.toResponse(category);
     }
 
     private BlogCategory findCategoryById(UUID id) {
@@ -104,6 +98,7 @@ public class BlogCategoryServiceImpl implements BlogCategoryService {
             throw new ResourceAlreadyExistsException("Slug already exists");
         }
     }
+
     @Override
     @Transactional
     public void delete(UUID id) {
@@ -120,20 +115,12 @@ public class BlogCategoryServiceImpl implements BlogCategoryService {
     public BlogCategoryResponse get(UUID id) {
         BlogCategory category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
-        return toResponse(category);
+        return blogMapper.toResponse(category);
     }
 
     @Override
     public PaginationResponse list(Pageable pageable) {
-        Page<BlogCategoryResponse> page = categoryRepository.findAll(pageable).map(this::toResponse);
+        Page<BlogCategoryResponse> page = categoryRepository.findAll(pageable).map(blogMapper::toResponse);
         return PaginationResponse.from(page, pageable);
-    }
-
-    private BlogCategoryResponse toResponse(BlogCategory blogCategory) {
-        return new BlogCategoryResponse(blogCategory.getId(),
-                blogCategory.getName(),
-                blogCategory.getSlug(),
-                blogCategory.getDescription(),
-                blogCategory.getCreatedAt());
     }
 }

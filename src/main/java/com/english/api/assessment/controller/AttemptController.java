@@ -1,12 +1,13 @@
 package com.english.api.assessment.controller;
 
 import com.english.api.assessment.dto.request.SubmitAttemptRequest;
+import com.english.api.assessment.dto.response.AttemptAnswersResponse;
 import com.english.api.assessment.dto.response.AttemptResponse;
 import com.english.api.assessment.service.AttemptService;
 import com.english.api.common.dto.PaginationResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -29,19 +30,20 @@ public class AttemptController {
     }
 
     @GetMapping("/my")
-    public PaginationResponse myAttempts(@RequestParam(value = "page", defaultValue = "1") int page,
-                                         @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
+    public PaginationResponse myAttempts(@PageableDefault(size = 20) Pageable pageable,
                                          @RequestParam(value = "quizId", required = false) UUID quizId) {
-        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), pageSize);
         if (quizId != null) return attemptService.listAttemptsByUserAndQuiz(quizId, pageable);
         return attemptService.listAttemptsByUser(pageable);
     }
 
     @GetMapping
     public PaginationResponse listByQuiz(@RequestParam("quizId") UUID quizId,
-                                         @RequestParam(value = "page", defaultValue = "1") int page,
-                                         @RequestParam(value = "pageSize", defaultValue = "20") int pageSize) {
-        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), pageSize);
+                                         @PageableDefault(size = 20) Pageable pageable) {
         return attemptService.listAttemptsByQuiz(quizId, pageable);
+    }
+
+    @GetMapping("/{attemptId}/answers")
+    public AttemptAnswersResponse getAnswers(@PathVariable UUID attemptId) {
+        return attemptService.getAttemptAnswers(attemptId);
     }
 }

@@ -31,6 +31,16 @@ public interface QuizRepository extends JpaRepository<Quiz, UUID>, JpaSpecificat
 
     @Query("""
             select distinct qz from Quiz qz
+            left join fetch qz.quizType
+            left join fetch qz.quizSection
+            left join fetch qz.questions q
+            where qz.id = :id
+            order by q.orderIndex
+            """)
+    Optional<Quiz> findWithTreeByIdWithoutOptions(UUID id);
+
+    @Query("""
+            select distinct qz from Quiz qz
             left join qz.quizType qt
             left join qz.quizSection qs
             where (:keyword is null or :keyword = '' 

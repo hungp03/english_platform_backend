@@ -115,12 +115,7 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
         WritingSubmission submission = submissionRepo.findById(request.submissionId())
                 .orElseThrow(() -> new EntityNotFoundException("Submission not found: " + request.submissionId()));
 
-        submission.setAiTaskResponse(request.aiTaskResponse());
-        submission.setAiCoherence(request.aiCoherence());
-        submission.setAiGrammar(request.aiGrammar());
-        submission.setAiVocabulary(request.aiVocabulary());
-        submission.setAiScore(request.aiScore());
-        submission.setFeedback(request.feedback());
+        mapper.updateFromAICallback(request, submission);
 
         submissionRepo.save(submission);
     }
