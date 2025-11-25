@@ -9,6 +9,7 @@ import com.english.api.quiz.dto.response.QuizResponse;
 import com.english.api.quiz.mapper.QuizMapper;
 import com.english.api.quiz.model.Question;
 import com.english.api.quiz.model.Quiz;
+import com.english.api.quiz.model.QuizSection;
 import com.english.api.quiz.model.QuizType;
 import com.english.api.quiz.model.enums.QuizSkill;
 import com.english.api.quiz.model.enums.QuizStatus;
@@ -49,77 +50,67 @@ public class QuizServiceImpl implements QuizService {
         return quizMapper.toQuizResponse(findById(id));
     }
 
-    public QuizResponse create(QuizCreateRequest r) {
-        QuizType type = quizTypeRepo.findById(r.quizTypeId())
+    public QuizResponse create(QuizCreateRequest request) {
+        QuizType type = quizTypeRepo.findById(request.quizTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
 
-        Quiz q = new Quiz();
-        q.setTitle(r.title());
-        q.setDescription(r.description());
-        q.setStatus(r.status() == null ? QuizStatus.DRAFT : r.status());
-        q.setQuizType(type);
-        q.setContextText(r.contextText());
-        q.setQuestionText(r.questionText());
-        q.setExplanation(r.explanation());
+        Quiz quiz = new Quiz();
+        quiz.setTitle(request.title());
+        quiz.setDescription(request.description());
+        quiz.setStatus(request.status() == null ? QuizStatus.DRAFT : request.status());
+        quiz.setQuizType(type);
+        quiz.setContextText(request.contextText());
+        quiz.setQuestionText(request.questionText());
+        quiz.setExplanation(request.explanation());
 
-        if (r.quizSectionId() != null) {
-            var section = quizSectionRepo.findById(r.quizSectionId())
+        if (request.quizSectionId() != null) {
+            QuizSection section = quizSectionRepo.findById(request.quizSectionId())
                     .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found"));
-            q.setQuizSection(section);
+            quiz.setQuizSection(section);
         }
 
-        quizRepository.save(q);
-        return quizMapper.toQuizResponse(q);
+        quizRepository.save(quiz);
+        return quizMapper.toQuizResponse(quiz);
     }
 
-    public QuizResponse update(UUID id, QuizUpdateRequest r) {
-        Quiz q = findById(id);
+    public QuizResponse update(UUID id, QuizUpdateRequest request) {
+        Quiz quiz = findById(id);
 
-        if (r.title() != null) {
-            q.setTitle(r.title());
+        if (request.title() != null) {
+            quiz.setTitle(request.title());
         }
-        if (r.description() != null) {
-            q.setDescription(r.description());
+        if (request.description() != null) {
+            quiz.setDescription(request.description());
         }
-        if (r.status() != null) {
-            q.setStatus(r.status());
+        if (request.status() != null) {
+            quiz.setStatus(request.status());
         }
-        if (r.quizTypeId() != null) {
-            QuizType type = quizTypeRepo.findById(r.quizTypeId())
+        if (request.quizTypeId() != null) {
+            QuizType type = quizTypeRepo.findById(request.quizTypeId())
                     .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
-            q.setQuizType(type);
+            quiz.setQuizType(type);
         }
-        if (r.quizSectionId() != null) {
-            var section = quizSectionRepo.findById(r.quizSectionId())
+        if (request.quizSectionId() != null) {
+            QuizSection section = quizSectionRepo.findById(request.quizSectionId())
                     .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found"));
-            q.setQuizSection(section);
+            quiz.setQuizSection(section);
         }
-        if (r.quizSectionId() != null) {
-            var section = quizSectionRepo.findById(r.quizSectionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found"));
-            q.setQuizSection(section);
+        if (request.contextText() != null) {
+            quiz.setContextText(request.contextText());
         }
-        if (r.contextText() != null) {
-            q.setContextText(r.contextText());
+        if (request.questionText() != null) {
+            quiz.setQuestionText(request.questionText());
         }
-        if (r.questionText() != null) {
-            q.setQuestionText(r.questionText());
-        }
-        if (r.explanation() != null) {
-            q.setExplanation(r.explanation());
-        }
-        if (r.quizSectionId() != null) {
-            var section = quizSectionRepo.findById(r.quizSectionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found"));
-            q.setQuizSection(section);
+        if (request.explanation() != null) {
+            quiz.setExplanation(request.explanation());
         }
 
-        quizRepository.save(q);
-        return quizMapper.toQuizResponse(q);
+        quizRepository.save(quiz);
+        return quizMapper.toQuizResponse(quiz);
     }
 
     public PaginationResponse publicQuizBySection(UUID sectionId, Pageable pageable) {
-        var page = quizRepository.findByQuizSectionIdAndStatus(sectionId, QuizStatus.PUBLISHED, pageable);
+        Page<Quiz> page = quizRepository.findByQuizSectionIdAndStatus(sectionId, QuizStatus.PUBLISHED, pageable);
         return PaginationResponse.from(page.map(quizMapper::toQuizListResponse), pageable);
     }
 
@@ -147,7 +138,7 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public PublicQuizDetailResponse getPublicQuiz(UUID id) {
-        var quiz = quizRepository.findById(id)
+        Quiz quiz = quizRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
         
         QuizSkill skill = quiz.getQuizSection() != null ? quiz.getQuizSection().getSkill() : null;
@@ -161,7 +152,7 @@ public class QuizServiceImpl implements QuizService {
                     .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
         }
 
-        var deduplicatedQuestions = deduplicateQuestions(quiz.getQuestions());
+        List<Question> deduplicatedQuestions = deduplicateQuestions(quiz.getQuestions());
         return quizMapper.toPublicQuizDetailResponse(quiz, deduplicatedQuestions);
     }
 

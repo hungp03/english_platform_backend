@@ -32,96 +32,96 @@ public class QuestionServiceImpl implements QuestionService {
     private final QuestionRepository questionRepository;
 
     @Transactional
-    public QuestionResponse create(QuestionCreateRequest req) {
-        Quiz quiz = quizRepository.findById(req.quizId())
+    public QuestionResponse create(QuestionCreateRequest request) {
+        Quiz quiz = quizRepository.findById(request.quizId())
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
 
-        if (questionRepository.existsByQuiz_IdAndOrderIndex(req.quizId(), req.orderIndex())) {
+        if (questionRepository.existsByQuiz_IdAndOrderIndex(request.quizId(), request.orderIndex())) {
             throw new ResourceAlreadyExistsException(
-                    "Question with orderIndex " + req.orderIndex() + " already exists in this quiz");
+                    "Question with orderIndex " + request.orderIndex() + " already exists in this quiz");
         }
 
-        Question q = Question.builder()
+        Question question = Question.builder()
                 .quiz(quiz)
                 .content(req.content())
                 .explanation(req.explanation())
                 .orderIndex(req.orderIndex())
                 .build();
 
-        if (req.options() != null && !req.options().isEmpty()) {
-            List<QuestionOption> opts = new ArrayList<>();
-            for (QuestionOptionCreateRequest o : req.options()) {
-                QuestionOption op = QuestionOption.builder()
-                        .question(q)
-                        .content(o.content())
-                        .correct(Boolean.TRUE.equals(o.correct()))
-                        .explanation(o.explanation())
-                        .orderIndex(o.orderIndex() == null ? 1 : o.orderIndex())
+        if (request.options() != null && !request.options().isEmpty()) {
+            List<QuestionOption> options = new ArrayList<>();
+            for (QuestionOptionCreateRequest optionRequest : request.options()) {
+                QuestionOption option = QuestionOption.builder()
+                        .question(question)
+                        .content(optionRequest.content())
+                        .correct(Boolean.TRUE.equals(optionRequest.correct()))
+                        .explanation(optionRequest.explanation())
+                        .orderIndex(optionRequest.orderIndex() == null ? 1 : optionRequest.orderIndex())
                         .build();
-                opts.add(op);
+                options.add(option);
             }
-            q.setOptions(new java.util.LinkedHashSet<>(opts));
+            question.setOptions(new java.util.LinkedHashSet<>(options));
         }
 
-        q = questionRepository.save(q);
-        return toResponse(q);
+        question = questionRepository.save(question);
+        return toResponse(question);
     }
 
     @Transactional
-    public QuestionResponse update(UUID id, QuestionUpdateRequest req) {
-        Question q = questionRepository.findById(id)
+    public QuestionResponse update(UUID id, QuestionUpdateRequest request) {
+        Question question = questionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
 
-        if (req.quizId() != null) {
-            Quiz quiz = quizRepository.findById(req.quizId())
+        if (request.quizId() != null) {
+            Quiz quiz = quizRepository.findById(request.quizId())
                     .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
-            q.setQuiz(quiz);
+            question.setQuiz(quiz);
         }
-        if (req.content() != null)
-            q.setContent(req.content());
-        if (req.orderIndex() != null) {
-            UUID quizId = req.quizId() != null ? req.quizId() : q.getQuiz().getId();
-            if (!req.orderIndex().equals(q.getOrderIndex()) &&
-                    questionRepository.existsByQuiz_IdAndOrderIndex(quizId, req.orderIndex())) {
+        if (request.content() != null)
+            question.setContent(request.content());
+        if (request.orderIndex() != null) {
+            UUID quizId = request.quizId() != null ? request.quizId() : question.getQuiz().getId();
+            if (!request.orderIndex().equals(question.getOrderIndex()) &&
+                    questionRepository.existsByQuiz_IdAndOrderIndex(quizId, request.orderIndex())) {
                 throw new ResourceAlreadyExistsException(
-                        "Question with orderIndex " + req.orderIndex() + " already exists in this quiz");
+                        "Question with orderIndex " + request.orderIndex() + " already exists in this quiz");
             }
-            q.setOrderIndex(req.orderIndex());
+            question.setOrderIndex(request.orderIndex());
         }
 
-        if (req.options() != null) {
-            if (q.getOptions() == null) {
-                q.setOptions(new java.util.LinkedHashSet<>());
+        if (request.options() != null) {
+            if (question.getOptions() == null) {
+                question.setOptions(new java.util.LinkedHashSet<>());
             }
-            q.getOptions().clear();
-            for (QuestionOptionCreateRequest o : req.options()) {
-                QuestionOption op = QuestionOption.builder()
-                        .question(q)
-                        .content(o.content())
-                        .correct(Boolean.TRUE.equals(o.correct()))
-                        .explanation(o.explanation())
-                        .orderIndex(o.orderIndex() == null ? 1 : o.orderIndex())
+            question.getOptions().clear();
+            for (QuestionOptionCreateRequest optionRequest : request.options()) {
+                QuestionOption option = QuestionOption.builder()
+                        .question(question)
+                        .content(optionRequest.content())
+                        .correct(Boolean.TRUE.equals(optionRequest.correct()))
+                        .explanation(optionRequest.explanation())
+                        .orderIndex(optionRequest.orderIndex() == null ? 1 : optionRequest.orderIndex())
                         .build();
-                q.getOptions().add(op);
+                question.getOptions().add(option);
             }
         }
 
-        q = questionRepository.save(q);
-        return toResponse(q);
+        question = questionRepository.save(question);
+        return toResponse(question);
     }
 
     @Transactional
     public void delete(UUID id) {
-        Question q = questionRepository.findById(id)
+        Question question = questionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
-        questionRepository.delete(q);
+        questionRepository.delete(question);
     }
 
     @Transactional(readOnly = true)
     public QuestionResponse get(UUID id) {
-        Question q = questionRepository.findById(id)
+        Question question = questionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
-        return toResponse(q);
+        return toResponse(question);
     }
 
     @Transactional(readOnly = true)
@@ -130,18 +130,18 @@ public class QuestionServiceImpl implements QuestionService {
         return PaginationResponse.from(page.map(this::toResponse), pageable);
     }
 
-    private QuestionResponse toResponse(Question e) {
-        List<QuestionOptionResponse> options = e.getOptions() != null
-                ? e.getOptions().stream()
-                        .map(op -> new QuestionOptionResponse(op.getId(), op.getContent(), op.isCorrect(),
-                                op.getExplanation(), op.getOrderIndex()))
+    private QuestionResponse toResponse(Question question) {
+        List<QuestionOptionResponse> options = question.getOptions() != null
+                ? question.getOptions().stream()
+                        .map(option -> new QuestionOptionResponse(option.getId(), option.getContent(), option.isCorrect(),
+                                option.getExplanation(), option.getOrderIndex()))
                         .collect(java.util.stream.Collectors.toList())
                 : new ArrayList<>();
         return new QuestionResponse(
-                e.getId(),
-                e.getQuiz().getId(),
-                e.getContent(),
-                e.getOrderIndex(),
+                question.getId(),
+                question.getQuiz().getId(),
+                question.getContent(),
+                question.getOrderIndex(),
                 options,
                 e.getExplanation(),
                 e.getCreatedAt(),

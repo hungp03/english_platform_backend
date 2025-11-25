@@ -6,10 +6,13 @@ import com.english.api.quiz.dto.request.QuizSectionCreateRequest;
 import com.english.api.quiz.dto.request.QuizSectionUpdateRequest;
 import com.english.api.quiz.dto.response.QuizSectionResponse;
 import com.english.api.quiz.model.QuizSection;
+import com.english.api.quiz.model.QuizType;
 import com.english.api.quiz.repository.QuizSectionRepository;
 import com.english.api.quiz.repository.QuizTypeRepository;
 import com.english.api.quiz.service.QuizSectionService;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,14 +34,14 @@ public class QuizSectionServiceImpl implements QuizSectionService {
 
     @Override
     @Transactional
-    public QuizSectionResponse create(QuizSectionCreateRequest req) {
-        var quizType = typeRepo.findById(req.quizTypeId())
-                .orElseThrow(() -> new ResourceNotFoundException("QuizType not found: " + req.quizTypeId()));
+    public QuizSectionResponse create(QuizSectionCreateRequest request) {
+        QuizType quizType = typeRepo.findById(request.quizTypeId())
+                .orElseThrow(() -> new ResourceNotFoundException("QuizType not found: " + request.quizTypeId()));
 
-        var section = QuizSection.builder()
-                .name(req.name())
-                .description(req.description())
-                .skill(req.skill())
+        QuizSection section = QuizSection.builder()
+                .name(request.name())
+                .description(request.description())
+                .skill(request.skill())
                 .quizType(quizType)
                 .build();
 
@@ -48,16 +51,16 @@ public class QuizSectionServiceImpl implements QuizSectionService {
 
     @Override
     @Transactional
-    public QuizSectionResponse update(UUID id, QuizSectionUpdateRequest req) {
-        var section = sectionRepo.findById(id)
+    public QuizSectionResponse update(UUID id, QuizSectionUpdateRequest request) {
+        QuizSection section = sectionRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found: " + id));
 
-        if (req.name() != null) section.setName(req.name());
-        if (req.description() != null) section.setDescription(req.description());
-        if (req.skill() != null) section.setSkill(req.skill());
-        if (req.quizTypeId() != null) {
-            var quizType = typeRepo.findById(req.quizTypeId())
-                    .orElseThrow(() -> new ResourceNotFoundException("QuizType not found: " + req.quizTypeId()));
+        if (request.name() != null) section.setName(request.name());
+        if (request.description() != null) section.setDescription(request.description());
+        if (request.skill() != null) section.setSkill(request.skill());
+        if (request.quizTypeId() != null) {
+            QuizType quizType = typeRepo.findById(request.quizTypeId())
+                    .orElseThrow(() -> new ResourceNotFoundException("QuizType not found: " + request.quizTypeId()));
             section.setQuizType(quizType);
         }
 
@@ -74,7 +77,7 @@ public class QuizSectionServiceImpl implements QuizSectionService {
     @Override
     @Transactional(readOnly = true)
     public QuizSectionResponse get(UUID id) {
-        var section = sectionRepo.findById(id)
+        QuizSection section = sectionRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("QuizSection not found: " + id));
         return toDto(section);
     }
@@ -82,17 +85,17 @@ public class QuizSectionServiceImpl implements QuizSectionService {
     @Override
     @Transactional(readOnly = true)
     public PaginationResponse page(int page, int pageSize) {
-        var pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
-        var p = sectionRepo.findAll(pageable).map(this::toDto);
-        return PaginationResponse.from(p, pageable);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
+        Page<QuizSectionResponse> pageResponse = sectionRepo.findAll(pageable).map(this::toDto);
+        return PaginationResponse.from(pageResponse, pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaginationResponse pageByQuizType(UUID quizTypeId, int page, int pageSize) {
-        var pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
-        var p = sectionRepo.findByQuizTypeId(quizTypeId, pageable).map(this::toDto);
-        return PaginationResponse.from(p, pageable);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
+        Page<QuizSectionResponse> pageResponse = sectionRepo.findByQuizTypeId(quizTypeId, pageable).map(this::toDto);
+        return PaginationResponse.from(pageResponse, pageable);
     }
 
     @Override
@@ -104,16 +107,16 @@ public class QuizSectionServiceImpl implements QuizSectionService {
                 .toList();
     }
 
-    private QuizSectionResponse toDto(QuizSection s) {
+    private QuizSectionResponse toDto(QuizSection section) {
         return new QuizSectionResponse(
-                s.getId(),
-                s.getName(),
-                s.getDescription(),
-                s.getSkill() != null ? s.getSkill().name() : null,
-                s.getQuizType() != null ? s.getQuizType().getId() : null,
-                s.getQuizType() != null ? s.getQuizType().getName() : null,
-                s.getCreatedAt() != null ? ISO.format(s.getCreatedAt()) : null,
-                s.getUpdatedAt() != null ? ISO.format(s.getUpdatedAt()) : null
+                section.getId(),
+                section.getName(),
+                section.getDescription(),
+                section.getSkill() != null ? section.getSkill().name() : null,
+                section.getQuizType() != null ? section.getQuizType().getId() : null,
+                section.getQuizType() != null ? section.getQuizType().getName() : null,
+                section.getCreatedAt() != null ? ISO.format(section.getCreatedAt()) : null,
+                section.getUpdatedAt() != null ? ISO.format(section.getUpdatedAt()) : null
         );
     }
 }

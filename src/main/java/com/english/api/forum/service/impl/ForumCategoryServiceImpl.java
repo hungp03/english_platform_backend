@@ -34,14 +34,14 @@ public class ForumCategoryServiceImpl implements ForumCategoryService {
         }else{
             slugName = SlugUtil.slugify(request.slug());
         }
-        var category = ForumCategory.builder().name(request.name()).slug(slugName).description(request.description()).build();
+        ForumCategory category = ForumCategory.builder().name(request.name()).slug(slugName).description(request.description()).build();
         return toDto(categoryRepo.save(category));
     }
 
     @Override
     @Transactional
     public ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest request) {
-        var category = categoryRepo.findById(id).orElseThrow();
+        ForumCategory category = categoryRepo.findById(id).orElseThrow();
 
         if (request.name() != null) {
             category.setName(request.name());

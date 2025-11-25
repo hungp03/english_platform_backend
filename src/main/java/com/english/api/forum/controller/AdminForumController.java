@@ -84,7 +84,7 @@ public class AdminForumController {
             @RequestParam(defaultValue = "20") int pageSize
     ) {
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
-        var t = (type == null) ? ReportTargetType.THREAD : type;
+        ReportTargetType t = (type == null) ? ReportTargetType.THREAD : type;
         return ResponseEntity.ok(reportService.list(t, onlyOpen, pageable));
     }
 

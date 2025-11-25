@@ -8,63 +8,62 @@ import com.english.api.quiz.dto.request.QuizTypeUpdateRequest;
 import com.english.api.quiz.dto.response.QuizTypeResponse;
 import com.english.api.quiz.model.QuizType;
 import com.english.api.quiz.repository.QuizTypeRepository;
+import com.english.api.quiz.service.QuizTypeService;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class QuizTypeServiceImpl implements com.english.api.quiz.service.QuizTypeService {
+public class QuizTypeServiceImpl implements QuizTypeService {
 
     private final QuizTypeRepository quizTypeRepository;
 
     @Transactional
-    public QuizTypeResponse create(QuizTypeCreateRequest req) {
-        if (quizTypeRepository.existsByNameIgnoreCase(req.name().trim())) {
+    public QuizTypeResponse create(QuizTypeCreateRequest request) {
+        if (quizTypeRepository.existsByNameIgnoreCase(request.name().trim())) {
             throw new ResourceAlreadyExistsException("QuizType name already exists");
         }
-        QuizType entity = QuizType.builder()
-                .name(req.name().trim())
-                .description(req.description())
+        QuizType quizType = QuizType.builder()
+                .name(request.name().trim())
+                .description(request.description())
                 .build();
-        entity = quizTypeRepository.save(entity);
-        return toResponse(entity);
+        quizType = quizTypeRepository.save(quizType);
+        return toResponse(quizType);
     }
 
     @Transactional
-    public QuizTypeResponse update(UUID id, QuizTypeUpdateRequest req) {
-        QuizType entity = quizTypeRepository.findById(id)
+    public QuizTypeResponse update(UUID id, QuizTypeUpdateRequest request) {
+        QuizType quizType = quizTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException( "QuizType not found"));
-        if (req.name() != null) {
-            if (req.name().trim().isEmpty()) {
+        if (request.name() != null) {
+            if (request.name().trim().isEmpty()) {
                 throw new ResourceInvalidException("Quiz type name cannot be empty");
             }
-            if (quizTypeRepository.existsByNameIgnoreCase(req.name().trim())) {
+            if (quizTypeRepository.existsByNameIgnoreCase(request.name().trim())) {
                 throw new ResourceAlreadyExistsException("QuizType name already exists");
             }
-            entity.setName(req.name().trim());
+            quizType.setName(request.name().trim());
         }
-        if (req.description() != null) entity.setDescription(req.description());
-        return toResponse(quizTypeRepository.save(entity));
+        if (request.description() != null) quizType.setDescription(request.description());
+        return toResponse(quizTypeRepository.save(quizType));
     }
 
     @Transactional
     public void delete(UUID id) {
-        QuizType entity = quizTypeRepository.findById(id)
+        QuizType quizType = quizTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
-        quizTypeRepository.delete(entity);
+        quizTypeRepository.delete(quizType);
     }
 
     @Transactional(readOnly = true)
     public QuizTypeResponse get(UUID id) {
-        QuizType entity = quizTypeRepository.findById(id)
+        QuizType quizType = quizTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
-        return toResponse(entity);
+        return toResponse(quizType);
     }
 
     @Transactional(readOnly = true)
@@ -72,14 +71,14 @@ public class QuizTypeServiceImpl implements com.english.api.quiz.service.QuizTyp
         return quizTypeRepository.findAll().stream().map(this::toResponse).toList();
     }
 
-    private QuizTypeResponse toResponse(QuizType e) {
+    private QuizTypeResponse toResponse(QuizType quizType) {
         return new QuizTypeResponse(
-                e.getId(),
-                // e.getCode(),
-                e.getName(),
-                e.getDescription(),
-                e.getCreatedAt(),
-                e.getUpdatedAt()
+                quizType.getId(),
+                // quizType.getCode(),
+                quizType.getName(),
+                quizType.getDescription(),
+                quizType.getCreatedAt(),
+                quizType.getUpdatedAt()
         );
     }
 }

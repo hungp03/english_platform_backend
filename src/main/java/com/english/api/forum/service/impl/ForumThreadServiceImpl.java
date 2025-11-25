@@ -20,9 +20,8 @@ import com.english.api.forum.repository.ForumThreadCategoryRepository;
 import com.english.api.forum.repository.ForumThreadRepository;
 import com.english.api.forum.service.ForumThreadService;
 import com.english.api.forum.util.SlugUtil;
+import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
-import com.google.rpc.context.AttributeContext.Resource;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -54,13 +53,13 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     public PaginationResponse listPublic(String keyword, UUID categoryId, Boolean locked, Pageable pageable) {
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
         Page<ForumThread> page = threadRepo.search(normalizedKeyword, categoryId, locked, pageable);
-        var threadListResponses = page.getContent().stream().map(this::toListDto).toList();
+        List<ForumThreadListResponse> threadListResponses = page.getContent().stream().map(this::toListDto).toList();
         return PaginationResponse.from(new PageImpl<>(threadListResponses, pageable, page.getTotalElements()), pageable);
     }
 
     @Override
     public ForumThreadResponse getBySlug(String slug) {
-        var thread = threadRepo.findBySlug(slug).orElseThrow();
+        ForumThread thread = threadRepo.findBySlug(slug).orElseThrow();
         return toDto(thread);
     }
 
@@ -69,7 +68,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     @Transactional
     public void increaseView(UUID threadId) {
         try {
-            var thread = threadRepo.findById(threadId).orElseThrow();
+            ForumThread thread = threadRepo.findById(threadId).orElseThrow();
             thread.setViewCount(thread.getViewCount() + 1);
             threadRepo.save(thread);
         } catch (Exception e) {
@@ -87,7 +86,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
         String slug = SlugUtil.ensureUnique(SlugUtil.slugify(base),
                 s -> threadRepo.findBySlug(s).isPresent());
 
-        var thread = ForumThread.builder()
+        ForumThread thread = ForumThread.builder()
                 .authorId(currentUserId)
                 .title(request.title())
                 .slug(slug)
@@ -111,7 +110,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     @Override
     @Transactional
     public ForumThreadResponse adminLock(UUID id, boolean lock) {
-        var thread = threadRepo.findById(id).orElseThrow();
+        ForumThread thread = threadRepo.findById(id).orElseThrow();
         thread.setLocked(lock);
         thread = threadRepo.save(thread);
         return toDto(thread);
@@ -121,7 +120,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     @Transactional
     public ForumThreadResponse lockByOwner(UUID id, boolean lock) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        var thread = threadRepo.findById(id).orElseThrow();
+        ForumThread thread = threadRepo.findById(id).orElseThrow();
         if (thread.getAuthorId() == null || !thread.getAuthorId().equals(currentUserId)) {
             throw new AccessDeniedException("Only thread owner can lock/unlock this thread");
         }
@@ -141,15 +140,15 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     public PaginationResponse listByAuthor(UUID authorId, Pageable pageable) {
         // UUID currentUserId = SecurityUtil.getCurrentUserId();
         Page<ForumThread> page = threadRepo.findByAuthorIdOrderByCreatedAtDesc(authorId, pageable);
-        var threadListResponses = page.getContent().stream()
+        List<ForumThreadListResponse> threadListResponses = page.getContent().stream()
                 .map(this::toListDto) // đã có sẵn trong class
                 .toList();
         return PaginationResponse.from(new PageImpl<>(threadListResponses, pageable, page.getTotalElements()), pageable);
     }
 
     private ForumThreadResponse toDto(ForumThread thread) {
-        var threadCategories = threadCatRepo.findByThread(thread);
-        var categoryResponses = threadCategories.stream()
+        List<ForumThreadCategory> threadCategories = threadCatRepo.findByThread(thread);
+        List<ForumCategoryResponse> categoryResponses = threadCategories.stream()
                 .map(ForumThreadCategory::getCategory)
                 .map(category -> new ForumCategoryResponse(
                         category.getId(), category.getName(), category.getSlug(), category.getDescription(), category.getCreatedAt()))
@@ -157,7 +156,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
 
         String authorName = null, authorAvatar = null;
         if (thread.getAuthorId() != null) {
-            var user = userRepo.findById(thread.getAuthorId()).orElse(null);
+            User user = userRepo.findById(thread.getAuthorId()).orElse(null);
             if (user != null) {
                 authorName = user.getFullName();
                 authorAvatar = user.getAvatarUrl();
@@ -172,8 +171,8 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     }
 
     private ForumThreadListResponse toListDto(ForumThread thread) {
-        var threadCategories = threadCatRepo.findByThread(thread);
-        var categoryResponses = threadCategories.stream()
+        List<ForumThreadCategory> threadCategories = threadCatRepo.findByThread(thread);
+        List<ForumCategoryResponse> categoryResponses = threadCategories.stream()
                 .map(ForumThreadCategory::getCategory)
                 .map(category -> new ForumCategoryResponse(
                         category.getId(), category.getName(), category.getSlug(), category.getDescription(), category.getCreatedAt()))
@@ -181,7 +180,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
 
         String authorName = null, authorAvatar = null;
         if (thread.getAuthorId() != null) {
-            var user = userRepo.findById(thread.getAuthorId()).orElse(null);
+            User user = userRepo.findById(thread.getAuthorId()).orElse(null);
             if (user != null) {
                 authorName = user.getFullName();
                 authorAvatar = user.getAvatarUrl();
@@ -199,7 +198,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     @Transactional
     public ForumThreadResponse updateByOwner(UUID id, ForumThreadUpdateRequest req) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        var thread = threadRepo.findById(id).orElseThrow();
+        ForumThread thread = threadRepo.findById(id).orElseThrow();
 
         if (thread.getAuthorId() == null || !thread.getAuthorId().equals(currentUserId)) {
             throw new AccessDeniedException("Bạn không có quyền sửa bài viết này");
@@ -224,7 +223,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
         }
 
         if (req.categoryIds() != null) {
-            var oldLinks = threadCatRepo.findByThread(thread);
+            List<ForumThreadCategory> oldLinks = threadCatRepo.findByThread(thread);
             threadCatRepo.deleteAll(oldLinks);
 
             if (!req.categoryIds().isEmpty()) {
@@ -246,7 +245,7 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     @Transactional
     public void deleteByOwner(UUID id) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        var thread = threadRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Thread not found"));
+        ForumThread thread = threadRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Thread not found"));
 
         if (thread.getAuthorId() == null || !thread.getAuthorId().equals(currentUserId)) {
             throw new AccessDeniedException("Bạn không có quyền xóa bài viết này");
@@ -271,10 +270,10 @@ public class ForumThreadServiceImpl implements ForumThreadService {
     @Override
     @Transactional
     public void adminDelete(UUID id) {
-        var thread = threadRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Thread not found"));
+        ForumThread thread = threadRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Thread not found"));
 
         UUID adminId = SecurityUtil.getCurrentUserId();
-        var adminUser = userRepo.findById(adminId).orElse(null);
+        User adminUser = userRepo.findById(adminId).orElse(null);
         String adminName = adminUser != null ? adminUser.getFullName() : "Quản trị viên";
 
         UUID threadAuthorId = thread.getAuthorId();

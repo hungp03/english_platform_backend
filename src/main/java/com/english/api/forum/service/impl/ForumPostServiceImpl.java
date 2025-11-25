@@ -8,6 +8,7 @@ import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.forum.dto.request.ForumPostCreateRequest;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.entity.ForumPost;
+import com.english.api.forum.entity.ForumThread;
 import com.english.api.forum.repository.ForumPostRepository;
 import com.english.api.forum.repository.ForumReportRepository;
 import com.english.api.forum.repository.ForumThreadRepository;
@@ -38,22 +39,22 @@ public class ForumPostServiceImpl implements ForumPostService {
 
     @Override
     public PaginationResponse listByThread(UUID threadId, Pageable pageable, boolean onlyPublished) {
-        var thread = threadRepo.findById(threadId).orElseThrow();
+        ForumThread thread = threadRepo.findById(threadId).orElseThrow();
 
         // 1. Lấy page bình thường như cũ
         Page<ForumPost> page = onlyPublished
                 ? postRepo.findByThreadAndPublishedOrderByCreatedAtAsc(thread, true, pageable)
                 : postRepo.findByThreadOrderByCreatedAtAsc(thread, pageable);
 
-        var postsInPage = page.getContent();
+        List<ForumPost> postsInPage = page.getContent();
 
         // 2. Lấy id các post trong page
-        var pageIds = postsInPage.stream()
+        Set<UUID> pageIds = postsInPage.stream()
                 .map(ForumPost::getId)
                 .collect(Collectors.toSet());
 
         // 3. Tìm các parentId của post trong page, loại null, loại những thằng đã có trong page
-        var missingParentIds = postsInPage.stream()
+        Set<UUID> missingParentIds = postsInPage.stream()
                 .map(ForumPost::getParent)
                 .filter(Objects::nonNull)
                 .map(ForumPost::getId)
@@ -69,17 +70,17 @@ public class ForumPostServiceImpl implements ForumPostService {
         missingParents.sort(Comparator.comparing(ForumPost::getCreatedAt));
 
         // 5. Map DTO: post trong page (chính)
-        var mainDtos = postsInPage.stream()
+        List<ForumPostResponse> mainDtos = postsInPage.stream()
                 .map(this::toDto)
                 .toList();
 
         // 6. Map DTO: parent bổ sung
-        var parentDtos = missingParents.stream()
+        List<ForumPostResponse> parentDtos = missingParents.stream()
                 .map(this::toDto)
                 .toList();
 
         // 7. Gộp lại: result = [20 post trong page] + [các parent bổ sung]
-        var combined = new ArrayList<>(mainDtos.size() + parentDtos.size());
+        ArrayList<ForumPostResponse> combined = new ArrayList<>(mainDtos.size() + parentDtos.size());
         combined.addAll(mainDtos);
         combined.addAll(parentDtos);
 
@@ -95,45 +96,45 @@ public class ForumPostServiceImpl implements ForumPostService {
 
     @Override
     @Transactional
-    public ForumPostResponse create(UUID threadId, ForumPostCreateRequest req) {
+    public ForumPostResponse create(UUID threadId, ForumPostCreateRequest request) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        var t = threadRepo.findById(threadId).orElseThrow();
+        ForumThread thread = threadRepo.findById(threadId).orElseThrow();
 
-        if (t.isLocked()) {
+        if (thread.isLocked()) {
             throw new ResourceInvalidException("Thread is locked");
         }
 
-        var p = ForumPost.builder()
-                .thread(t)
-                .parent(req.parentId() == null ? null : ForumPost.builder().id(req.parentId()).build())
+        ForumPost post = ForumPost.builder()
+                .thread(thread)
+                .parent(request.parentId() == null ? null : ForumPost.builder().id(request.parentId()).build())
                 .authorId(currentUserId)
-                .bodyMd(req.bodyMd())
+                .bodyMd(request.bodyMd())
                 .published(true)
                 .build();
 
-        p = postRepo.save(p);
+        post = postRepo.save(post);
 
-        t.setReplyCount(t.getReplyCount() + 1);
-        t.setLastPostAt(Instant.now());
-        t.setLastPostId(p.getId());
-        t.setLastPostAuthor(currentUserId);
-        threadRepo.save(t);
+        thread.setReplyCount(thread.getReplyCount() + 1);
+        thread.setLastPostAt(Instant.now());
+        thread.setLastPostId(post.getId());
+        thread.setLastPostAuthor(currentUserId);
+        threadRepo.save(thread);
 
 
         // Xác định parent post nếu có
         ForumPost parentPost = null;
-        if (req.parentId() != null) {
-            parentPost = postRepo.findById(req.parentId()).orElse(null);
+        if (request.parentId() != null) {
+            parentPost = postRepo.findById(request.parentId()).orElse(null);
         }
         // Lấy thông tin người đang comment để hiển thị tên trong thông báo
         User currentUser = userRepo.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         // 1. Gửi thông báo cho chủ thread (nếu người comment không phải chủ thread)
-        if (t.getAuthorId() != null && !t.getAuthorId().equals(currentUserId)) {
+        if (thread.getAuthorId() != null && !thread.getAuthorId().equals(currentUserId)) {
             notificationService.sendNotification(
-                    t.getAuthorId(),
+                    thread.getAuthorId(),
                     "Phản hồi mới trong chủ đề của bạn",
-                    currentUser.getFullName() + " đã bình luận trong chủ đề của bạn: \"" + t.getTitle() + "\""
+                    currentUser.getFullName() + " đã bình luận trong chủ đề của bạn: \"" + thread.getTitle() + "\""
             );
         }
 
@@ -141,58 +142,58 @@ public class ForumPostServiceImpl implements ForumPostService {
         if (parentPost != null && parentPost.getAuthorId() != null
             && !parentPost.getAuthorId().equals(currentUserId)) {
             // Tránh gửi trùng nếu chủ thread cũng là chủ comment cha
-            if (!parentPost.getAuthorId().equals(t.getAuthorId())) {
+            if (!parentPost.getAuthorId().equals(thread.getAuthorId())) {
                 notificationService.sendNotification(
                         parentPost.getAuthorId(),
                         "Phản hồi mới trong bình luận của bạn",
-                        currentUser.getFullName() + " đã phản hồi trong bài post của bạn: \"" + t.getTitle() + "\""
+                        currentUser.getFullName() + " đã phản hồi trong bài post của bạn: \"" + thread.getTitle() + "\""
                 );
             }
         }
-        return toDto(p);
+        return toDto(post);
     }
 
     @Override
     @Transactional
     public ForumPostResponse hide(UUID postId) {
-        var p = postRepo.findById(postId).orElseThrow();
-        p.setPublished(false);
-        p = postRepo.save(p);
-        return toDto(p);
+        ForumPost post = postRepo.findById(postId).orElseThrow();
+        post.setPublished(false);
+        post = postRepo.save(post);
+        return toDto(post);
     }
 
     @Override
     @Transactional
     public ForumPostResponse show(UUID postId) {
-        var p = postRepo.findById(postId).orElseThrow();
-        p.setPublished(true);
-        p = postRepo.save(p);
-        return toDto(p);
+        ForumPost post = postRepo.findById(postId).orElseThrow();
+        post.setPublished(true);
+        post = postRepo.save(post);
+        return toDto(post);
     }
 
-    private ForumPostResponse toDto(ForumPost p) {
+    private ForumPostResponse toDto(ForumPost post) {
         String authorName = null;
         String authorAvatarUrl = null;
 
-        if (p.getAuthorId() != null) {
-            var u = userRepo.findById(p.getAuthorId()).orElse(null);
-            if (u != null) {
-                authorName = u.getFullName();
-                authorAvatarUrl = u.getAvatarUrl();
+        if (post.getAuthorId() != null) {
+            User user = userRepo.findById(post.getAuthorId()).orElse(null);
+            if (user != null) {
+                authorName = user.getFullName();
+                authorAvatarUrl = user.getAvatarUrl();
             }
         }
 
         return new ForumPostResponse(
-                p.getId(),
-                p.getThread() != null ? p.getThread().getId() : null,
-                p.getParent() != null ? p.getParent().getId() : null,
-                p.getAuthorId(),
+                post.getId(),
+                post.getThread() != null ? post.getThread().getId() : null,
+                post.getParent() != null ? post.getParent().getId() : null,
+                post.getAuthorId(),
                 authorName,
                 authorAvatarUrl,
-                p.getBodyMd(),
-                p.isPublished(),
-                p.getCreatedAt(),
-                p.getUpdatedAt()
+                post.getBodyMd(),
+                post.isPublished(),
+                post.getCreatedAt(),
+                post.getUpdatedAt()
         );
     }
 
@@ -201,29 +202,29 @@ public class ForumPostServiceImpl implements ForumPostService {
     @Transactional
     public void deleteByOwner(UUID postId) {
         UUID uid = SecurityUtil.getCurrentUserId();
-        var p = postRepo.findById(postId).orElseThrow();
+        ForumPost post = postRepo.findById(postId).orElseThrow();
 
-        if (p.getAuthorId() == null || !p.getAuthorId().equals(uid)) {
+        if (post.getAuthorId() == null || !post.getAuthorId().equals(uid)) {
             throw new AccessDeniedException("Only author can delete this post");
         }
 
-        performDelete(p);
+        performDelete(post);
     }
 
     @Override
     @Transactional
     public void adminDelete(UUID postId) {
-        var p = postRepo.findById(postId).orElseThrow();
+        ForumPost post = postRepo.findById(postId).orElseThrow();
 
         UUID adminId = SecurityUtil.getCurrentUserId();
-        var adminUser = userRepo.findById(adminId).orElse(null);
+        User adminUser = userRepo.findById(adminId).orElse(null);
         String adminName = adminUser != null ? adminUser.getFullName() : "Quản trị viên";
 
-        UUID postAuthorId = p.getAuthorId();
-        UUID threadAuthorId = p.getThread() != null ? p.getThread().getAuthorId() : null;
-        String threadTitle = p.getThread() != null ? p.getThread().getTitle() : "";
+        UUID postAuthorId = post.getAuthorId();
+        UUID threadAuthorId = post.getThread() != null ? post.getThread().getAuthorId() : null;
+        String threadTitle = post.getThread() != null ? post.getThread().getTitle() : "";
 
-        performDelete(p);
+        performDelete(post);
 
         // Gửi thông báo tới chủ post (nếu có và khác admin)
         if (postAuthorId != null && !postAuthorId.equals(adminId)) {
@@ -250,49 +251,49 @@ public class ForumPostServiceImpl implements ForumPostService {
         }
     }
 
-    private void performDelete(ForumPost p) {
-        var t = p.getThread();
+    private void performDelete(ForumPost post) {
+        ForumThread thread = post.getThread();
         long deletedCount = 1;
 
         // 1. Xóa các bài con (nếu có)
-        if (p.getParent() == null) {
-            long childrenCount = postRepo.countByParent(p);
+        if (post.getParent() == null) {
+            long childrenCount = postRepo.countByParent(post);
             if (childrenCount > 0) {
 
-                List<UUID> childIds = postRepo.findIdsByParent(p);
+                List<UUID> childIds = postRepo.findIdsByParent(post);
                 if (!childIds.isEmpty()) {
                     reportRepo.deleteByTargetIds(childIds);
                 }
 
-                postRepo.deleteByParent(p);
+                postRepo.deleteByParent(post);
                 deletedCount += childrenCount;
             }
         }
 
-        postRepo.delete(p);
+        postRepo.delete(post);
 
         //Flush để đảm bảo lệnh xóa đã được ghi nhận trước khi ta query tìm bài mới nhất
         postRepo.flush();
 
-        if (t != null) {
-            long currentCount = t.getReplyCount();
+        if (thread != null) {
+            long currentCount = thread.getReplyCount();
             long newCount = Math.max(0, currentCount - deletedCount);
-            t.setReplyCount(newCount);
+            thread.setReplyCount(newCount);
 
-            var latestPostOpt = postRepo.findFirstByThreadOrderByCreatedAtDesc(t);
+            Optional<ForumPost> latestPostOpt = postRepo.findFirstByThreadOrderByCreatedAtDesc(thread);
 
             if (latestPostOpt.isPresent()) {
                 ForumPost latestPost = latestPostOpt.get();
-                t.setLastPostAt(latestPost.getCreatedAt());
-                t.setLastPostId(latestPost.getId());
-                t.setLastPostAuthor(latestPost.getAuthorId());
+                thread.setLastPostAt(latestPost.getCreatedAt());
+                thread.setLastPostId(latestPost.getId());
+                thread.setLastPostAuthor(latestPost.getAuthorId());
             } else {
-                t.setLastPostAt(t.getCreatedAt());
-                t.setLastPostId(null);
-                t.setLastPostAuthor(null);
+                thread.setLastPostAt(thread.getCreatedAt());
+                thread.setLastPostId(null);
+                thread.setLastPostAuthor(null);
             }
 
-            threadRepo.save(t);
+            threadRepo.save(thread);
         }
     }
 }
