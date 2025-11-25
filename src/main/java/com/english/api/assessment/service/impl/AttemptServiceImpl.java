@@ -61,6 +61,8 @@ public class AttemptServiceImpl implements AttemptService {
 
         User userRef = userRepo.getReferenceById(userId);
 
+        Instant startTime = req.startedAt() != null ? req.startedAt() : Instant.now();
+
         QuizAttempt attempt = QuizAttempt.builder()
                 .quiz(quiz)
                 .user(userRef)
@@ -158,7 +160,9 @@ public class AttemptServiceImpl implements AttemptService {
                 }
             }
         }
-        savedAttempt.setSubmittedAt(Instant.now());
+
+        savedAttempt.setStartedAt(startTime);
+        savedAttempt.setSubmittedAt(Instant.now()); 
         attemptRepo.save(savedAttempt);
         return attemptMapper.toResponse(savedAttempt, savedAnswers);
     }
@@ -253,6 +257,7 @@ public class AttemptServiceImpl implements AttemptService {
         UUID questionId = answer.getQuestion().getId();
         String questionContent = answer.getQuestion().getContent();
         Integer questionOrderIndex = answer.getQuestion().getOrderIndex();
+        String questionExplanation = answer.getQuestion().getExplanation();
 
         QuestionOption selectedOption = answer.getSelectedOption();
         UUID selectedOptionId = selectedOption != null ? selectedOption.getId() : null;
@@ -274,6 +279,7 @@ public class AttemptServiceImpl implements AttemptService {
         return attemptMapper.toAttemptAnswerItem(
                 questionId,
                 questionContent,
+                questionExplanation,
                 questionOrderIndex,
                 selectedOptionId,
                 selectedOptionContent,

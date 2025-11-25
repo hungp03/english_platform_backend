@@ -69,6 +69,7 @@ public interface AttemptMapper {
 
     @Mapping(target = "questionId", source = "questionId")
     @Mapping(target = "questionContent", source = "questionContent")
+    @Mapping(target = "questionExplanation", source = "questionExplanation")
     @Mapping(target = "orderIndex", source = "questionOrderIndex")
     @Mapping(target = "selectedOptionId", source = "selectedOptionId")
     @Mapping(target = "selectedOptionContent", source = "selectedOptionContent")
@@ -80,6 +81,7 @@ public interface AttemptMapper {
     AttemptAnswerItem toAttemptAnswerItem(
             UUID questionId,
             String questionContent,
+            String questionExplanation,
             Integer questionOrderIndex,
             UUID selectedOptionId,
             String selectedOptionContent,

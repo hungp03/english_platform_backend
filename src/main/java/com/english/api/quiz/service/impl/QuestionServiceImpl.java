@@ -44,6 +44,7 @@ public class QuestionServiceImpl implements QuestionService {
         Question q = Question.builder()
                 .quiz(quiz)
                 .content(req.content())
+                .explanation(req.explanation())
                 .orderIndex(req.orderIndex())
                 .build();
 
@@ -142,6 +143,7 @@ public class QuestionServiceImpl implements QuestionService {
                 e.getContent(),
                 e.getOrderIndex(),
                 options,
+                e.getExplanation(),
                 e.getCreatedAt(),
                 e.getUpdatedAt());
     }
