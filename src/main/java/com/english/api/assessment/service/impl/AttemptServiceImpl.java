@@ -66,6 +66,7 @@ public class AttemptServiceImpl implements AttemptService {
                 .user(userRef)
                 .skill(skill)
                 .status(QuizAttemptStatus.STARTED)
+                .completionTimeSeconds(req.completionTimeSeconds())
                 .build();
 
         QuizAttempt savedAttempt = attemptRepo.save(attempt);
@@ -100,7 +101,6 @@ public class AttemptServiceImpl implements AttemptService {
                 }
 
                 ans.setAnswerText(null);
-                ans.setTimeSpentMs(a.timeSpentMs());
                 QuizAttemptAnswer savedAns = answerRepo.save(ans);
                 savedAnswers.add(savedAns);
             }
@@ -125,7 +125,6 @@ public class AttemptServiceImpl implements AttemptService {
 
                 ans.setSelectedOption(null); // luôn null
                 ans.setAnswerText(a.answerText());
-                ans.setTimeSpentMs(a.timeSpentMs());
                 QuizAttemptAnswer savedAns = answerRepo.save(ans);
                 savedAnswers.add(savedAns);
             }
@@ -253,6 +252,7 @@ public class AttemptServiceImpl implements AttemptService {
         UUID questionId = answer.getQuestion().getId();
         String questionContent = answer.getQuestion().getContent();
         Integer questionOrderIndex = answer.getQuestion().getOrderIndex();
+        String questionExplanation = answer.getQuestion().getExplanation();
 
         QuestionOption selectedOption = answer.getSelectedOption();
         UUID selectedOptionId = selectedOption != null ? selectedOption.getId() : null;
@@ -275,12 +275,12 @@ public class AttemptServiceImpl implements AttemptService {
                 questionId,
                 questionContent,
                 questionOrderIndex,
+                questionExplanation,
                 selectedOptionId,
                 selectedOptionContent,
                 correctOptionBriefs,
                 isCorrect,
                 answer.getAnswerText(),
-                answer.getTimeSpentMs(),
                 optionReviews);
     }
 

@@ -5,7 +5,6 @@ import java.util.UUID;
 public record SubmitAnswerDto(
         UUID questionId,
         UUID selectedOptionId,
-        String answerText,
-        Integer timeSpentMs
+        String answerText
 ) {
 }

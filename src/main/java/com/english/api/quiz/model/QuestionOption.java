@@ -30,9 +30,6 @@ public class QuestionOption {
     @Column(nullable = false)
     private boolean correct;
 
-    @Column(length = 2000)
-    private String explanation;
-
     @Min(1)
     @Column(nullable = false)
     private Integer orderIndex;

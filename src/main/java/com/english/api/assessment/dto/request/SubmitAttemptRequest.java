@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record SubmitAttemptRequest(
         UUID quizId,
-        List<SubmitAnswerDto> answers
+        List<SubmitAnswerDto> answers,
+        Integer completionTimeSeconds
 ) {
 }

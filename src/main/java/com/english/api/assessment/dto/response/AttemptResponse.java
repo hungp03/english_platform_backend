@@ -21,6 +21,7 @@ public record AttemptResponse(
         Double maxScore,
         Instant startedAt,
         Instant submittedAt,
+        Integer completionTimeSeconds,
         List<AnswerBrief> answers
 ) {
 }

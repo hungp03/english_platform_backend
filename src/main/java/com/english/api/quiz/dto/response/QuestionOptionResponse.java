@@ -6,7 +6,6 @@ public record QuestionOptionResponse(
         UUID id,
         String content,
         boolean correct,
-        String explanation,
         Integer orderIndex
 ) {
 }

@@ -8,7 +8,6 @@ import jakarta.validation.constraints.Size;
 public record QuestionOptionCreateRequest(
         @NotBlank @Size(max = 1000) String content,
         @NotNull Boolean correct,
-        @Size(max = 2000) String explanation,
         @Min(1) Integer orderIndex
 ) {
 }

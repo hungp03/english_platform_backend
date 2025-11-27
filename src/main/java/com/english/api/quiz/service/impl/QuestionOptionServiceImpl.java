@@ -30,7 +30,6 @@ public class QuestionOptionServiceImpl implements QuestionOptionService {
                 .question(question)
                 .content(request.content())
                 .correct(Boolean.TRUE.equals(request.correct()))
-                .explanation(request.explanation())
                 .orderIndex(request.orderIndex() == null ? 0 : request.orderIndex())
                 .build();
         option = optionRepository.save(option);
@@ -43,7 +42,6 @@ public class QuestionOptionServiceImpl implements QuestionOptionService {
                 .orElseThrow(() -> new ResourceNotFoundException("QuestionOption not found"));
         if (request.content() != null) option.setContent(request.content());
         if (request.correct() != null) option.setCorrect(request.correct());
-        if (request.explanation() != null) option.setExplanation(request.explanation());
         if (request.orderIndex() != null) option.setOrderIndex(request.orderIndex());
         option = optionRepository.save(option);
         return toResponse(option);
@@ -64,6 +62,6 @@ public class QuestionOptionServiceImpl implements QuestionOptionService {
     }
 
     private QuestionOptionResponse toResponse(QuestionOption option) {
-        return new QuestionOptionResponse(option.getId(), option.getContent(), option.isCorrect(), option.getExplanation(), option.getOrderIndex());
+        return new QuestionOptionResponse(option.getId(), option.getContent(), option.isCorrect(), option.getOrderIndex());
     }
 }

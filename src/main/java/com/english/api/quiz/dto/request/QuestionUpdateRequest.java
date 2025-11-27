@@ -9,6 +9,7 @@ public record QuestionUpdateRequest(
         UUID quizId,
         @Size(max = 2000) String content,
         Integer orderIndex,
+        @Size(max = 2000) String explanation,
         List<QuestionOptionCreateRequest> options
 ) {
 }

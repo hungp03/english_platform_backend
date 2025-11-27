@@ -70,6 +70,9 @@ public class QuizAttempt {
 
     private Instant submittedAt;
 
+    @Column(name = "completion_time_seconds")
+    private Integer completionTimeSeconds;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

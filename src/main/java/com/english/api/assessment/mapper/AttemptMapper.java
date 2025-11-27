@@ -29,6 +29,7 @@ public interface AttemptMapper {
     @Mapping(target = "maxScore", source = "attempt.maxScore")
     @Mapping(target = "startedAt", source = "attempt.startedAt")
     @Mapping(target = "submittedAt", source = "attempt.submittedAt")
+    @Mapping(target = "completionTimeSeconds", source = "attempt.completionTimeSeconds")
     @Mapping(target = "answers", source = "answerEntities")
     AttemptResponse toResponse(QuizAttempt attempt, List<QuizAttemptAnswer> answerEntities);
 
@@ -56,8 +57,8 @@ public interface AttemptMapper {
     @Mapping(target = "maxScore", source = "attempt.maxScore")
     @Mapping(target = "startedAt", source = "attempt.startedAt")
     @Mapping(target = "submittedAt", source = "attempt.submittedAt")
+    @Mapping(target = "completionTimeSeconds", source = "attempt.completionTimeSeconds")
     @Mapping(target = "contextText", source = "quiz.contextText")
-    @Mapping(target = "explanation", source = "quiz.explanation")
     @Mapping(target = "answers", source = "items")
     AttemptAnswersResponse toAttemptAnswersResponse(
             QuizAttempt attempt,
@@ -70,23 +71,23 @@ public interface AttemptMapper {
     @Mapping(target = "questionId", source = "questionId")
     @Mapping(target = "questionContent", source = "questionContent")
     @Mapping(target = "orderIndex", source = "questionOrderIndex")
+    @Mapping(target = "explanation", source = "questionExplanation")
     @Mapping(target = "selectedOptionId", source = "selectedOptionId")
     @Mapping(target = "selectedOptionContent", source = "selectedOptionContent")
     @Mapping(target = "correctOptions", source = "correctOptionBriefs")
     @Mapping(target = "isCorrect", source = "isCorrect")
     @Mapping(target = "answerText", source = "answerText")
-    @Mapping(target = "timeSpentMs", source = "timeSpentMs")
     @Mapping(target = "options", source = "optionReviews")
     AttemptAnswerItem toAttemptAnswerItem(
             UUID questionId,
             String questionContent,
             Integer questionOrderIndex,
+            String questionExplanation,
             UUID selectedOptionId,
             String selectedOptionContent,
             List<OptionBrief> correctOptionBriefs,
             Boolean isCorrect,
             String answerText,
-            Integer timeSpentMs,
             List<OptionReview> optionReviews
     );
 
