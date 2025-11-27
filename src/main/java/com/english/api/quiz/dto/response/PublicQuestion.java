@@ -7,6 +7,7 @@ public record PublicQuestion(
         UUID id,
         Integer orderIndex,
         String content,
+        String explanation,
         // String contextText,
         // String imageUrl,
         // String audioUrl,

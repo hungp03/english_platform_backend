@@ -8,12 +8,12 @@ public record AttemptAnswerItem(
         String questionContent,
         String questionExplanation,
         Integer orderIndex,
+        String explanation,
         UUID selectedOptionId,
         String selectedOptionContent,
         List<OptionBrief> correctOptions,
         Boolean isCorrect,
         String answerText,
-        Integer timeSpentMs,
         List<OptionReview> options
 ) {
 }

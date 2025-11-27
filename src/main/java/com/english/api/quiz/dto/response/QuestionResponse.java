@@ -11,6 +11,7 @@ public record QuestionResponse(
         UUID quizId,
         String content,
         Integer orderIndex,
+        String explanation,
         List<QuestionOptionResponse> options,
         String explanation,
         Instant createdAt,

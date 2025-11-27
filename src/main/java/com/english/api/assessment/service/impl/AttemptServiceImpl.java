@@ -68,6 +68,7 @@ public class AttemptServiceImpl implements AttemptService {
                 .user(userRef)
                 .skill(skill)
                 .status(QuizAttemptStatus.STARTED)
+                .completionTimeSeconds(req.completionTimeSeconds())
                 .build();
 
         QuizAttempt savedAttempt = attemptRepo.save(attempt);
@@ -102,7 +103,6 @@ public class AttemptServiceImpl implements AttemptService {
                 }
 
                 ans.setAnswerText(null);
-                ans.setTimeSpentMs(a.timeSpentMs());
                 QuizAttemptAnswer savedAns = answerRepo.save(ans);
                 savedAnswers.add(savedAns);
             }
@@ -127,7 +127,6 @@ public class AttemptServiceImpl implements AttemptService {
 
                 ans.setSelectedOption(null); // luôn null
                 ans.setAnswerText(a.answerText());
-                ans.setTimeSpentMs(a.timeSpentMs());
                 QuizAttemptAnswer savedAns = answerRepo.save(ans);
                 savedAnswers.add(savedAns);
             }
@@ -281,12 +280,12 @@ public class AttemptServiceImpl implements AttemptService {
                 questionContent,
                 questionExplanation,
                 questionOrderIndex,
+                questionExplanation,
                 selectedOptionId,
                 selectedOptionContent,
                 correctOptionBriefs,
                 isCorrect,
                 answer.getAnswerText(),
-                answer.getTimeSpentMs(),
                 optionReviews);
     }
 

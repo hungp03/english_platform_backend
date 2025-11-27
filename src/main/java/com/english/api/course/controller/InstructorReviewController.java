@@ -1,6 +1,5 @@
 package com.english.api.course.controller;
 
-import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.response.ReviewResponse;
 import com.english.api.course.service.ReviewService;
 import lombok.RequiredArgsConstructor;

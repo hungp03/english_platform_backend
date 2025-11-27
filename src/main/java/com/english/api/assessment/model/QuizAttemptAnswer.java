@@ -40,9 +40,6 @@ public class QuizAttemptAnswer {
     @Column(name = "answer_text", columnDefinition = "text")
     private String answerText;
 
-    @Column(name = "time_spent_ms")
-    private Integer timeSpentMs;
-
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -43,9 +43,9 @@ public class QuestionServiceImpl implements QuestionService {
 
         Question question = Question.builder()
                 .quiz(quiz)
-                .content(req.content())
-                .explanation(req.explanation())
-                .orderIndex(req.orderIndex())
+                .content(request.content())
+                .orderIndex(request.orderIndex())
+                .explanation(request.explanation())
                 .build();
 
         if (request.options() != null && !request.options().isEmpty()) {
@@ -55,7 +55,6 @@ public class QuestionServiceImpl implements QuestionService {
                         .question(question)
                         .content(optionRequest.content())
                         .correct(Boolean.TRUE.equals(optionRequest.correct()))
-                        .explanation(optionRequest.explanation())
                         .orderIndex(optionRequest.orderIndex() == null ? 1 : optionRequest.orderIndex())
                         .build();
                 options.add(option);
@@ -79,6 +78,8 @@ public class QuestionServiceImpl implements QuestionService {
         }
         if (request.content() != null)
             question.setContent(request.content());
+        if (request.explanation() != null)
+            question.setExplanation(request.explanation());
         if (request.orderIndex() != null) {
             UUID quizId = request.quizId() != null ? request.quizId() : question.getQuiz().getId();
             if (!request.orderIndex().equals(question.getOrderIndex()) &&
@@ -99,7 +100,6 @@ public class QuestionServiceImpl implements QuestionService {
                         .question(question)
                         .content(optionRequest.content())
                         .correct(Boolean.TRUE.equals(optionRequest.correct()))
-                        .explanation(optionRequest.explanation())
                         .orderIndex(optionRequest.orderIndex() == null ? 1 : optionRequest.orderIndex())
                         .build();
                 question.getOptions().add(option);
@@ -134,7 +134,7 @@ public class QuestionServiceImpl implements QuestionService {
         List<QuestionOptionResponse> options = question.getOptions() != null
                 ? question.getOptions().stream()
                         .map(option -> new QuestionOptionResponse(option.getId(), option.getContent(), option.isCorrect(),
-                                option.getExplanation(), option.getOrderIndex()))
+                                option.getOrderIndex()))
                         .collect(java.util.stream.Collectors.toList())
                 : new ArrayList<>();
         return new QuestionResponse(
@@ -142,6 +142,7 @@ public class QuestionServiceImpl implements QuestionService {
                 question.getQuiz().getId(),
                 question.getContent(),
                 question.getOrderIndex(),
+                question.getExplanation(),
                 options,
                 e.getExplanation(),
                 e.getCreatedAt(),

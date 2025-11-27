@@ -21,8 +21,8 @@ public record AttemptAnswersResponse(
         Double maxScore,
         Instant startedAt,
         Instant submittedAt,
+        Integer completionTimeSeconds,
         String contextText,
-        String explanation,
         List<AttemptAnswerItem> answers
 ) {
 }
