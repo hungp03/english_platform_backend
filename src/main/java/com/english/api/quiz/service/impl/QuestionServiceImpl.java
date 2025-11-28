@@ -144,9 +144,8 @@ public class QuestionServiceImpl implements QuestionService {
                 question.getOrderIndex(),
                 question.getExplanation(),
                 options,
-                e.getExplanation(),
-                e.getCreatedAt(),
-                e.getUpdatedAt());
+                question.getCreatedAt(),
+                question.getUpdatedAt());
     }
 
     @Override

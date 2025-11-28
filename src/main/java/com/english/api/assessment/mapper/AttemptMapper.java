@@ -82,7 +82,6 @@ public interface AttemptMapper {
     AttemptAnswerItem toAttemptAnswerItem(
             UUID questionId,
             String questionContent,
-            String questionExplanation,
             Integer questionOrderIndex,
             String questionExplanation,
             UUID selectedOptionId,

@@ -15,6 +15,7 @@ public record QuizCreateRequest(
         @NotNull UUID quizTypeId,
         UUID quizSectionId,
         String contextText,
-        String questionText
+        String questionText,
+        String explanation
 ) {
 }

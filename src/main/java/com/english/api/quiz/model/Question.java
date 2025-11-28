@@ -44,8 +44,6 @@ public class Question {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    @Column(columnDefinition = "TEXT")
-    private String explanation;
 
     @PrePersist
     public void prePersist() {

@@ -13,7 +13,6 @@ public record QuestionResponse(
         Integer orderIndex,
         String explanation,
         List<QuestionOptionResponse> options,
-        String explanation,
         Instant createdAt,
         Instant updatedAt
 ) {

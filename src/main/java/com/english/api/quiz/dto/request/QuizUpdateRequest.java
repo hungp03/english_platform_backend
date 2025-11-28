@@ -13,6 +13,7 @@ public record QuizUpdateRequest(
         UUID quizTypeId,
         UUID quizSectionId,
         String contextText,
-        String questionText
+        String questionText,
+        String explanation
 ) {
 }

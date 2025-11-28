@@ -103,4 +103,6 @@ public interface ReviewService {
      * @return Updated review
      */
     ReviewResponse showReview(UUID reviewId);
+
+    PaginationResponse getReviewsForInstructor(UUID courseId, Boolean isPublished, Integer rating, int page, int size);
 }

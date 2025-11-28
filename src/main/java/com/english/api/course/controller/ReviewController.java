@@ -122,4 +122,31 @@ public class ReviewController {
         PaginationResponse reviews = reviewService.getMyReviews(page, size);
         return ResponseEntity.ok(reviews);
     }
+
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    @GetMapping("/instructor/courses/{courseId}")
+    public ResponseEntity<PaginationResponse> getReviewsForCourse(
+            @PathVariable UUID courseId,
+            @RequestParam(required = false) Boolean isPublished,
+            @RequestParam(required = false) Integer rating,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        PaginationResponse response = reviewService.getReviewsForInstructor(courseId, isPublished, rating, page, size);
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    @PostMapping("/instructor/{reviewId}/hide")
+    public ResponseEntity<ReviewResponse> hideReview(@PathVariable UUID reviewId) {
+        ReviewResponse review = reviewService.hideReview(reviewId);
+        return ResponseEntity.ok(review);
+    }
+
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    @PostMapping("/instructor/{reviewId}/show")
+    public ResponseEntity<ReviewResponse> showReview(@PathVariable UUID reviewId) {
+        ReviewResponse review = reviewService.showReview(reviewId);
+        return ResponseEntity.ok(review);
+    }
 }

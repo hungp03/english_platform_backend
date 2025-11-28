@@ -55,6 +55,9 @@ public class Quiz {
     @Column(name = "question_text", columnDefinition = "TEXT")
     private String questionText;
 
+    @Column(name = "explanation", columnDefinition = "TEXT")
+    private String explanation;
+
     private Instant createdAt;
 
     @Column(nullable = false)

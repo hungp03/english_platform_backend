@@ -113,4 +113,19 @@ public interface CourseReviewRepository extends JpaRepository<CourseReview, UUID
      * Delete all reviews by a user
      */
     void deleteByUserId(UUID userId);
+
+    @Query("""
+            SELECT r FROM CourseReview r
+            LEFT JOIN FETCH r.user
+            WHERE r.course.id = :courseId
+            AND (:isPublished IS NULL OR r.isPublished = :isPublished)
+            AND (:rating IS NULL OR r.rating = :rating)
+            ORDER BY r.createdAt DESC
+        """)
+        Page<CourseReview> findByCourseIdWithFilters(
+            @Param("courseId") UUID courseId,
+            @Param("isPublished") Boolean isPublished,
+            @Param("rating") Integer rating,
+            Pageable pageable
+        );
 }

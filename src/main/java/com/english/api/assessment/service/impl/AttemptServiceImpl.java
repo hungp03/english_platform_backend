@@ -68,7 +68,6 @@ public class AttemptServiceImpl implements AttemptService {
                 .user(userRef)
                 .skill(skill)
                 .status(QuizAttemptStatus.STARTED)
-                .completionTimeSeconds(req.completionTimeSeconds())
                 .build();
 
         QuizAttempt savedAttempt = attemptRepo.save(attempt);
@@ -278,7 +277,6 @@ public class AttemptServiceImpl implements AttemptService {
         return attemptMapper.toAttemptAnswerItem(
                 questionId,
                 questionContent,
-                questionExplanation,
                 questionOrderIndex,
                 questionExplanation,
                 selectedOptionId,

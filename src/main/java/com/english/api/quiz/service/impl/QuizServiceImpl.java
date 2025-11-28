@@ -61,6 +61,7 @@ public class QuizServiceImpl implements QuizService {
         quiz.setQuizType(type);
         quiz.setContextText(request.contextText());
         quiz.setQuestionText(request.questionText());
+        quiz.setExplanation(request.explanation());
 
         if (request.quizSectionId() != null) {
             QuizSection section = quizSectionRepo.findById(request.quizSectionId())
@@ -99,6 +100,10 @@ public class QuizServiceImpl implements QuizService {
         }
         if (request.questionText() != null) {
             quiz.setQuestionText(request.questionText());
+        }
+
+        if (request.explanation() != null) {
+            quiz.setExplanation(request.explanation());
         }
 
         quizRepository.save(quiz);

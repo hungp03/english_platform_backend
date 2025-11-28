@@ -20,6 +20,7 @@ public record QuizResponse(
         Instant createdAt,
         Instant updatedAt,
         String contextText,
-        String questionText
+        String questionText,
+        String explanation
 ) {
 }
