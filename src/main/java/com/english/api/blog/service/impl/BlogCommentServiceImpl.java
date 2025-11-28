@@ -20,8 +20,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.UUID;
+
+import java.util.*;
+import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class BlogCommentServiceImpl implements BlogCommentService {
@@ -150,19 +151,19 @@ public class BlogCommentServiceImpl implements BlogCommentService {
                 commentRepository.findByIdInWithAssociations(commentIds);
 
         // Tập ID comment trong page (để biết parent nào đã nằm trong page)
-        java.util.Set<UUID> commentIdSet = new java.util.HashSet<>(commentIds);
+        Set<UUID> commentIdSet = new HashSet<>(commentIds);
 
         // 4. Tìm các parentId còn thiếu (parent không nằm trong page hiện tại)
-        java.util.Set<UUID> missingParentIds = commentsWithAssociations.stream()
+        Set<UUID> missingParentIds = commentsWithAssociations.stream()
                 .map(BlogComment::getParent)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .map(BlogComment::getId)
                 .filter(parentId -> !commentIdSet.contains(parentId))
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toSet());
 
         // Map id -> comment để giữ đúng thứ tự ban đầu cho 20 comment chính
-        java.util.Map<UUID, BlogComment> commentMap = commentsWithAssociations.stream()
-                .collect(java.util.stream.Collectors.toMap(BlogComment::getId, c -> c));
+        Map<UUID, BlogComment> commentMap = commentsWithAssociations.stream()
+                .collect(Collectors.toMap(BlogComment::getId, c -> c));
 
         // 5. Map 20 comment chính sang DTO, giữ nguyên thứ tự phân trang
         List<CommentResponse> mainResponses = commentIds.stream()
@@ -171,15 +172,15 @@ public class BlogCommentServiceImpl implements BlogCommentService {
                 .toList();
 
         // 6. Nếu có parent nằm ngoài page, load thêm và map sang DTO
-        List<CommentResponse> parentResponses = java.util.Collections.emptyList();
+        List<CommentResponse> parentResponses = Collections.emptyList();
         if (!missingParentIds.isEmpty()) {
                 List<BlogComment> missingParents =
                         commentRepository.findByIdInWithAssociations(
-                                new java.util.ArrayList<>(missingParentIds)
+                                new ArrayList<>(missingParentIds)
                         );
 
                 // (tuỳ chọn) sort parent theo createdAt cho ổn định
-                missingParents.sort(java.util.Comparator.comparing(BlogComment::getCreatedAt));
+                missingParents.sort(Comparator.comparing(BlogComment::getCreatedAt));
 
                 parentResponses = missingParents.stream()
                         .map(blogMapper::toCommentResponse)
@@ -188,7 +189,7 @@ public class BlogCommentServiceImpl implements BlogCommentService {
 
         // 7. Gộp 20 comment chính + các parent bổ sung vào cùng result
         List<CommentResponse> allResponses =
-                new java.util.ArrayList<>(mainResponses.size() + parentResponses.size());
+                new ArrayList<>(mainResponses.size() + parentResponses.size());
         allResponses.addAll(mainResponses);
         allResponses.addAll(parentResponses);
 
@@ -221,8 +222,8 @@ public class BlogCommentServiceImpl implements BlogCommentService {
         List<BlogComment> commentsWithAssociations = commentRepository.findByIdInWithAssociations(commentIds);
 
         // Preserve the original order from pagination
-        java.util.Map<UUID, BlogComment> commentMap = commentsWithAssociations.stream()
-                .collect(java.util.stream.Collectors.toMap(BlogComment::getId, c -> c));
+        Map<UUID, BlogComment> commentMap = commentsWithAssociations.stream()
+                .collect(Collectors.toMap(BlogComment::getId, c -> c));
 
         List<CommentResponse> responses = commentIds.stream()
                 .map(commentMap::get)

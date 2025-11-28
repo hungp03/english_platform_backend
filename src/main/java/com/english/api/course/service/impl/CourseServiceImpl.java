@@ -69,7 +69,7 @@ public class CourseServiceImpl implements CourseService {
         // TEMPORARY: Only allow VND currency for new courses
         // Remove this restriction when multiple currencies are fully supported
         if (!"VND".equalsIgnoreCase(req.currency())) {
-            throw new com.english.api.common.exception.ResourceInvalidException(
+            throw new ResourceInvalidException(
                 "Currently, only VND currency is supported for course creation");
         }
         

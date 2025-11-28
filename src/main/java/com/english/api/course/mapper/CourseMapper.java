@@ -6,10 +6,12 @@ import com.english.api.course.model.Course;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.Arrays;
+
 /**
  * Created by hungpham on 10/2/2025
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", imports = Arrays.class)
 public interface CourseMapper {
     @Mapping(target = "skillFocus", expression = "java(req.skillFocus() != null ? req.skillFocus().toArray(new String[0]) : null)")
     @Mapping(target = "id", ignore = true)
@@ -21,6 +23,6 @@ public interface CourseMapper {
     @Mapping(target = "status", constant = "DRAFT")
     Course toEntity(CourseRequest req);
 
-    @Mapping(target = "skillFocus", expression = "java(c.getSkillFocus() != null ? java.util.Arrays.asList(c.getSkillFocus()) : null)")
+    @Mapping(target = "skillFocus", expression = "java(c.getSkillFocus() != null ? Arrays.asList(c.getSkillFocus()) : null)")
     CourseResponse toResponse(Course c);
 }

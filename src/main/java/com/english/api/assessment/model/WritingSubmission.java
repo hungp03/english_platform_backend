@@ -25,9 +25,7 @@ public class WritingSubmission {
     @JoinColumn(name = "attempt_answer_id", nullable = false, unique = true, foreignKey = @ForeignKey(name = "fk_writing_answer"))
     private QuizAttemptAnswer attemptAnswer;
 
-    // =====================
-    // AI Rubrics (IELTS Writing Task 1/2 style)
-    // =====================
+    // AI Rubrics
     private Double aiTaskResponse;
     private Double aiCoherence;
     private Double aiGrammar;

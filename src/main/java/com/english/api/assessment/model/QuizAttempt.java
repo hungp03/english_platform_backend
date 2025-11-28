@@ -94,15 +94,4 @@ public class QuizAttempt {
     public void preUpdate() {
         updatedAt = Instant.now();
     }
-
-    // Factory method tiện cho AttemptServiceImpl
-    public static QuizAttempt of(Quiz quiz, User user, QuizSkill skill, QuizAttemptStatus status) {
-        return QuizAttempt.builder()
-                .quiz(quiz)
-                .user(user)
-                .skill(skill)
-                .status(status)
-                .startedAt(Instant.now())
-                .build();
-    }
 }

@@ -82,7 +82,7 @@ public class AppForumController {
     // === Owner self-delete post ===
     @DeleteMapping("/posts/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> deleteOwnPost(@PathVariable java.util.UUID id) {
+    public ResponseEntity<Void> deleteOwnPost(@PathVariable UUID id) {
         postService.deleteByOwner(id);
         return ResponseEntity.noContent().build();
     }

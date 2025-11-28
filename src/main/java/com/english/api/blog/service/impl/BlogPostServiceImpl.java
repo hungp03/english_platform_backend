@@ -1,10 +1,7 @@
 package com.english.api.blog.service.impl;
 
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.CacheEvict;
@@ -143,7 +140,7 @@ public class BlogPostServiceImpl implements BlogPostService{
         List<BlogPost> postsWithAssociations = postRepository.findByIdInWithAssociations(postIds);
         
         // Preserve the original order from pagination
-        java.util.Map<UUID, BlogPost> postMap = postsWithAssociations.stream()
+        Map<UUID, BlogPost> postMap = postsWithAssociations.stream()
             .collect(Collectors.toMap(BlogPost::getId, p -> p));
         
         List<PostResponse> responses = postIds.stream()
@@ -221,7 +218,7 @@ public class BlogPostServiceImpl implements BlogPostService{
         List<BlogPost> postsWithAssociations = postRepository.findByIdInWithAssociations(postIds);
         
         // Preserve the original order from pagination
-        java.util.Map<UUID, BlogPost> postMap = postsWithAssociations.stream()
+        Map<UUID, BlogPost> postMap = postsWithAssociations.stream()
             .collect(Collectors.toMap(BlogPost::getId, p -> p));
         
         List<PublicPostSummaryResponse> responses = postIds.stream()
