@@ -67,6 +67,7 @@ public class AttemptServiceImpl implements AttemptService {
                 .skill(skill)
                 .status(QuizAttemptStatus.STARTED)
                 .completionTimeSeconds(req.completionTimeSeconds())
+                .startedAt(req.startedAt() != null ? req.startedAt() : Instant.now())
                 .build();
 
         QuizAttempt savedAttempt = attemptRepo.save(attempt);

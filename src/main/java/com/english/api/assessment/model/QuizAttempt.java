@@ -65,8 +65,7 @@ public class QuizAttempt {
     @Builder.Default
     private Double maxScore = 0.0;
 
-    @Builder.Default
-    private Instant startedAt = Instant.now();
+    private Instant startedAt;
 
     private Instant submittedAt;
 
@@ -87,7 +86,6 @@ public class QuizAttempt {
         Instant now = Instant.now();
         if (createdAt == null) createdAt = now;
         updatedAt = now;
-        if (startedAt == null) startedAt = now;
     }
 
     @PreUpdate

@@ -21,7 +21,6 @@ import java.util.UUID;
 @Table(name = "quizzes")
 
 public class Quiz {
-
     @Id
     private UUID id;
 
