@@ -13,4 +13,7 @@ public interface QuizAttemptAnswerRepository extends JpaRepository<QuizAttemptAn
 
     @EntityGraph(attributePaths = {"question", "selectedOption"})
     List<QuizAttemptAnswer> findByAttempt_Id(UUID attemptId);
+
+    @EntityGraph(attributePaths = {"question", "selectedOption"})
+    List<QuizAttemptAnswer> findByAttempt_IdIn(List<UUID> attemptIds);
 }

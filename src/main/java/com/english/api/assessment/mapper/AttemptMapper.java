@@ -17,7 +17,6 @@ import java.util.UUID;
 public interface AttemptMapper {
 
     @Mapping(target = "quizId", source = "attempt.quiz.id")
-    @Mapping(target = "userId", source = "attempt.user.id")
     @Mapping(target = "quizType", source = "attempt.quiz.quizType.name")
     @Mapping(target = "quizSection", source = "attempt.quiz.quizSection.name")
     @Mapping(target = "quizName", source = "attempt.quiz.title")
@@ -45,7 +44,6 @@ public interface AttemptMapper {
 
     @Mapping(target = "attemptId", source = "attempt.id")
     @Mapping(target = "quizId", source = "quiz.id")
-    @Mapping(target = "userId", source = "attempt.user.id")
     @Mapping(target = "quizType", source = "quiz.quizType.name")
     @Mapping(target = "quizSection", source = "quiz.quizSection.name")
     @Mapping(target = "quizName", source = "quiz.title")
@@ -59,6 +57,7 @@ public interface AttemptMapper {
     @Mapping(target = "submittedAt", source = "attempt.submittedAt")
     @Mapping(target = "completionTimeSeconds", source = "attempt.completionTimeSeconds")
     @Mapping(target = "contextText", source = "quiz.contextText")
+    @Mapping(target = "explanation", source = "quiz.explanation")
     @Mapping(target = "answers", source = "items")
     AttemptAnswersResponse toAttemptAnswersResponse(
             QuizAttempt attempt,

@@ -9,7 +9,6 @@ import java.util.UUID;
 public record AttemptAnswersResponse(
         UUID attemptId,
         UUID quizId,
-        UUID userId,
         String quizType,
         String quizSection,
         String quizName,
@@ -23,6 +22,7 @@ public record AttemptAnswersResponse(
         Instant submittedAt,
         Integer completionTimeSeconds,
         String contextText,
+        String explanation,
         List<AttemptAnswerItem> answers
 ) {
 }

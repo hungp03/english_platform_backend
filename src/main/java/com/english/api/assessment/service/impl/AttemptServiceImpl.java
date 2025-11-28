@@ -177,11 +177,7 @@ public class AttemptServiceImpl implements AttemptService {
     public PaginationResponse listAttemptsByUser(Pageable pageable) {
         UUID me = SecurityUtil.getCurrentUserId();
         Page<QuizAttempt> page = attemptRepo.findByUser_Id(me, pageable);
-
-        return PaginationResponse.from(page.map(attempt -> {
-            List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attempt.getId());
-            return attemptMapper.toResponse(attempt, answers);
-        }), pageable);
+        return mapAttemptsToResponse(page, pageable);
     }
 
     @Override
@@ -189,20 +185,14 @@ public class AttemptServiceImpl implements AttemptService {
     public PaginationResponse listAttemptsByUserAndQuiz(UUID quizId, Pageable pageable) {
         UUID me = SecurityUtil.getCurrentUserId();
         Page<QuizAttempt> page = attemptRepo.findByQuiz_IdAndUser_Id(quizId, me, pageable);
-        return PaginationResponse.from(page.map(attempt -> {
-            List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attempt.getId());
-            return attemptMapper.toResponse(attempt, answers);
-        }), pageable);
+        return mapAttemptsToResponse(page, pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaginationResponse listAttemptsByQuiz(UUID quizId, Pageable pageable) {
         Page<QuizAttempt> page = attemptRepo.findByQuiz_Id(quizId, pageable);
-        return PaginationResponse.from(page.map(attempt -> {
-            List<QuizAttemptAnswer> answers = answerRepo.findByAttempt_Id(attempt.getId());
-            return attemptMapper.toResponse(attempt, answers);
-        }), pageable);
+        return mapAttemptsToResponse(page, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -243,6 +233,29 @@ public class AttemptServiceImpl implements AttemptService {
                 items.size(),
                 totalCorrect,
                 items);
+    }
+
+    private PaginationResponse mapAttemptsToResponse(Page<QuizAttempt> page, Pageable pageable) {
+        List<QuizAttempt> attempts = page.getContent();
+        
+        if (attempts.isEmpty()) {
+            return PaginationResponse.from(page.map(attempt -> 
+                attemptMapper.toResponse(attempt, List.of())), pageable);
+        }
+
+        List<UUID> attemptIds = attempts.stream()
+                .map(QuizAttempt::getId)
+                .toList();
+
+        List<QuizAttemptAnswer> allAnswers = answerRepo.findByAttempt_IdIn(attemptIds);
+
+        Map<UUID, List<QuizAttemptAnswer>> answersByAttemptId = allAnswers.stream()
+                .collect(Collectors.groupingBy(answer -> answer.getAttempt().getId()));
+
+        return PaginationResponse.from(page.map(attempt -> {
+            List<QuizAttemptAnswer> answers = answersByAttemptId.getOrDefault(attempt.getId(), List.of());
+            return attemptMapper.toResponse(attempt, answers);
+        }), pageable);
     }
 
     private AttemptAnswerItem buildAttemptAnswerItem(

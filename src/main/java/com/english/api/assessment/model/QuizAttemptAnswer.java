@@ -44,12 +44,6 @@ public class QuizAttemptAnswer {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @OneToOne(mappedBy = "attemptAnswer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private SpeakingSubmission speakingSubmission;
-
-    @OneToOne(mappedBy = "attemptAnswer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private WritingSubmission writingSubmission;
-
     @PrePersist
     protected void prePersist() {
         if (id == null) {

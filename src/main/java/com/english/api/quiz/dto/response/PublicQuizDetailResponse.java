@@ -14,6 +14,7 @@ public record PublicQuizDetailResponse(
         UUID quizSectionId,
         String quizSectionName,
         String contextText,
+        String explanation,
         QuizSkill skill,
         List<PublicQuestion> questions
 ) {
