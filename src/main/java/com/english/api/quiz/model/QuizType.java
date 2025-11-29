@@ -21,13 +21,13 @@ public class QuizType {
     @Id
     private UUID id;
 
-
     @Column(nullable = false, unique = true)
     private String name;
 
     @Column(length = 512)
     private String description;
 
+    @Builder.Default
     @OneToMany(mappedBy = "quizType", fetch = FetchType.LAZY)
     private Set<Quiz> quizzes = new HashSet<>();
 

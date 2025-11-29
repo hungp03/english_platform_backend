@@ -34,6 +34,7 @@ public class Question {
     @Column(columnDefinition = "TEXT")
     private String explanation;
 
+    @Builder.Default
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
     private Set<QuestionOption> options = new LinkedHashSet<>();

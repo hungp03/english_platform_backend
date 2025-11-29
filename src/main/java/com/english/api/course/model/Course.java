@@ -91,6 +91,7 @@ public class Course implements Serializable {
 
     @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
     @JsonIgnore
+    @Builder.Default
     private Set<Enrollment> enrollments = new HashSet<>();
 
     private Instant deletedAt;

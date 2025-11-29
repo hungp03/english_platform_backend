@@ -184,7 +184,8 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
         }
         context.put("questionContent", question.getContent());
 
-        // TODO: Add imageUrls, wordLimit, taskType from quiz metadata if needed
+        // Add imageUrls, wordLimit, taskType from quiz metadata if needed
+        
         // context.put("taskType", "task1"); // or "task2"
         // context.put("wordLimit", 250);
         // if (!imageUrls.isEmpty()) {

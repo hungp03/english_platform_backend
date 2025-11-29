@@ -62,6 +62,7 @@ public class Lesson implements Serializable {
     private JsonNode content;
 
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<LessonMedia> mediaLinks = new ArrayList<>();
 
     @PrePersist

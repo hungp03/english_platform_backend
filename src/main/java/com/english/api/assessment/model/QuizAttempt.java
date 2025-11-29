@@ -50,7 +50,8 @@ public class QuizAttempt {
     private QuizAttemptStatus status;
 
     @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
-    @BatchSize(size = 30) // gom 30 answer/lần khi load
+    @BatchSize(size = 30)
+    @Builder.Default
     private List<QuizAttemptAnswer> answers = new ArrayList<>();
 
     @Builder.Default

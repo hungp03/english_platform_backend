@@ -15,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class Notification {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,6 +29,7 @@ public class Notification {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean isRead = false;
 

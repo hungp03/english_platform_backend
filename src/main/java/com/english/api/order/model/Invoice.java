@@ -36,6 +36,7 @@ public class Invoice {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private CurrencyType currency = CurrencyType.VND;
 
     @JdbcTypeCode(SqlTypes.JSON)

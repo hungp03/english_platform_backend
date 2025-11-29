@@ -35,6 +35,7 @@ public class OrderItem {
     private String title;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer quantity = 1;
 
     @Column(name = "unit_price_cents", nullable = false)
