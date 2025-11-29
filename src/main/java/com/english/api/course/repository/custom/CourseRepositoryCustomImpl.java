@@ -45,6 +45,9 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
         SORT_COLUMN_MAP.put("status", "c.status");
         SORT_COLUMN_MAP.put("moduleCount", "module_count");
         SORT_COLUMN_MAP.put("lessonCount", "lesson_count");
+        SORT_COLUMN_MAP.put("students", "student_count");
+        SORT_COLUMN_MAP.put("rating", "average_rating");
+        SORT_COLUMN_MAP.put("totalReviews","total_reviews");
     }
 
     @Override
@@ -67,11 +70,14 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.status AS status,
                 COUNT(DISTINCT m.id) AS module_count,
                 COUNT(DISTINCT l.id) AS lesson_count,
+                COALESCE(AVG(r.rating), 0) AS average_rating,
+                COUNT(DISTINCT r.id) AS total_reviews,
                 c.created_at AS created_at,
                 c.updated_at AS updated_at
             FROM courses c
             LEFT JOIN course_modules m ON m.course_id = c.id
             LEFT JOIN lessons l ON l.module_id = m.id
+            LEFT JOIN course_reviews r ON r.course_id = c.id AND r.is_published = true
             WHERE (CAST(:keyword AS text) IS NULL OR
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
@@ -129,11 +135,14 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.status AS status,
                 COUNT(DISTINCT m.id) AS module_count,
                 COUNT(DISTINCT l.id) AS lesson_count,
+                COALESCE(AVG(r.rating), 0) AS average_rating,
+                COUNT(DISTINCT r.id) AS total_reviews,
                 c.created_at AS created_at,
                 c.updated_at AS updated_at
             FROM courses c
             LEFT JOIN course_modules m ON m.course_id = c.id
             LEFT JOIN lessons l ON l.module_id = m.id
+            LEFT JOIN course_reviews r ON r.course_id = c.id AND r.is_published = true
             WHERE c.created_by = :ownerId
               AND c.is_deleted = false
               AND (
@@ -322,10 +331,22 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 }
                 return count != null ? ((Number) count).longValue() : 0L;
             }
+            
+            @Override
+            public Double getAverageRating() {
+                Object val = row[12]; 
+                return val != null ? ((Number) val).doubleValue() : 0.0;
+            }
+
+            @Override
+            public Long getTotalReviews() {
+                Object val = row[13];
+                return val != null ? ((Number) val).longValue() : 0L;
+            }
 
             @Override
             public Instant getCreatedAt() {
-                Object timestamp = row[12];
+                Object timestamp = row[14];
                 if (timestamp instanceof Timestamp) {
                     return ((Timestamp) timestamp).toInstant();
                 }
@@ -334,12 +355,13 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
 
             @Override
             public Instant getUpdatedAt() {
-                Object timestamp = row[13];
+                Object timestamp = row[15];
                 if (timestamp instanceof Timestamp) {
                     return ((Timestamp) timestamp).toInstant();
                 }
                 return (Instant) timestamp;
             }
         };
-    }
+    };
+
 }

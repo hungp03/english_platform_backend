@@ -19,6 +19,8 @@ public record CourseWithStatsResponse(
     String status,
     Long moduleCount,
     Long lessonCount,
+    Long totalReviews,
+    Double averageRating,
     Instant createdAt,
     Instant updatedAt
 ) implements Serializable {

@@ -10,6 +10,7 @@ import com.english.api.enrollment.repository.EnrollmentRepository;
 import com.english.api.course.dto.request.CreateReviewRequest;
 import com.english.api.course.dto.request.UpdateReviewRequest;
 import com.english.api.course.dto.response.CourseRatingStatsResponse;
+import com.english.api.course.dto.response.MyReviewResponse;
 import com.english.api.course.dto.response.ReviewResponse;
 import com.english.api.course.dto.response.ReviewSummaryResponse;
 import com.english.api.course.mapper.ReviewMapper;
@@ -170,7 +171,7 @@ public class ReviewServiceImpl implements ReviewService {
         Pageable pageable = PageRequest.of(page, size);
         Page<CourseReview> reviewsPage = reviewRepository.findByUserId(currentUserId, pageable);
         
-        Page<ReviewResponse> responsePage = reviewsPage.map(reviewMapper::toResponse);
+        Page<MyReviewResponse> responsePage = reviewsPage.map(reviewMapper::toMyReviewResponse);
         
         return PaginationResponse.from(responsePage, pageable);
     }
@@ -219,7 +220,6 @@ public class ReviewServiceImpl implements ReviewService {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
     
         // 1. Kiểm tra khóa học có tồn tại và thuộc về Instructor này không
-        // Sử dụng repository helper để lấy ownerId (đã có trong file CourseRepository bạn gửi)
         UUID ownerId = courseRepository.findOwnerIdById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
                 
@@ -259,41 +259,14 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewMapper.toResponse(updatedReview);
     }
 
-    // @Override
-    // @Transactional(readOnly = true)
-    // public PaginationResponse getReviewsForInstructor(UUID courseId, Boolean isPublished, Integer rating, int page, int size) {
-    //     UUID currentUserId = SecurityUtil.getCurrentUserId();
-
-    //     // 1. Kiểm tra khóa học có tồn tại và thuộc về Instructor này không
-    //     // Sử dụng repository helper để lấy ownerId (đã có trong file CourseRepository bạn gửi)
-    //     UUID ownerId = courseRepository.findOwnerIdById(courseId)
-    //             .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
-                
-    //     if (!ownerId.equals(currentUserId)) {
-    //         throw new AccessDeniedException("You are not allowed to manage reviews for this course");
-    //     }
-
-    //     // 2. Gọi Repository với bộ lọc
-    //     Pageable pageable = PageRequest.of(page, size);
-    //     Page<CourseReview> reviewsPage = reviewRepository.findByCourseIdWithFilters(courseId, isPublished, rating, pageable);
-        
-    //     // 3. Map sang Response (Full details để instructor xem)
-    //     Page<ReviewResponse> responsePage = reviewsPage.map(reviewMapper::toResponse);
-
-    //     return PaginationResponse.from(responsePage, pageable);
-    // }
-
     @Override
     @Transactional
     public ReviewResponse hideReview(UUID reviewId) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         
-        // 1. Tìm review
         CourseReview review = reviewRepository.findById(reviewId)
             .orElseThrow(() -> new ResourceNotFoundException("Review not found with ID: " + reviewId));
         
-        // 2. LOGIC MỚI: Kiểm tra quyền sở hữu khóa học
-        // Review thuộc về Course -> Course thuộc về User (Instructor)
         if (!review.getCourse().getCreatedBy().getId().equals(currentUserId)) {
             throw new AccessDeniedException("You can only hide reviews for your own courses");
         }

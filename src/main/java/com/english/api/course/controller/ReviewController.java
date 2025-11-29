@@ -114,7 +114,6 @@ public class ReviewController {
      * @return Paginated list of user's reviews
      */
     @GetMapping("/my-reviews")
-    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<PaginationResponse> getMyReviews(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {

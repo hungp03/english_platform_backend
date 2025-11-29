@@ -21,4 +21,6 @@ public interface CourseWithStatsProjection {
     Long getLessonCount();
     Instant getCreatedAt();
     Instant getUpdatedAt();
+    Double getAverageRating();
+    Long getTotalReviews();
 }
