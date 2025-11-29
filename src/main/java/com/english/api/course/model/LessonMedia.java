@@ -44,6 +44,7 @@ public class LessonMedia implements Serializable {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private LessonMediaRole role = LessonMediaRole.ATTACHMENT;
 
     private Integer position;

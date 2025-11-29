@@ -31,9 +31,7 @@ public class SpeakingSubmission {
     @Column(columnDefinition = "text")
     private String transcript;
 
-    // =====================
-    // AI Scores (IELTS-like)
-    // =====================
+    // AI Scores
     private Double aiFluency;
     private Double aiPronunciation;
     private Double aiGrammar;

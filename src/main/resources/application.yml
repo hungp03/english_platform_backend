@@ -18,7 +18,7 @@ spring:
     hibernate:
       ddl-auto: validate
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         id:
@@ -130,10 +130,10 @@ n8n:
   callback:
     secret: ${N8N_CALLBACK_SECRET}
 
-logging:
- level:
-  org.springframework.security: DEBUG
-  org.springframework.scheduling: DEBUG
+# logging:
+#  level:
+#   org.springframework.security: DEBUG
+#   org.springframework.scheduling: DEBUG
 #    org.springframework.orm.jpa: DEBUG
 #    org.springframework.transaction: DEBUG
 #    org.hibernate.SQL: DEBUG

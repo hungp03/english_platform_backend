@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Sort;
+
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -60,7 +62,7 @@ public class PublicForumController {
 
 
     @GetMapping("/categories")
-    public ResponseEntity<java.util.List<ForumCategoryResponse>> categories() {
+    public ResponseEntity<List<ForumCategoryResponse>> categories() {
         return ResponseEntity.ok(categoryService.list());
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -24,7 +25,7 @@ public interface InstructorCertificateProofRepository extends JpaRepository<Inst
         LEFT JOIN FETCH ir.user u
         WHERE cp.id = :proofId
         """)
-    java.util.Optional<InstructorCertificateProof> findByIdWithRequest(@Param("proofId") UUID proofId);
+    Optional<InstructorCertificateProof> findByIdWithRequest(@Param("proofId") UUID proofId);
 
     void deleteByInstructorRequestId(UUID requestId);
 }

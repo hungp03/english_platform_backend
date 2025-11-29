@@ -1,6 +1,7 @@
-package com.english.api.forum.entity;
+package com.english.api.forum.model;
 
 import com.english.api.user.model.User;
+import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -23,8 +24,6 @@ import java.util.UUID;
 })
 public class ForumReport {
     @Id
-    @GeneratedValue
-    @JdbcTypeCode(SqlTypes.UUID)
     private UUID id;
 
     @Enumerated(EnumType.STRING)
@@ -53,4 +52,11 @@ public class ForumReport {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resolved_by")
     private User resolvedBy;
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null) {
+            id = UuidCreator.getTimeOrderedEpoch();
+        }
+    }
 }

@@ -29,9 +29,15 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -40,11 +46,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -443,21 +456,21 @@ public class AuthServiceImpl implements AuthService {
             } else {
                 // It's an access token, verify via userinfo endpoint
                 String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
-                java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-                java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
-                        .uri(java.net.URI.create(userInfoUrl))
+                HttpClient client = HttpClient.newHttpClient();
+                HttpRequest httpRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(userInfoUrl))
                         .header("Authorization", "Bearer " + request.idToken())
                         .GET()
                         .build();
 
-                java.net.http.HttpResponse<String> response = client.send(httpRequest, 
-                        java.net.http.HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = client.send(httpRequest, 
+                        HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() != 200) {
                     throw new ResourceInvalidException("Invalid Google access token");
                 }
 
-                com.google.gson.JsonObject userInfo = com.google.gson.JsonParser.parseString(response.body()).getAsJsonObject();
+                JsonObject userInfo = JsonParser.parseString(response.body()).getAsJsonObject();
                 googleUid = userInfo.get("sub").getAsString();
                 email = userInfo.has("email") ? userInfo.get("email").getAsString() : null;
             }
@@ -502,21 +515,21 @@ public class AuthServiceImpl implements AuthService {
     private GoogleTokenResponse exchangeAuthorizationCode(String authorizationCode, String redirectUri) {
         String tokenEndpoint = "https://oauth2.googleapis.com/token";
         
-        org.springframework.util.LinkedMultiValueMap<String, String> params = new org.springframework.util.LinkedMultiValueMap<>();
+        LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("code", authorizationCode);
         params.add("client_id", googleClientId);
         params.add("client_secret", googleClientSecret);
         params.add("redirect_uri", redirectUri);
         params.add("grant_type", "authorization_code");
 
-        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-        headers.setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, String>> request = 
-                new org.springframework.http.HttpEntity<>(params, headers);
+        HttpEntity<MultiValueMap<String, String>> request = 
+                new HttpEntity<>(params, headers);
 
         try {
-            org.springframework.http.ResponseEntity<Map> response = restTemplate.postForEntity(
+            ResponseEntity<Map> response = restTemplate.postForEntity(
                     tokenEndpoint, 
                     request, 
                     Map.class
@@ -568,7 +581,7 @@ public class AuthServiceImpl implements AuthService {
             }
             
             if (expiresIn != null) {
-                java.time.OffsetDateTime expiresAt = java.time.OffsetDateTime.now()
+                OffsetDateTime expiresAt = OffsetDateTime.now()
                         .plusSeconds(expiresIn);
                 token.setTokenExpiresAt(expiresAt);
             }

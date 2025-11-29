@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-// import com.english.api.admin.repository.DashboardStatsRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -171,12 +170,7 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         Long totalUnsolveReport = forumReportRepository.countByResolvedAtIsNull();
         Long totalPendingOrders = orderRepository.countByStatus(OrderStatus.PENDING);
 
-
-        return PendingActionsResponse.builder()
-                .instructorRequestsCount((long) totalPendingRequest)
-                .forumReportsCount((long) totalUnsolveReport)
-                .pendingOrdersCount((long) totalPendingOrders)
-                .build();
+        return new PendingActionsResponse(totalPendingRequest, totalUnsolveReport, totalPendingOrders);
     }
 
     // === 3. CHARTS ===
@@ -191,7 +185,7 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         LocalDate end = LocalDate.now().withDayOfMonth(1);
         while (!current.isAfter(end)) {
             String key = current.format(DateTimeFormatter.ofPattern("MM-yyyy"));
-            monthMap.put(key, UserGrowthResponse.MonthlyData.builder().month(key).newUsers(0L).activeUsers(0L).build());
+            monthMap.put(key, new UserGrowthResponse.MonthlyData(key, 0L, 0L));
             current = current.plusMonths(1);
         }
 
@@ -200,16 +194,10 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                     .format(DateTimeFormatter.ofPattern("MM-yyyy"));
             Long newUsers = (Long) row[1];
             Long activeUsers = (Long) row[2];
-            UserGrowthResponse.MonthlyData d = monthMap.get(monthStr);
-            if (d != null) {
-                d.setNewUsers(newUsers);
-                d.setActiveUsers(activeUsers);
-            }
+            monthMap.put(monthStr, new UserGrowthResponse.MonthlyData(monthStr, newUsers, activeUsers));
         }
 
-        return UserGrowthResponse.builder()
-                .monthlyData(new ArrayList<>(monthMap.values()))
-                .build();
+        return new UserGrowthResponse(new ArrayList<>(monthMap.values()));
     }
 
     @Override
@@ -217,7 +205,6 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         if (months > 12) months = 12;
         OffsetDateTime startDate = OffsetDateTime.now().minusMonths(months).withDayOfMonth(1)
                 .withHour(0).withMinute(0).withSecond(0);
-        // List<Object[]> data = orderRepository.getRevenueByMonth(startDate);
         List<Object[]> data = orderRepository.getRevenueByMonth(startDate);
 
         Map<String, RevenueChartResponse.MonthlyRevenue> monthMap = new LinkedHashMap<>();
@@ -225,9 +212,7 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         LocalDate end = LocalDate.now().withDayOfMonth(1);
         while (!current.isAfter(end)) {
             String key = current.format(DateTimeFormatter.ofPattern("MM-yyyy"));
-            monthMap.put(key, RevenueChartResponse.MonthlyRevenue.builder()
-                    .month(key).revenueVND(0L).revenueUSD(0L).totalOrders(0L).averageOrderValue(BigDecimal.ZERO)
-                    .build());
+            monthMap.put(key, new RevenueChartResponse.MonthlyRevenue(key, 0L, 0L, 0L, BigDecimal.ZERO));
             current = current.plusMonths(1);
         }
 
@@ -238,26 +223,18 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
             Long vnd = (Long) row[1];
             Long usd = (Long) row[2];
             Long orders = (Long) row[3];
-        BigDecimal rate = new BigDecimal("26349");
-        BigDecimal totalVnd = BigDecimal.valueOf(vnd)
-                .add(BigDecimal.valueOf(usd).multiply(rate));
+            BigDecimal rate = new BigDecimal("26349");
+            BigDecimal totalVnd = BigDecimal.valueOf(vnd)
+                    .add(BigDecimal.valueOf(usd).multiply(rate));
 
-        BigDecimal avg = orders > 0
-                ? totalVnd.divide(BigDecimal.valueOf(orders), 2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
+            BigDecimal avg = orders > 0
+                    ? totalVnd.divide(BigDecimal.valueOf(orders), 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
 
-            RevenueChartResponse.MonthlyRevenue d = monthMap.get(monthStr);
-            if (d != null) {
-                d.setRevenueVND(vnd);
-                d.setRevenueUSD(usd);
-                d.setTotalOrders(orders);
-                d.setAverageOrderValue(avg);
-            }
+            monthMap.put(monthStr, new RevenueChartResponse.MonthlyRevenue(monthStr, vnd, usd, orders, avg));
         }
 
-        return RevenueChartResponse.builder()
-                .monthlyRevenue(new ArrayList<>(monthMap.values()))
-                .build();
+        return new RevenueChartResponse(new ArrayList<>(monthMap.values()));
     }
 
     @Override
@@ -272,10 +249,7 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         LocalDate end = LocalDate.now().withDayOfMonth(1);
         while (!current.isAfter(end)) {
             String key = current.format(DateTimeFormatter.ofPattern("MM-yyyy"));
-            monthMap.put(key, EnrollmentChartResponse.MonthlyEnrollment.builder()
-                    .month(key).newEnrollments(0L).completedEnrollments(0L)
-                    .completionRate(BigDecimal.ZERO).averageProgress(BigDecimal.ZERO)
-                    .build());
+            monthMap.put(key, new EnrollmentChartResponse.MonthlyEnrollment(key, 0L, 0L, BigDecimal.ZERO, BigDecimal.ZERO));
             current = current.plusMonths(1);
         }
 
@@ -290,18 +264,16 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                     ? BigDecimal.valueOf(completed * 100.0 / newEnroll).setScale(2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO;
 
-            EnrollmentChartResponse.MonthlyEnrollment d = monthMap.get(monthStr);
-            if (d != null) {
-                d.setNewEnrollments(newEnroll);
-                d.setCompletedEnrollments(completed);
-                d.setCompletionRate(completionRate);
-                d.setAverageProgress(BigDecimal.valueOf(avgProgress != null ? avgProgress : 0).setScale(2, RoundingMode.HALF_UP));
-            }
+            monthMap.put(monthStr, new EnrollmentChartResponse.MonthlyEnrollment(
+                monthStr, 
+                newEnroll, 
+                completed, 
+                completionRate,
+                BigDecimal.valueOf(avgProgress != null ? avgProgress : 0).setScale(2, RoundingMode.HALF_UP)
+            ));
         }
 
-        return EnrollmentChartResponse.builder()
-                .monthlyEnrollment(new ArrayList<>(monthMap.values()))
-                .build();
+        return new EnrollmentChartResponse(new ArrayList<>(monthMap.values()));
     }
 
     // === 4. TOP PERFORMERS ===
@@ -318,38 +290,29 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
             UUID instructorId = (UUID) row[5];
             Long enrollmentCount = (Long) row[6];
             Long completionCount = (Long) row[7];
-            Double avgProgress = (Double) row[8];
             Long priceCents = (Long) row[9];
             
             BigDecimal completionRate = enrollmentCount > 0
                     ? BigDecimal.valueOf(completionCount * 100.0 / enrollmentCount).setScale(2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO;
             
-            return TopPerformersResponse.TopCourse.builder()
-                    .id(courseId)
-                    .title(title)
-                    .slug(slug)
-                    .thumbnail(thumbnail)
-                    .instructorName(instructorName)
-                    .instructorId(instructorId)
-                    .enrollmentCount(enrollmentCount)
-                    .completionCount(completionCount)
-                    .completionRate(completionRate)
-                    .averageRating(null) // Rating calculation would require a separate query
-                    .totalRevenueCents(priceCents != null ? priceCents * enrollmentCount : 0L)
-                    .currency("VND")
-                    .rank(0)
-                    .build();
+            return new TopPerformersResponse.TopCourse(
+                    courseId, title, slug, thumbnail, instructorName, instructorId,
+                    enrollmentCount, completionCount, completionRate, null,
+                    priceCents != null ? priceCents * enrollmentCount : 0L, "VND", 0
+            );
         }).collect(Collectors.toList());
         
-        // Set ranks
         for (int i = 0; i < list.size(); i++) {
-            list.get(i).setRank(i + 1);
+            list.set(i, new TopPerformersResponse.TopCourse(
+                list.get(i).id(), list.get(i).title(), list.get(i).slug(), list.get(i).thumbnail(),
+                list.get(i).instructorName(), list.get(i).instructorId(), list.get(i).enrollmentCount(),
+                list.get(i).completionCount(), list.get(i).completionRate(), list.get(i).averageRating(),
+                list.get(i).totalRevenueCents(), list.get(i).currency(), i + 1
+            ));
         }
         
-        TopPerformersResponse response = new TopPerformersResponse();
-        response.setTopCourses(list);
-        return response;
+        return new TopPerformersResponse(list, null, null);
     }
 
     @Override
@@ -366,28 +329,24 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 Long totalCourses = (Long) row[5];
                 Long totalEnrollments = (Long) row[6];
 
-                return TopPerformersResponse.TopInstructor.builder()
-                        .id(instructorId)
-                        .fullName(fullName)
-                        .email(email)
-                        .avatarUrl(avatarUrl)
-                        .totalRevenueCents(totalRevenueCents)
-                        .totalCourses(totalCourses)
-                        .totalEnrollments(totalEnrollments)
-                        .rank(0)
-                        .build();
+                return new TopPerformersResponse.TopInstructor(
+                        instructorId, fullName, email, avatarUrl, totalCourses, null,
+                        totalEnrollments, null, null, totalRevenueCents, 0
+                );
                 })
                 .collect(Collectors.toList());
 
-        // Gán rank
         for (int i = 0; i < list.size(); i++) {
-                list.get(i).setRank(i + 1);
+            TopPerformersResponse.TopInstructor old = list.get(i);
+            list.set(i, new TopPerformersResponse.TopInstructor(
+                old.id(), old.fullName(), old.email(), old.avatarUrl(), old.totalCourses(),
+                old.publishedCourses(), old.totalEnrollments(), old.totalStudents(),
+                old.averageRating(), old.totalRevenueCents(), i + 1
+            ));
         }
 
-        TopPerformersResponse response = new TopPerformersResponse();
-        response.setTopInstructors(list);
-        return response;
-        }
+        return new TopPerformersResponse(null, list, null);
+    }
 
 
 
@@ -409,28 +368,21 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                     ? BigDecimal.valueOf(revenue).divide(BigDecimal.valueOf(orders), 2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO;
             
-            return TopPerformersResponse.TopRevenueCourse.builder()
-                    .id(courseId)
-                    .title(title)
-                    .slug(slug)
-                    .instructorName(instructorName)
-                    .totalRevenueCents(revenue)
-                    .currency(currency)
-                    .totalOrders(orders)
-                    .enrollmentCount(enrollmentCount)
-                    .averageOrderValue(avgOrderValue)
-                    .rank(0)
-                    .build();
+            return new TopPerformersResponse.TopRevenueCourse(
+                    courseId, title, slug, instructorName, revenue, currency,
+                    orders, enrollmentCount, avgOrderValue, 0
+            );
         }).collect(Collectors.toList());
         
-        // Set ranks
         for (int i = 0; i < list.size(); i++) {
-            list.get(i).setRank(i + 1);
+            TopPerformersResponse.TopRevenueCourse old = list.get(i);
+            list.set(i, new TopPerformersResponse.TopRevenueCourse(
+                old.id(), old.title(), old.slug(), old.instructorName(), old.totalRevenueCents(),
+                old.currency(), old.totalOrders(), old.enrollmentCount(), old.averageOrderValue(), i + 1
+            ));
         }
         
-        TopPerformersResponse response = new TopPerformersResponse();
-        response.setTopRevenueCourses(list);
-        return response;
+        return new TopPerformersResponse(null, null, list);
     }
 
     // === 5. EXPORT ===
@@ -547,10 +499,10 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
         csv.append("Month,New Users,Active Users\n");
 
-        for (UserGrowthResponse.MonthlyData monthly : data.getMonthlyData()) {
-            csv.append(monthly.getMonth()).append(",")
-               .append(monthly.getNewUsers()).append(",")
-               .append(monthly.getActiveUsers()).append("\n");
+        for (UserGrowthResponse.MonthlyData monthly : data.monthlyData()) {
+            csv.append(monthly.month()).append(",")
+               .append(monthly.newUsers()).append(",")
+               .append(monthly.activeUsers()).append("\n");
         }
 
         return csv.toString();
@@ -564,12 +516,12 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
         csv.append("Month,Revenue VND (cents),Revenue USD (cents),Total Orders,Average Order Value\n");
 
-        for (RevenueChartResponse.MonthlyRevenue monthly : data.getMonthlyRevenue()) {
-            csv.append(monthly.getMonth()).append(",")
-               .append(monthly.getRevenueVND()).append(",")
-               .append(monthly.getRevenueUSD()).append(",")
-               .append(monthly.getTotalOrders()).append(",")
-               .append(monthly.getAverageOrderValue()).append("\n");
+        for (RevenueChartResponse.MonthlyRevenue monthly : data.monthlyRevenue()) {
+            csv.append(monthly.month()).append(",")
+               .append(monthly.revenueVND()).append(",")
+               .append(monthly.revenueUSD()).append(",")
+               .append(monthly.totalOrders()).append(",")
+               .append(monthly.averageOrderValue()).append("\n");
         }
 
         return csv.toString();
@@ -583,12 +535,12 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
         csv.append("Month,New Enrollments,Completed Enrollments,Completion Rate (%),Average Progress (%)\n");
 
-        for (EnrollmentChartResponse.MonthlyEnrollment monthly : data.getMonthlyEnrollment()) {
-            csv.append(monthly.getMonth()).append(",")
-               .append(monthly.getNewEnrollments()).append(",")
-               .append(monthly.getCompletedEnrollments()).append(",")
-               .append(monthly.getCompletionRate()).append(",")
-               .append(monthly.getAverageProgress()).append("\n");
+        for (EnrollmentChartResponse.MonthlyEnrollment monthly : data.monthlyEnrollment()) {
+            csv.append(monthly.month()).append(",")
+               .append(monthly.newEnrollments()).append(",")
+               .append(monthly.completedEnrollments()).append(",")
+               .append(monthly.completionRate()).append(",")
+               .append(monthly.averageProgress()).append("\n");
         }
 
         return csv.toString();
@@ -602,17 +554,17 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
         csv.append("Rank,Course ID,Title,Slug,Instructor,Enrollments,Completions,Completion Rate (%),Revenue (cents),Currency\n");
 
-        for (TopPerformersResponse.TopCourse course : data.getTopCourses()) {
-            csv.append(course.getRank()).append(",")
-               .append(course.getId()).append(",")
-               .append("\"").append(escapeCSV(course.getTitle())).append("\",")
-               .append(course.getSlug()).append(",")
-               .append("\"").append(escapeCSV(course.getInstructorName())).append("\",")
-               .append(course.getEnrollmentCount()).append(",")
-               .append(course.getCompletionCount()).append(",")
-               .append(course.getCompletionRate()).append(",")
-               .append(course.getTotalRevenueCents()).append(",")
-               .append(course.getCurrency()).append("\n");
+        for (TopPerformersResponse.TopCourse course : data.topCourses()) {
+            csv.append(course.rank()).append(",")
+               .append(course.id()).append(",")
+               .append("\"").append(escapeCSV(course.title())).append("\",")
+               .append(course.slug()).append(",")
+               .append("\"").append(escapeCSV(course.instructorName())).append("\",")
+               .append(course.enrollmentCount()).append(",")
+               .append(course.completionCount()).append(",")
+               .append(course.completionRate()).append(",")
+               .append(course.totalRevenueCents()).append(",")
+               .append(course.currency()).append("\n");
         }
 
         return csv.toString();
@@ -626,14 +578,14 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
         csv.append("Rank,Instructor ID,Full Name,Email,Total Courses,Total Enrollments,Total Revenue (cents)\n");
 
-        for (TopPerformersResponse.TopInstructor instructor : data.getTopInstructors()) {
-            csv.append(instructor.getRank()).append(",")
-               .append(instructor.getId()).append(",")
-               .append("\"").append(escapeCSV(instructor.getFullName())).append("\",")
-               .append(instructor.getEmail()).append(",")
-               .append(instructor.getTotalCourses()).append(",")
-               .append(instructor.getTotalEnrollments()).append(",")
-               .append(instructor.getTotalRevenueCents()).append("\n");
+        for (TopPerformersResponse.TopInstructor instructor : data.topInstructors()) {
+            csv.append(instructor.rank()).append(",")
+               .append(instructor.id()).append(",")
+               .append("\"").append(escapeCSV(instructor.fullName())).append("\",")
+               .append(instructor.email()).append(",")
+               .append(instructor.totalCourses()).append(",")
+               .append(instructor.totalEnrollments()).append(",")
+               .append(instructor.totalRevenueCents()).append("\n");
         }
 
         return csv.toString();
@@ -647,17 +599,17 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
         csv.append("Rank,Course ID,Title,Slug,Instructor,Total Revenue (cents),Currency,Total Orders,Enrollments,Average Order Value\n");
 
-        for (TopPerformersResponse.TopRevenueCourse course : data.getTopRevenueCourses()) {
-            csv.append(course.getRank()).append(",")
-               .append(course.getId()).append(",")
-               .append("\"").append(escapeCSV(course.getTitle())).append("\",")
-               .append(course.getSlug()).append(",")
-               .append("\"").append(escapeCSV(course.getInstructorName())).append("\",")
-               .append(course.getTotalRevenueCents()).append(",")
-               .append(course.getCurrency()).append(",")
-               .append(course.getTotalOrders()).append(",")
-               .append(course.getEnrollmentCount()).append(",")
-               .append(course.getAverageOrderValue()).append("\n");
+        for (TopPerformersResponse.TopRevenueCourse course : data.topRevenueCourses()) {
+            csv.append(course.rank()).append(",")
+               .append(course.id()).append(",")
+               .append("\"").append(escapeCSV(course.title())).append("\",")
+               .append(course.slug()).append(",")
+               .append("\"").append(escapeCSV(course.instructorName())).append("\",")
+               .append(course.totalRevenueCents()).append(",")
+               .append(course.currency()).append(",")
+               .append(course.totalOrders()).append(",")
+               .append(course.enrollmentCount()).append(",")
+               .append(course.averageOrderValue()).append("\n");
         }
 
         return csv.toString();

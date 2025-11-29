@@ -1,7 +1,5 @@
 package com.english.api.forum.repository;
 
-import com.english.api.forum.entity.ForumReport;
-import com.english.api.forum.entity.ReportTargetType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -10,6 +8,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import com.english.api.forum.model.ForumReport;
+import com.english.api.forum.model.ReportTargetType;
 
 import java.util.List;
 import java.util.UUID;

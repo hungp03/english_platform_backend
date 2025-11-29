@@ -62,6 +62,7 @@ public class Payment {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private PaymentStatus status = PaymentStatus.INITIATED;
 
     @Column(name = "raw_payload", columnDefinition = "jsonb")

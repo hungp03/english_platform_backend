@@ -101,6 +101,9 @@ public class QuizServiceImpl implements QuizService {
         if (request.questionText() != null) {
             quiz.setQuestionText(request.questionText());
         }
+        if (request.explanation() != null) {
+            quiz.setExplanation(request.explanation());
+        }
 
         if (request.explanation() != null) {
             quiz.setExplanation(request.explanation());

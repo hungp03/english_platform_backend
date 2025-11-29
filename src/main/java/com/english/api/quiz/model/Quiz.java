@@ -19,7 +19,6 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(name = "quizzes")
-
 public class Quiz {
 
     @Id
@@ -31,7 +30,7 @@ public class Quiz {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private QuizStatus status = QuizStatus.DRAFT;
@@ -44,6 +43,7 @@ public class Quiz {
     @JoinColumn(name = "quiz_section_id", nullable = true)
     private QuizSection quizSection;
 
+    @Builder.Default
     @BatchSize(size = 20)
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
@@ -71,9 +71,6 @@ public class Quiz {
         if (status == null) {
             status = QuizStatus.DRAFT;
         }
-        // if (skill == null) {
-        //     skill = QuizSkill.READING;
-        // }
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;

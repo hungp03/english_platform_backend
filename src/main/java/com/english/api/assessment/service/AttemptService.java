@@ -1,6 +1,7 @@
 package com.english.api.assessment.service;
 
 import com.english.api.assessment.dto.request.SubmitAttemptRequest;
+import com.english.api.assessment.dto.response.AttemptAnswersResponse;
 import com.english.api.assessment.dto.response.AttemptResponse;
 import com.english.api.common.dto.PaginationResponse;
 import org.springframework.data.domain.Pageable;
@@ -8,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface AttemptService {
-    com.english.api.assessment.dto.response.AttemptAnswersResponse getAttemptAnswers(java.util.UUID attemptId);
+    AttemptAnswersResponse getAttemptAnswers(UUID attemptId);
 
     AttemptResponse submitOneShot(SubmitAttemptRequest req);
 

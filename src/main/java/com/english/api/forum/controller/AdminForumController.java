@@ -7,7 +7,7 @@ import com.english.api.forum.dto.response.ForumCategoryResponse;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.dto.response.ForumReportResponse;
 import com.english.api.forum.dto.response.ForumThreadResponse;
-import com.english.api.forum.entity.ReportTargetType;
+import com.english.api.forum.model.ReportTargetType;
 import com.english.api.forum.service.ForumCategoryService;
 import com.english.api.forum.service.ForumPostService;
 import com.english.api.forum.service.ForumReportService;
@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -33,7 +34,7 @@ public class AdminForumController {
     private final ForumReportService reportService;
 
     @GetMapping("/categories")
-    public ResponseEntity<java.util.List<ForumCategoryResponse>> categories() {
+    public ResponseEntity<List<ForumCategoryResponse>> categories() {
         return ResponseEntity.ok(categoryService.list());
     }
 
@@ -106,7 +107,7 @@ public class AdminForumController {
     }
 
     @DeleteMapping("/posts/{id}")
-    public ResponseEntity<Void> deletePost(@PathVariable java.util.UUID id) {
+    public ResponseEntity<Void> deletePost(@PathVariable UUID id) {
         postService.adminDelete(id);
         return ResponseEntity.noContent().build();
     }

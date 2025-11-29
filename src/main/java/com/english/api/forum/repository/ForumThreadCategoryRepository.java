@@ -1,12 +1,13 @@
 package com.english.api.forum.repository;
 
-import com.english.api.forum.entity.ForumThread;
-import com.english.api.forum.entity.ForumThreadCategory;
-import com.english.api.forum.entity.ForumThreadCategoryId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.english.api.forum.model.ForumThread;
+import com.english.api.forum.model.ForumThreadCategory;
+import com.english.api.forum.model.ForumThreadCategoryId;
 
 import java.util.List;
 

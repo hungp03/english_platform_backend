@@ -1,10 +1,9 @@
-package com.english.api.forum.entity;
+package com.english.api.forum.model;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -20,8 +19,6 @@ import java.util.UUID;
 })
 public class ForumCategory {
     @Id
-    @GeneratedValue
-    @JdbcTypeCode(SqlTypes.UUID)
     private UUID id;
     @Column(nullable = false)
     private String name;
@@ -31,4 +28,11 @@ public class ForumCategory {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null) {
+            id = UuidCreator.getTimeOrderedEpoch();
+        }
+    }
 }

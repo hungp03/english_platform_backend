@@ -50,7 +50,8 @@ public class QuizAttempt {
     private QuizAttemptStatus status;
 
     @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
-    @BatchSize(size = 30) // gom 30 answer/lần khi load
+    @BatchSize(size = 30)
+    @Builder.Default
     private List<QuizAttemptAnswer> answers = new ArrayList<>();
 
     @Builder.Default
@@ -65,8 +66,7 @@ public class QuizAttempt {
     @Builder.Default
     private Double maxScore = 0.0;
 
-    @Builder.Default
-    private Instant startedAt = Instant.now();
+    private Instant startedAt;
 
     private Instant submittedAt;
 
@@ -87,22 +87,10 @@ public class QuizAttempt {
         Instant now = Instant.now();
         if (createdAt == null) createdAt = now;
         updatedAt = now;
-        if (startedAt == null) startedAt = now;
     }
 
     @PreUpdate
     public void preUpdate() {
         updatedAt = Instant.now();
-    }
-
-    // Factory method tiện cho AttemptServiceImpl
-    public static QuizAttempt of(Quiz quiz, User user, QuizSkill skill, QuizAttemptStatus status) {
-        return QuizAttempt.builder()
-                .quiz(quiz)
-                .user(user)
-                .skill(skill)
-                .status(status)
-                .startedAt(Instant.now())
-                .build();
     }
 }

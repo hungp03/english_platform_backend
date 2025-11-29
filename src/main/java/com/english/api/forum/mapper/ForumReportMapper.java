@@ -1,10 +1,10 @@
 package com.english.api.forum.mapper;
 
 import com.english.api.forum.dto.response.ForumReportResponse;
-import com.english.api.forum.entity.ForumPost;
-import com.english.api.forum.entity.ForumReport;
-import com.english.api.forum.entity.ForumThread;
-import com.english.api.forum.entity.ReportTargetType;
+import com.english.api.forum.model.ForumPost;
+import com.english.api.forum.model.ForumReport;
+import com.english.api.forum.model.ForumThread;
+import com.english.api.forum.model.ReportTargetType;
 import com.english.api.forum.repository.ForumPostRepository;
 import com.english.api.forum.repository.ForumThreadRepository;
 import org.mapstruct.Mapper;

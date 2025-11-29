@@ -9,7 +9,7 @@ import com.english.api.forum.dto.request.ForumThreadUpdateRequest;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.dto.response.ForumReportResponse;
 import com.english.api.forum.dto.response.ForumThreadResponse;
-import com.english.api.forum.entity.ReportTargetType;
+import com.english.api.forum.model.ReportTargetType;
 import com.english.api.forum.service.ForumPostService;
 import com.english.api.forum.service.ForumReportService;
 import com.english.api.forum.service.ForumThreadService;
@@ -82,7 +82,7 @@ public class AppForumController {
     // === Owner self-delete post ===
     @DeleteMapping("/posts/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> deleteOwnPost(@PathVariable java.util.UUID id) {
+    public ResponseEntity<Void> deleteOwnPost(@PathVariable UUID id) {
         postService.deleteByOwner(id);
         return ResponseEntity.noContent().build();
     }

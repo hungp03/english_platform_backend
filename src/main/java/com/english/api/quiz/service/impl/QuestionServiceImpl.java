@@ -20,9 +20,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -59,7 +62,7 @@ public class QuestionServiceImpl implements QuestionService {
                         .build();
                 options.add(option);
             }
-            question.setOptions(new java.util.LinkedHashSet<>(options));
+            question.setOptions(new LinkedHashSet<>(options));
         }
 
         question = questionRepository.save(question);
@@ -92,7 +95,7 @@ public class QuestionServiceImpl implements QuestionService {
 
         if (request.options() != null) {
             if (question.getOptions() == null) {
-                question.setOptions(new java.util.LinkedHashSet<>());
+                question.setOptions(new LinkedHashSet<>());
             }
             question.getOptions().clear();
             for (QuestionOptionCreateRequest optionRequest : request.options()) {
@@ -135,7 +138,7 @@ public class QuestionServiceImpl implements QuestionService {
                 ? question.getOptions().stream()
                         .map(option -> new QuestionOptionResponse(option.getId(), option.getContent(), option.isCorrect(),
                                 option.getOrderIndex()))
-                        .collect(java.util.stream.Collectors.toList())
+                        .collect(Collectors.toList())
                 : new ArrayList<>();
         return new QuestionResponse(
                 question.getId(),

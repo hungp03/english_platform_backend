@@ -32,6 +32,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MediaAsset implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -51,15 +52,15 @@ public class MediaAsset implements Serializable {
 
     private Instant createdAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "media", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<LessonMedia> lessonMediaLinks = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
         if (id == null) {
-            id = UuidCreator.getTimeOrderedEpoch(); // UUIDv7
+            id = UuidCreator.getTimeOrderedEpoch();
         }
         createdAt = Instant.now();
     }
 }
-

@@ -9,7 +9,6 @@ import java.util.UUID;
 public record AttemptResponse(
         UUID id,
         UUID quizId,
-        UUID userId,
         String quizType,
         String quizSection,
         String quizName,
