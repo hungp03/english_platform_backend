@@ -4,6 +4,8 @@ import com.english.api.common.dto.PaginationResponse;
 import com.english.api.course.dto.response.CourseRatingStatsResponse;
 import com.english.api.course.service.ReviewService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,19 +25,13 @@ public class PublicReviewController {
     /**
      * Get published reviews for a course (public access)
      * GET /api/public/reviews/courses/{courseId}
-     * 
-     * @param courseId Course ID
-     * @param page Page number (default: 0)
-     * @param size Page size (default: 20)
-     * @return Paginated list of published reviews
      */
     @GetMapping("/courses/{courseId}")
     public ResponseEntity<PaginationResponse> getReviewsForCourse(
             @PathVariable UUID courseId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @PageableDefault(size = 20) Pageable pageable) {
         
-        PaginationResponse reviews = reviewService.getReviewsForCourse(courseId, page, size);
+        PaginationResponse reviews = reviewService.getReviewsForCourse(courseId, pageable);
         return ResponseEntity.ok(reviews);
     }
     

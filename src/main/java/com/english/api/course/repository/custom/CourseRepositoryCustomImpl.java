@@ -68,16 +68,17 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.price_cents AS price_cents,
                 c.currency AS currency,
                 c.status AS status,
-                COUNT(DISTINCT m.id) AS module_count,
-                COUNT(DISTINCT l.id) AS lesson_count,
-                COALESCE(AVG(r.rating), 0) AS average_rating,
-                COUNT(DISTINCT r.id) AS total_reviews,
+                (SELECT COUNT(*) FROM course_modules m WHERE m.course_id = c.id) AS module_count,
+                (SELECT COUNT(*) FROM course_modules m
+                 INNER JOIN lessons l ON l.module_id = m.id
+                 WHERE m.course_id = c.id) AS lesson_count,
+                COALESCE((SELECT AVG(r.rating) FROM course_reviews r
+                          WHERE r.course_id = c.id AND r.is_published = true), 0) AS average_rating,
+                (SELECT COUNT(*) FROM course_reviews r
+                 WHERE r.course_id = c.id AND r.is_published = true) AS total_reviews,
                 c.created_at AS created_at,
                 c.updated_at AS updated_at
             FROM courses c
-            LEFT JOIN course_modules m ON m.course_id = c.id
-            LEFT JOIN lessons l ON l.module_id = m.id
-            LEFT JOIN course_reviews r ON r.course_id = c.id AND r.is_published = true
             WHERE (CAST(:keyword AS text) IS NULL OR
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
@@ -90,8 +91,6 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                            SELECT LOWER(unnest) FROM unnest(CAST(:skills AS text[]))
                        )
                    ))
-            GROUP BY c.id, c.title, c.slug, c.description, c.language, c.thumbnail, c.skill_focus,
-                     c.price_cents, c.currency, c.status, c.created_at, c.updated_at
             """;
 
         String countQuery = """
@@ -133,16 +132,17 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.price_cents AS price_cents,
                 c.currency AS currency,
                 c.status AS status,
-                COUNT(DISTINCT m.id) AS module_count,
-                COUNT(DISTINCT l.id) AS lesson_count,
-                COALESCE(AVG(r.rating), 0) AS average_rating,
-                COUNT(DISTINCT r.id) AS total_reviews,
+                (SELECT COUNT(*) FROM course_modules m WHERE m.course_id = c.id) AS module_count,
+                (SELECT COUNT(*) FROM course_modules m
+                 INNER JOIN lessons l ON l.module_id = m.id
+                 WHERE m.course_id = c.id) AS lesson_count,
+                COALESCE((SELECT AVG(r.rating) FROM course_reviews r
+                          WHERE r.course_id = c.id AND r.is_published = true), 0) AS average_rating,
+                (SELECT COUNT(*) FROM course_reviews r
+                 WHERE r.course_id = c.id AND r.is_published = true) AS total_reviews,
                 c.created_at AS created_at,
                 c.updated_at AS updated_at
             FROM courses c
-            LEFT JOIN course_modules m ON m.course_id = c.id
-            LEFT JOIN lessons l ON l.module_id = m.id
-            LEFT JOIN course_reviews r ON r.course_id = c.id AND r.is_published = true
             WHERE c.created_by = :ownerId
               AND c.is_deleted = false
               AND (
@@ -158,8 +158,6 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                            SELECT LOWER(unnest) FROM unnest(CAST(:skills AS text[]))
                        )
                    ))
-            GROUP BY c.id, c.title, c.slug, c.description, c.language, c.thumbnail, c.skill_focus,
-                     c.price_cents, c.currency, c.status, c.created_at, c.updated_at
             """;
 
         String countQuery = """

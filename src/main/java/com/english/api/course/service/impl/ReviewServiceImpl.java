@@ -55,11 +55,6 @@ public class ReviewServiceImpl implements ReviewService {
         }
         
         // 3. Check if user is enrolled in the course
-        // Enrollment enrollment = enrollmentRepository
-        //     .findByUserIdAndCourseId(currentUserId, courseId)
-        //     .orElseThrow(() -> new OperationNotAllowedException(
-        //         "You must be enrolled in this course to write a review"
-        //     ));
         if (!enrollmentRepository.existsByUserIdAndCourseId(currentUserId, courseId)) {
             throw new OperationNotAllowedException("You must be enrolled in this course to write a review");
         }
@@ -147,13 +142,12 @@ public class ReviewServiceImpl implements ReviewService {
     
     @Override
     @Transactional(readOnly = true)
-    public PaginationResponse getReviewsForCourse(UUID courseId, int page, int size) {
+    public PaginationResponse getReviewsForCourse(UUID courseId, Pageable pageable) {
         // Check if course exists
         if (!courseRepository.existsById(courseId)) {
             throw new ResourceNotFoundException("Course not found with ID: " + courseId);
         }
         
-        Pageable pageable = PageRequest.of(page, size);
         Page<CourseReview> reviewsPage = reviewRepository
             .findByCourseIdAndIsPublishedTrue(courseId, pageable);
         
@@ -165,10 +159,9 @@ public class ReviewServiceImpl implements ReviewService {
     
     @Override
     @Transactional(readOnly = true)
-    public PaginationResponse getMyReviews(int page, int size) {
+    public PaginationResponse getMyReviews(Pageable pageable) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         
-        Pageable pageable = PageRequest.of(page, size);
         Page<CourseReview> reviewsPage = reviewRepository.findByUserId(currentUserId, pageable);
         
         Page<MyReviewResponse> responsePage = reviewsPage.map(reviewMapper::toMyReviewResponse);
@@ -216,7 +209,7 @@ public class ReviewServiceImpl implements ReviewService {
     
     @Override
     @Transactional(readOnly = true)
-    public PaginationResponse getReviewsForInstructor(UUID courseId, Boolean isPublished, Integer rating, int page, int size) {
+    public PaginationResponse getReviewsForInstructor(UUID courseId, Boolean isPublished, Integer rating, Pageable pageable) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
     
         // 1. Kiểm tra khóa học có tồn tại và thuộc về Instructor này không
@@ -228,7 +221,6 @@ public class ReviewServiceImpl implements ReviewService {
         }
     
         // 2. Gọi Repository với bộ lọc
-        Pageable pageable = PageRequest.of(page, size);
         Page<CourseReview> reviewsPage = reviewRepository.findByCourseIdWithFilters(courseId, isPublished, rating, pageable);
         
         // 3. Map sang Response (Full details để instructor xem)

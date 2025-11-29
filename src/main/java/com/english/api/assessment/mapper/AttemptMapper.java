@@ -69,7 +69,6 @@ public interface AttemptMapper {
 
     @Mapping(target = "questionId", source = "questionId")
     @Mapping(target = "questionContent", source = "questionContent")
-    @Mapping(target = "questionExplanation", source = "questionExplanation")
     @Mapping(target = "orderIndex", source = "questionOrderIndex")
     @Mapping(target = "explanation", source = "questionExplanation")
     @Mapping(target = "selectedOptionId", source = "selectedOptionId")

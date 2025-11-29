@@ -5,6 +5,7 @@ import com.english.api.course.dto.request.CreateReviewRequest;
 import com.english.api.course.dto.request.UpdateReviewRequest;
 import com.english.api.course.dto.response.CourseRatingStatsResponse;
 import com.english.api.course.dto.response.ReviewResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -65,20 +66,18 @@ public interface ReviewService {
      * Get all published reviews for a course (public)
      * 
      * @param courseId Course ID
-     * @param page Page number
-     * @param size Page size
+     * @param pageable Pagination parameters
      * @return Paginated reviews
      */
-    PaginationResponse getReviewsForCourse(UUID courseId, int page, int size);
+    PaginationResponse getReviewsForCourse(UUID courseId, Pageable pageable);
     
     /**
      * Get all reviews by current user
      * 
-     * @param page Page number
-     * @param size Page size
+     * @param pageable Pagination parameters
      * @return Paginated reviews
      */
-    PaginationResponse getMyReviews(int page, int size);
+    PaginationResponse getMyReviews(Pageable pageable);
     
     /**
      * Get rating statistics for a course
@@ -104,5 +103,5 @@ public interface ReviewService {
      */
     ReviewResponse showReview(UUID reviewId);
 
-    PaginationResponse getReviewsForInstructor(UUID courseId, Boolean isPublished, Integer rating, int page, int size);
+    PaginationResponse getReviewsForInstructor(UUID courseId, Boolean isPublished, Integer rating, Pageable pageable);
 }

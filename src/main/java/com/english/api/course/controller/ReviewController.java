@@ -7,6 +7,8 @@ import com.english.api.course.dto.response.ReviewResponse;
 import com.english.api.course.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,7 +36,6 @@ public class ReviewController {
      * @return Created review
      */
     @PostMapping("/courses/{courseId}")
-    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<ReviewResponse> createReview(
             @PathVariable UUID courseId,
             @Valid @RequestBody CreateReviewRequest request) {
@@ -52,7 +53,6 @@ public class ReviewController {
      * @return Updated review
      */
     @PutMapping("/{reviewId}")
-    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<ReviewResponse> updateReview(
             @PathVariable UUID reviewId,
             @Valid @RequestBody UpdateReviewRequest request) {
@@ -69,7 +69,6 @@ public class ReviewController {
      * @return Success message
      */
     @DeleteMapping("/{reviewId}")
-    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<String> deleteReview(@PathVariable UUID reviewId) {
         reviewService.deleteReview(reviewId);
         return ResponseEntity.ok("Review deleted successfully");
@@ -96,7 +95,6 @@ public class ReviewController {
      * @return User's review or null if not reviewed yet
      */
     @GetMapping("/my-review/courses/{courseId}")
-    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<ReviewResponse> getMyReviewForCourse(@PathVariable UUID courseId) {
         ReviewResponse review = reviewService.getMyReviewForCourse(courseId);
         if (review == null) {
@@ -109,16 +107,14 @@ public class ReviewController {
      * Get all my reviews
      * GET /api/reviews/my-reviews
      * 
-     * @param page Page number (default: 0)
-     * @param size Page size (default: 20)
+     * @param pageable Pagination parameters (default: page 0, size 20)
      * @return Paginated list of user's reviews
      */
     @GetMapping("/my-reviews")
     public ResponseEntity<PaginationResponse> getMyReviews(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @PageableDefault(size = 20) Pageable pageable) {
         
-        PaginationResponse reviews = reviewService.getMyReviews(page, size);
+        PaginationResponse reviews = reviewService.getMyReviews(pageable);
         return ResponseEntity.ok(reviews);
     }
 
@@ -128,10 +124,9 @@ public class ReviewController {
             @PathVariable UUID courseId,
             @RequestParam(required = false) Boolean isPublished,
             @RequestParam(required = false) Integer rating,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @PageableDefault(page = 0, size = 20) Pageable pageable
     ) {
-        PaginationResponse response = reviewService.getReviewsForInstructor(courseId, isPublished, rating, page, size);
+        PaginationResponse response = reviewService.getReviewsForInstructor(courseId, isPublished, rating, pageable);
         return ResponseEntity.ok(response);
     }
 

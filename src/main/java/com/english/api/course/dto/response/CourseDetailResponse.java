@@ -26,6 +26,7 @@ public record CourseDetailResponse(
         Instant updatedAt,
         Long moduleCount,
         Long lessonCount,
+        Long studentCount,
         Double averageRating,
         Long totalReviews
 ) implements Serializable {
