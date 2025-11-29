@@ -10,6 +10,7 @@ import com.english.api.enrollment.repository.EnrollmentRepository;
 import com.english.api.course.dto.request.CreateReviewRequest;
 import com.english.api.course.dto.request.UpdateReviewRequest;
 import com.english.api.course.dto.response.CourseRatingStatsResponse;
+import com.english.api.course.dto.response.MyReviewResponse;
 import com.english.api.course.dto.response.ReviewResponse;
 import com.english.api.course.dto.response.ReviewSummaryResponse;
 import com.english.api.course.mapper.ReviewMapper;
@@ -170,7 +171,7 @@ public class ReviewServiceImpl implements ReviewService {
         Pageable pageable = PageRequest.of(page, size);
         Page<CourseReview> reviewsPage = reviewRepository.findByUserId(currentUserId, pageable);
         
-        Page<ReviewResponse> responsePage = reviewsPage.map(reviewMapper::toResponse);
+        Page<MyReviewResponse> responsePage = reviewsPage.map(reviewMapper::toMyReviewResponse);
         
         return PaginationResponse.from(responsePage, pageable);
     }
@@ -214,28 +215,68 @@ public class ReviewServiceImpl implements ReviewService {
     }
     
     @Override
-    @Transactional
-    public ReviewResponse hideReview(UUID reviewId) {
-        CourseReview review = reviewRepository.findById(reviewId)
-            .orElseThrow(() -> new ResourceNotFoundException("Review not found with ID: " + reviewId));
+    @Transactional(readOnly = true)
+    public PaginationResponse getReviewsForInstructor(UUID courseId, Boolean isPublished, Integer rating, int page, int size) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+    
+        // 1. Kiểm tra khóa học có tồn tại và thuộc về Instructor này không
+        UUID ownerId = courseRepository.findOwnerIdById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+                
+        if (!ownerId.equals(currentUserId)) {
+            throw new AccessDeniedException("You are not allowed to manage reviews for this course");
+        }
+    
+        // 2. Gọi Repository với bộ lọc
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CourseReview> reviewsPage = reviewRepository.findByCourseIdWithFilters(courseId, isPublished, rating, pageable);
         
-        review.setIsPublished(false);
-        CourseReview updatedReview = reviewRepository.save(review);
-        
-        log.info("Admin hid review {}", reviewId);
-        return reviewMapper.toResponse(updatedReview);
+        // 3. Map sang Response (Full details để instructor xem)
+        Page<ReviewResponse> responsePage = reviewsPage.map(reviewMapper::toResponse);
+    
+        return PaginationResponse.from(responsePage, pageable);
     }
     
     @Override
     @Transactional
     public ReviewResponse showReview(UUID reviewId) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+    
+        // 1. Tìm review
         CourseReview review = reviewRepository.findById(reviewId)
             .orElseThrow(() -> new ResourceNotFoundException("Review not found with ID: " + reviewId));
-        
+            
+        // 2. LOGIC MỚI: Kiểm tra quyền sở hữu khóa học
+        if (!review.getCourse().getCreatedBy().getId().equals(currentUserId)) {
+            throw new AccessDeniedException("You can only show reviews for your own courses");
+        }
+    
+        // 3. Thực hiện hiện
         review.setIsPublished(true);
         CourseReview updatedReview = reviewRepository.save(review);
         
-        log.info("Admin showed review {}", reviewId);
+        log.info("Instructor {} showed review {}", currentUserId, reviewId);
         return reviewMapper.toResponse(updatedReview);
     }
+
+    @Override
+    @Transactional
+    public ReviewResponse hideReview(UUID reviewId) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        
+        CourseReview review = reviewRepository.findById(reviewId)
+            .orElseThrow(() -> new ResourceNotFoundException("Review not found with ID: " + reviewId));
+        
+        if (!review.getCourse().getCreatedBy().getId().equals(currentUserId)) {
+            throw new AccessDeniedException("You can only hide reviews for your own courses");
+        }
+    
+        // 3. Thực hiện ẩn
+        review.setIsPublished(false);
+        CourseReview updatedReview = reviewRepository.save(review);
+        
+        log.info("Instructor {} hid review {}", currentUserId, reviewId);
+        return reviewMapper.toResponse(updatedReview);
+    }
+
 }

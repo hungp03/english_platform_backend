@@ -6,6 +6,7 @@ import java.util.UUID;
 public record AttemptAnswerItem(
         UUID questionId,
         String questionContent,
+        String questionExplanation,
         Integer orderIndex,
         String explanation,
         UUID selectedOptionId,

@@ -105,6 +105,10 @@ public class QuizServiceImpl implements QuizService {
             quiz.setExplanation(request.explanation());
         }
 
+        if (request.explanation() != null) {
+            quiz.setExplanation(request.explanation());
+        }
+
         quizRepository.save(quiz);
         return quizMapper.toQuizResponse(quiz);
     }

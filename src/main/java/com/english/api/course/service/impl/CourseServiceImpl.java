@@ -95,6 +95,8 @@ public class CourseServiceImpl implements CourseService {
                         projection.getStatus(),
                         projection.getModuleCount(),
                         projection.getLessonCount(),
+                        projection.getTotalReviews(),
+                        projection.getAverageRating(),
                         projection.getCreatedAt(),
                         projection.getUpdatedAt()
                 ));
@@ -119,6 +121,8 @@ public class CourseServiceImpl implements CourseService {
                         projection.getStatus(),
                         projection.getModuleCount(),
                         projection.getLessonCount(),
+                        projection.getTotalReviews(),
+                        projection.getAverageRating(),
                         projection.getCreatedAt(),
                         projection.getUpdatedAt()
                 ));
@@ -250,6 +254,8 @@ public class CourseServiceImpl implements CourseService {
                         projection.getStatus(),
                         projection.getModuleCount(),
                         projection.getLessonCount(),
+                        projection.getTotalReviews(),
+                        projection.getAverageRating(),
                         projection.getCreatedAt(),
                         projection.getUpdatedAt()
                 ));
@@ -377,6 +383,8 @@ public class CourseServiceImpl implements CourseService {
                         projection.getStatus(),
                         projection.getModuleCount(),
                         projection.getLessonCount(),
+                        projection.getTotalReviews(),
+                        projection.getAverageRating(),
                         projection.getCreatedAt(),
                         projection.getUpdatedAt()
                 ));

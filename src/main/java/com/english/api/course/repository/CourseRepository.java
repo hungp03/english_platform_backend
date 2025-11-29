@@ -41,7 +41,10 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
             cb.fullName,
             c.updatedAt,
             COALESCE((SELECT COUNT(m) FROM CourseModule m WHERE m.course.id = c.id), 0L),
-            COALESCE((SELECT COUNT(l) FROM Lesson l WHERE l.module.course.id = c.id), 0L)
+            COALESCE((SELECT COUNT(l) FROM Lesson l WHERE l.module.course.id = c.id), 0L),
+            
+            COALESCE((SELECT AVG(r.rating) FROM CourseReview r WHERE r.course.id = c.id AND r.isPublished = true), 0.0),
+            COALESCE((SELECT COUNT(r) FROM CourseReview r WHERE r.course.id = c.id AND r.isPublished = true), 0L)
         )
         FROM Course c
         LEFT JOIN c.createdBy cb
@@ -66,7 +69,10 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
             cb.fullName,
             c.updatedAt,
             COALESCE((SELECT COUNT(m) FROM CourseModule m WHERE m.course.id = c.id AND m.published = true), 0L),
-            COALESCE((SELECT COUNT(l) FROM Lesson l WHERE l.module.course.id = c.id AND l.published = true), 0L)
+            COALESCE((SELECT COUNT(l) FROM Lesson l WHERE l.module.course.id = c.id AND l.published = true), 0L),
+
+            COALESCE((SELECT AVG(r.rating) FROM CourseReview r WHERE r.course.id = c.id AND r.isPublished = true), 0.0),
+            COALESCE((SELECT COUNT(r) FROM CourseReview r WHERE r.course.id = c.id AND r.isPublished = true), 0L)
         )
         FROM Course c
         LEFT JOIN c.createdBy cb
