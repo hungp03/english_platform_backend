@@ -7,7 +7,7 @@ import com.english.api.forum.dto.response.ForumCategoryResponse;
 import com.english.api.forum.dto.response.ForumPostResponse;
 import com.english.api.forum.dto.response.ForumReportResponse;
 import com.english.api.forum.dto.response.ForumThreadResponse;
-import com.english.api.forum.entity.ReportTargetType;
+import com.english.api.forum.model.ReportTargetType;
 import com.english.api.forum.service.ForumCategoryService;
 import com.english.api.forum.service.ForumPostService;
 import com.english.api.forum.service.ForumReportService;

@@ -1,3 +1,3 @@
-package com.english.api.forum.entity;
+package com.english.api.forum.model;
 
 public enum ReportTargetType {THREAD, POST}

@@ -1,7 +1,7 @@
 package com.english.api.forum.mapper;
 
 import com.english.api.forum.dto.response.ForumPostResponse;
-import com.english.api.forum.entity.ForumPost;
+import com.english.api.forum.model.ForumPost;
 import com.english.api.user.model.User;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;

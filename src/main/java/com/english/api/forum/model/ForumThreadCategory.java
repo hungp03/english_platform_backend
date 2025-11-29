@@ -1,4 +1,4 @@
-package com.english.api.forum.entity;
+package com.english.api.forum.model;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,6 +16,7 @@ public class ForumThreadCategory {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "thread_id", nullable = false)
     private ForumThread thread;
+
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)

@@ -1,4 +1,4 @@
-package com.english.api.forum.entity;
+package com.english.api.forum.model;
 
 import lombok.*;
 
