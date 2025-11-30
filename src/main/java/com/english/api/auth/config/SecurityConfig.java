@@ -103,6 +103,8 @@ public class SecurityConfig {
                         .requestMatchers(whiteList).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/courses/published").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/courses/slug/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/quiz/types/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/quiz/sections/*/quizzes").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/courses/*/modules/published").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/payos/webhook").permitAll()
