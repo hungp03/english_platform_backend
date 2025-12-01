@@ -48,7 +48,7 @@ public class ForumReport {
     @Column(name = "resolved_at")
     private Instant resolvedAt;
 
-    // --- THAY ĐỔI TẠI ĐÂY: Liên kết người giải quyết (Admin) ---
+    // Linked to the user who resolved this report (Admin)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resolved_by")
     private User resolvedBy;

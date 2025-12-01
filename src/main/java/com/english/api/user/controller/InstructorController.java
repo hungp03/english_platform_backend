@@ -1,6 +1,7 @@
 package com.english.api.user.controller;
 
 import com.english.api.auth.util.SecurityUtil;
+import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.InstructorStatsResponse;
 import com.english.api.course.service.CourseService;
 import com.english.api.user.dto.request.CreateInstructorRequest;
@@ -10,12 +11,17 @@ import com.english.api.user.dto.request.UpdateInstructorRequest;
 import com.english.api.user.dto.request.UploadCertificateProofRequest;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.user.dto.response.CertificateProofResponse;
+import com.english.api.user.dto.response.InstructorProfileResponse;
 import com.english.api.user.dto.response.InstructorRequestResponse;
+import com.english.api.user.dto.response.PublicInstructorResponse;
+import com.english.api.user.model.InstructorProfile;
 import com.english.api.user.model.InstructorRequest;
+import com.english.api.user.repository.InstructorProfileRepository;
 import com.english.api.user.service.InstructorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -27,10 +33,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * REST controller for Instructor Request operations
- * Created by hungpham on 10/29/2025
- */
 @RestController
 @RequestMapping("/api/instructors")
 @RequiredArgsConstructor
@@ -39,6 +41,7 @@ public class InstructorController {
 
     private final InstructorService instructorService;
     private final CourseService courseService;
+    private final InstructorProfileRepository instructorProfileRepository;
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")
@@ -196,5 +199,43 @@ public class InstructorController {
             @Valid @RequestBody RevokeInstructorRoleRequest request) {
         instructorService.manageInstructorRole(userId, request.action(), request.reason());
         return ResponseEntity.noContent().build();
+    }
+
+    // ==================== Public Endpoints ====================
+
+    // Get public instructor profile and stats
+    @GetMapping("/{userId}")
+    public ResponseEntity<PublicInstructorResponse> getPublicInstructorProfile(
+            @PathVariable UUID userId) {
+        InstructorProfile profile = instructorProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor profile not found"));
+
+        InstructorProfileResponse profileDto = new InstructorProfileResponse(
+                profile.getId(),
+                profile.getUser().getId(),
+                profile.getUser().getFullName(),
+                profile.getUser().getEmail(),
+                profile.getUser().getAvatarUrl(),
+                profile.getBio(),
+                profile.getExpertise(),
+                profile.getExperienceYears(),
+                profile.getQualification(),
+                profile.getCreatedAt(),
+                profile.getUpdatedAt());
+
+        InstructorStatsResponse stats = courseService.getInstructorStats(userId);
+        return ResponseEntity.ok(new PublicInstructorResponse(profileDto, stats));
+    }
+
+    // Get published courses by instructor
+    @GetMapping("/{userId}/courses")
+    public ResponseEntity<PaginationResponse> getInstructorPublishedCourses(
+            @PathVariable UUID userId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "12") int pageSize,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String[] skills) {
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return ResponseEntity.ok(courseService.getPublishedByInstructor(userId, pageable, keyword, skills));
     }
 }

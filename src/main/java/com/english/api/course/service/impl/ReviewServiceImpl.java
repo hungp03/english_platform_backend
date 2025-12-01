@@ -212,7 +212,7 @@ public class ReviewServiceImpl implements ReviewService {
     public PaginationResponse getReviewsForInstructor(UUID courseId, Boolean isPublished, Integer rating, Pageable pageable) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
     
-        // 1. Kiểm tra khóa học có tồn tại và thuộc về Instructor này không
+        // 1. Check if course exists and belongs to this instructor
         UUID ownerId = courseRepository.findOwnerIdById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
                 
@@ -220,10 +220,10 @@ public class ReviewServiceImpl implements ReviewService {
             throw new AccessDeniedException("You are not allowed to manage reviews for this course");
         }
     
-        // 2. Gọi Repository với bộ lọc
+        // 2. Call repository with filters
         Page<CourseReview> reviewsPage = reviewRepository.findByCourseIdWithFilters(courseId, isPublished, rating, pageable);
         
-        // 3. Map sang Response (Full details để instructor xem)
+        // 3. Map to response (full details for instructor view)
         Page<ReviewResponse> responsePage = reviewsPage.map(reviewMapper::toResponse);
     
         return PaginationResponse.from(responsePage, pageable);
@@ -234,16 +234,16 @@ public class ReviewServiceImpl implements ReviewService {
     public ReviewResponse showReview(UUID reviewId) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
     
-        // 1. Tìm review
+        // 1. Find review
         CourseReview review = reviewRepository.findById(reviewId)
             .orElseThrow(() -> new ResourceNotFoundException("Review not found with ID: " + reviewId));
             
-        // 2. LOGIC MỚI: Kiểm tra quyền sở hữu khóa học
+        // 2. Check course ownership
         if (!review.getCourse().getCreatedBy().getId().equals(currentUserId)) {
             throw new AccessDeniedException("You can only show reviews for your own courses");
         }
     
-        // 3. Thực hiện hiện
+        // 3. Set review as published
         review.setIsPublished(true);
         CourseReview updatedReview = reviewRepository.save(review);
         
@@ -263,7 +263,7 @@ public class ReviewServiceImpl implements ReviewService {
             throw new AccessDeniedException("You can only hide reviews for your own courses");
         }
     
-        // 3. Thực hiện ẩn
+        // 3. Set review as hidden
         review.setIsPublished(false);
         CourseReview updatedReview = reviewRepository.save(review);
         
