@@ -5,8 +5,10 @@ import org.springframework.stereotype.Repository;
 
 import com.english.api.forum.model.ForumCategory;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface ForumCategoryRepository extends JpaRepository<ForumCategory, UUID> {
+    Optional<ForumCategory> findBySlug(String slug);
 }

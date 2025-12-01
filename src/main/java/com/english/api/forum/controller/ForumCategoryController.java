@@ -4,6 +4,7 @@ import com.english.api.forum.dto.request.ForumCategoryCreateRequest;
 import com.english.api.forum.dto.request.ForumCategoryUpdateRequest;
 import com.english.api.forum.dto.response.ForumCategoryResponse;
 import com.english.api.forum.service.ForumCategoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,7 +29,7 @@ public class ForumCategoryController {
     // Create a new forum category
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ForumCategoryResponse> createCategory(@RequestBody ForumCategoryCreateRequest req) {
+    public ResponseEntity<ForumCategoryResponse> createCategory(@Valid @RequestBody ForumCategoryCreateRequest req) {
         return ResponseEntity.ok(categoryService.create(req));
     }
 
@@ -36,7 +37,7 @@ public class ForumCategoryController {
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<ForumCategoryResponse> updateCategory(@PathVariable UUID id,
-                                                                @RequestBody ForumCategoryUpdateRequest req) {
+                                                                @Valid @RequestBody ForumCategoryUpdateRequest req) {
         return ResponseEntity.ok(categoryService.update(id, req));
     }
 

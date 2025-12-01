@@ -61,7 +61,7 @@ public class ForumThreadController {
     @PutMapping("/{id}")
     public ResponseEntity<ForumThreadResponse> updateThread(
             @PathVariable UUID id,
-            @RequestBody ForumThreadUpdateRequest req) {
+            @Valid @RequestBody ForumThreadUpdateRequest req) {
         return ResponseEntity.ok(threadService.updateByOwner(id, req));
     }
 

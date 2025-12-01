@@ -5,6 +5,7 @@ import com.english.api.forum.dto.request.ForumReportCreateRequest;
 import com.english.api.forum.dto.response.ForumReportResponse;
 import com.english.api.forum.model.ReportTargetType;
 import com.english.api.forum.service.ForumReportService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +26,7 @@ public class ForumReportController {
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/threads/{id}/reports")
     public ResponseEntity<ForumReportResponse> reportThread(@PathVariable UUID id,
-                                                            @RequestBody ForumReportCreateRequest body) {
+                                                            @Valid @RequestBody ForumReportCreateRequest body) {
         ForumReportCreateRequest req = new ForumReportCreateRequest(ReportTargetType.THREAD, id, body.reason());
         return ResponseEntity.ok(reportService.create(req));
     }
@@ -34,7 +35,7 @@ public class ForumReportController {
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/posts/{id}/reports")
     public ResponseEntity<ForumReportResponse> reportPost(@PathVariable UUID id,
-                                                          @RequestBody ForumReportCreateRequest body) {
+                                                          @Valid @RequestBody ForumReportCreateRequest body) {
         ForumReportCreateRequest req = new ForumReportCreateRequest(ReportTargetType.POST, id, body.reason());
         return ResponseEntity.ok(reportService.create(req));
     }
@@ -42,7 +43,7 @@ public class ForumReportController {
     // Create a generic report
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/reports")
-    public ResponseEntity<ForumReportResponse> createReport(@RequestBody ForumReportCreateRequest req) {
+    public ResponseEntity<ForumReportResponse> createReport(@Valid @RequestBody ForumReportCreateRequest req) {
         return ResponseEntity.ok(reportService.create(req));
     }
 

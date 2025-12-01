@@ -28,13 +28,16 @@ public class ForumCategoryServiceImpl implements ForumCategoryService {
     @Override
     @Transactional
     public ForumCategoryResponse create(ForumCategoryCreateRequest request) {
-        String slugName;
-        if (request.slug() == null || request.slug().isBlank()){
-            slugName = SlugUtil.slugify(request.name());
-        }else{
-            slugName = SlugUtil.slugify(request.slug());
-        }
-        ForumCategory category = ForumCategory.builder().name(request.name()).slug(slugName).description(request.description()).build();
+        // Auto-generate unique slug from name
+        String baseSlug = SlugUtil.slugify(request.name());
+        String uniqueSlug = SlugUtil.ensureUnique(baseSlug, 
+            s -> categoryRepo.findBySlug(s).isPresent());
+        
+        ForumCategory category = ForumCategory.builder()
+                .name(request.name())
+                .slug(uniqueSlug)
+                .description(request.description())
+                .build();
         return toDto(categoryRepo.save(category));
     }
 
@@ -43,15 +46,15 @@ public class ForumCategoryServiceImpl implements ForumCategoryService {
     public ForumCategoryResponse update(UUID id, ForumCategoryUpdateRequest request) {
         ForumCategory category = categoryRepo.findById(id).orElseThrow();
 
-        if (request.name() != null) {
+        // Update name and regenerate slug if name changed
+        if (request.name() != null && !request.name().equals(category.getName())) {
             category.setName(request.name());
-            if (request.slug() == null || request.slug().isBlank()) {
-                category.setSlug(SlugUtil.slugify(request.name()));
-            }
-        }
-
-        if (request.slug() != null && !request.slug().isBlank()) {
-            category.setSlug(SlugUtil.slugify(request.slug()));
+            
+            // Auto-generate new unique slug from new name
+            String baseSlug = SlugUtil.slugify(request.name());
+            String uniqueSlug = SlugUtil.ensureUnique(baseSlug, 
+                s -> categoryRepo.findBySlug(s).isPresent());
+            category.setSlug(uniqueSlug);
         }
 
         if (request.description() != null) {

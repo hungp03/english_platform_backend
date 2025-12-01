@@ -1,8 +1,12 @@
 package com.english.api.forum.dto.request;
 
+import jakarta.validation.constraints.Size;
+
 public record ForumCategoryUpdateRequest(
+        @Size(min = 2, max = 100, message = "Category name must be between 2 and 100 characters")
         String name,
-        String slug,
+
+        @Size(max = 500, message = "Description must not exceed 500 characters")
         String description
 ) {
 }
