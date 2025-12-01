@@ -6,6 +6,7 @@ import com.english.api.auth.dto.response.LinkAccountResponse;
 import com.english.api.auth.dto.response.OtpVerificationResponse;
 import com.english.api.auth.dto.response.UserLoginResponse;
 import com.english.api.auth.service.AuthService;
+import com.english.api.auth.service.JwtService;
 import com.english.api.auth.util.CookieUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * Created by hungpham on 9/23/2025
  */
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final JwtService jwtService;
 
     @Value("${jwt.expiration.access-token}")
     private long accessTokenExpiration;   // second
@@ -95,6 +99,39 @@ public class AuthController {
                 .header("Set-Cookie", clearAccessToken.toString())
                 .header("Set-Cookie", clearRefreshToken.toString())
                 .build();
+    }
+
+    @PostMapping("/set-cookie")
+    public ResponseEntity<Void> setCookie(
+            @RequestBody Map<String, String> tokens,
+            @Value("${app.client-url}") String clientUrl) {
+
+        String accessToken = tokens.get("access_token");
+        String refreshToken = tokens.get("refresh_token");
+
+        if (accessToken == null || refreshToken == null) {
+            return ResponseEntity.status(400).build();
+        }
+
+        try {
+            // Validate tokens bằng cách decode
+            jwtService.decode(accessToken);
+            jwtService.decode(refreshToken);
+
+            ResponseCookie accessTokenCookie = CookieUtil.buildCookie("access_token", accessToken, accessTokenExpiration);
+            ResponseCookie refreshTokenCookie = CookieUtil.buildCookie("refresh_token", refreshToken, refreshTokenExpiration);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+            headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .build();
+        } catch (Exception e) {
+            // Token không hợp lệ
+            return ResponseEntity.status(401).build();
+        }
     }
 
     @PostMapping("/logout-all")

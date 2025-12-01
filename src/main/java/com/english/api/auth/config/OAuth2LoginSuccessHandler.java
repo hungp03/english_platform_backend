@@ -73,14 +73,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             String accessToken = jwtService.generateAccessToken(userDetails);
             String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-            ResponseCookie accessTokenCookie = CookieUtil.buildCookie("access_token", accessToken, accessTokenExpiration);
-            ResponseCookie refreshTokenCookie = CookieUtil.buildCookie("refresh_token", refreshToken, refreshTokenExpiration);
-
-            response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
-            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
-
-            // Redirect to FE
-            response.sendRedirect(client + "/auth/callback/success");
+            // Redirect về frontend với token trong URL
+            String redirectUrl = String.format("%s/auth/callback/success?access_token=%s&refresh_token=%s",
+                    client, accessToken, refreshToken);
+            response.sendRedirect(redirectUrl);
 
         } catch (Exception e) {
             response.sendRedirect(client + "/auth/callback/error?isLogin=false");

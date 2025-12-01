@@ -45,6 +45,7 @@ public class SecurityConfig {
             "/api/auth/refresh",
             "/api/auth/logout",
             "/api/auth/logout-all",
+            "/api/auth/set-cookie",
             "/api/auth/forgot-password",
             "/api/auth/verify-otp",
             "/api/auth/reset-password",
