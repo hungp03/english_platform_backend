@@ -218,7 +218,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
 
     private String buildOrderByClause(Sort sort) {
         if (sort.isUnsorted()) {
-            return " ORDER BY c.created_at DESC";
+            return " ORDER BY c.created_at DESC, c.id ASC";
         }
 
         String orderBy = sort.stream()
@@ -229,7 +229,8 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 })
                 .collect(Collectors.joining(", "));
 
-        return " ORDER BY " + orderBy;
+        // Always add id as tie-breaker to ensure stable pagination
+        return " ORDER BY " + orderBy + ", c.id ASC";
     }
 
     private void setParameters(Query query, String keyword, String status, UUID ownerId, String[] skills) {
