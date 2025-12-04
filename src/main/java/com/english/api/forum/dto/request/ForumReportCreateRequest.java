@@ -9,10 +9,10 @@ import java.util.UUID;
 import com.english.api.forum.model.ReportTargetType;
 
 public record ForumReportCreateRequest(
-        @NotNull(message = "Target type is required")
+        // @NotNull(message = "Target type is required")
         ReportTargetType targetType,
 
-        @NotNull(message = "Target ID is required")
+        // @NotNull(message = "Target ID is required")
         UUID targetId,
 
         @NotBlank(message = "Report reason is required")
