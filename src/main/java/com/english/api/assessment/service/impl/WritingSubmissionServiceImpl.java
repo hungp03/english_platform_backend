@@ -104,6 +104,10 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
             throw new AccessDeniedException("Not authorized to access this submission");
         }
 
+        if (submission.getAiScore() != null) {
+            throw new ResourceInvalidException("Submission already graded successfully");
+        }
+
         // Publish event - trigger will run after transaction commits
         eventPublisher.publishEvent(new WritingSubmissionCreatedEvent(submission.getId()));
 
