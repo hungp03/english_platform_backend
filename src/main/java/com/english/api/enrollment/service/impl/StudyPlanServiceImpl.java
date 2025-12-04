@@ -303,9 +303,9 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         log.debug("Gathering context for AI plan generation for user: {}", userId);
 
         // 1. Fetch recent quiz attempts (last 10)
-        Page<QuizAttempt> recentQuizzes = quizAttemptRepository.findByUser_Id(
+        Page<QuizAttempt> recentQuizzes = quizAttemptRepository.findByUser_IdOrderBySubmittedAtDesc(
             userId, 
-            PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"))
+            PageRequest.of(0, 10)
         );
         
         List<QuizPerformanceData> quizData = recentQuizzes.getContent().stream()

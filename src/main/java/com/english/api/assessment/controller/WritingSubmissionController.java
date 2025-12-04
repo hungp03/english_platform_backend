@@ -9,6 +9,7 @@ import com.english.api.common.exception.AccessDeniedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +28,14 @@ public class WritingSubmissionController {
     @GetMapping("/writing-submissions/{submissionId}")
     public ResponseEntity<WritingSubmissionResponse> getSubmission(@PathVariable UUID submissionId) {
         return ResponseEntity.ok(writingSubmissionService.getSubmission(submissionId));
+    }
+
+    @PostMapping("/attempts/{attemptId}/answers/{answerId}/writing")
+    public ResponseEntity<WritingSubmissionResponse> submitWriting(
+            @PathVariable UUID attemptId,
+            @PathVariable UUID answerId) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(writingSubmissionService.submitWriting(attemptId, answerId));
     }
 
     @GetMapping("/attempts/{attemptId}/answers/{answerId}/writing")

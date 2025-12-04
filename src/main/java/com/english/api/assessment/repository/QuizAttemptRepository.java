@@ -10,11 +10,11 @@ import java.util.UUID;
 
 public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> {
     @EntityGraph(attributePaths = {"quiz", "quiz.quizType", "quiz.quizSection"})
-    Page<QuizAttempt> findByUser_Id(UUID userId, Pageable pageable);
+    Page<QuizAttempt> findByUser_IdOrderBySubmittedAtDesc(UUID userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"quiz", "quiz.quizType", "quiz.quizSection"})
-    Page<QuizAttempt> findByQuiz_Id(UUID quizId, Pageable pageable);
+    Page<QuizAttempt> findByQuiz_IdOrderBySubmittedAtDesc(UUID quizId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"quiz", "quiz.quizType", "quiz.quizSection"})
-    Page<QuizAttempt> findByQuiz_IdAndUser_Id(UUID quizId, UUID userId, Pageable pageable);
+    Page<QuizAttempt> findByQuiz_IdAndUser_IdOrderBySubmittedAtDesc(UUID quizId, UUID userId, Pageable pageable);
 }

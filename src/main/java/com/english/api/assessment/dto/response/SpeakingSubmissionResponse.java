@@ -9,6 +9,7 @@ import java.util.UUID;
 public record SpeakingSubmissionResponse(
         UUID id,
         UUID attemptAnswerId,
+        String questionContent,
         String audioUrl,
         String transcript,
         Double aiFluency,

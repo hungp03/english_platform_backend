@@ -9,6 +9,8 @@ import java.util.UUID;
 public record WritingSubmissionResponse(
         UUID id,
         UUID attemptAnswerId,
+        String questionContent,
+        String answerText,
         Double aiTaskResponse,
         Double aiCoherence,
         Double aiGrammar,

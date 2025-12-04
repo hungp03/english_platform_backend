@@ -135,28 +135,7 @@ public class AttemptServiceImpl implements AttemptService {
             savedAttempt.setTotalCorrect(0);
             savedAttempt.setScore(0d);
             savedAttempt.setMaxScore(0d);
-            // Auto-create WritingSubmission for WRITING skill
-            if (skill == QuizSkill.WRITING) {
-                for (QuizAttemptAnswer answer : savedAnswers) {
-                    // Check if writing text exists
-                    if (answer.getAnswerText() != null && !answer.getAnswerText().isBlank()) {
-                        // Check if submission already exists
-                        if (!writingSubmissionRepo.existsByAttemptAnswer_Id(answer.getId())) {
-                            // Create WritingSubmission
-                            WritingSubmission submission = WritingSubmission.builder()
-                                    .attemptAnswer(answer)
-                                    .build();
-
-                            WritingSubmission saved = writingSubmissionRepo.save(submission);
-
-                            // Publish event - trigger will run after transaction commits
-                            eventPublisher.publishEvent(new WritingSubmissionCreatedEvent(saved.getId()));
-
-                            log.info("Auto-created WritingSubmission for answer: {}", answer.getId());
-                        }
-                    }
-                }
-            }
+            // WritingSubmission will be created via separate endpoint (like Speaking)
         }
         savedAttempt.setSubmittedAt(Instant.now());
         attemptRepo.save(savedAttempt);
@@ -176,7 +155,7 @@ public class AttemptServiceImpl implements AttemptService {
     @Transactional(readOnly = true)
     public PaginationResponse listAttemptsByUser(Pageable pageable) {
         UUID me = SecurityUtil.getCurrentUserId();
-        Page<QuizAttempt> page = attemptRepo.findByUser_Id(me, pageable);
+        Page<QuizAttempt> page = attemptRepo.findByUser_IdOrderBySubmittedAtDesc(me, pageable);
         return mapAttemptsToResponse(page, pageable);
     }
 
@@ -184,14 +163,14 @@ public class AttemptServiceImpl implements AttemptService {
     @Transactional(readOnly = true)
     public PaginationResponse listAttemptsByUserAndQuiz(UUID quizId, Pageable pageable) {
         UUID me = SecurityUtil.getCurrentUserId();
-        Page<QuizAttempt> page = attemptRepo.findByQuiz_IdAndUser_Id(quizId, me, pageable);
+        Page<QuizAttempt> page = attemptRepo.findByQuiz_IdAndUser_IdOrderBySubmittedAtDesc(quizId, me, pageable);
         return mapAttemptsToResponse(page, pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaginationResponse listAttemptsByQuiz(UUID quizId, Pageable pageable) {
-        Page<QuizAttempt> page = attemptRepo.findByQuiz_Id(quizId, pageable);
+        Page<QuizAttempt> page = attemptRepo.findByQuiz_IdOrderBySubmittedAtDesc(quizId, pageable);
         return mapAttemptsToResponse(page, pageable);
     }
 

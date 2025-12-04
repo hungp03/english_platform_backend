@@ -15,6 +15,8 @@ import java.util.List;
 public interface WritingSubmissionMapper {
 
     @Mapping(target = "attemptAnswerId", source = "attemptAnswer.id")
+    @Mapping(target = "questionContent", source = "attemptAnswer.question.content")
+    @Mapping(target = "answerText", source = "attemptAnswer.answerText")
     WritingSubmissionResponse toResponse(WritingSubmission submission);
 
     @Mapping(target = "id", ignore = true)

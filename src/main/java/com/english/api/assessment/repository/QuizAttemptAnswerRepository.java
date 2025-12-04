@@ -11,6 +11,8 @@ import java.util.UUID;
 public interface QuizAttemptAnswerRepository extends JpaRepository<QuizAttemptAnswer, UUID> {
     Optional<QuizAttemptAnswer> findByAttempt_IdAndQuestion_Id(UUID attemptId, UUID questionId);
 
+    boolean existsByIdAndAttempt_Id(UUID id, UUID attemptId);
+
     @EntityGraph(attributePaths = {"question", "selectedOption"})
     List<QuizAttemptAnswer> findByAttempt_Id(UUID attemptId);
 

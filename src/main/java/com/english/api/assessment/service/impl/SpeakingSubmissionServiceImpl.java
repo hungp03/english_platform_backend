@@ -102,13 +102,9 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     @Override
     @Transactional(readOnly = true)
     public SpeakingSubmissionResponse getSubmission(UUID submissionId) {
-        SpeakingSubmission submission = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + submissionId));
-
         UUID userId = SecurityUtil.getCurrentUserId();
-        if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
-            throw new AccessDeniedException("Not authorized to access this submission");
-        }
+        SpeakingSubmission submission = submissionRepo.findByIdAndUserId(submissionId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found or not authorized: " + submissionId));
 
         return mapper.toResponse(submission);
     }
@@ -118,21 +114,12 @@ public class SpeakingSubmissionServiceImpl implements SpeakingSubmissionService 
     public Optional<SpeakingSubmissionResponse> getSubmissionByAnswer(UUID attemptId, UUID answerId) {
         UUID userId = SecurityUtil.getCurrentUserId();
 
-        QuizAttempt attempt = attemptRepo.findById(attemptId)
-                .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
-
-        if (!attempt.getUser().getId().equals(userId)) {
-            throw new AccessDeniedException("Not authorized to access this attempt");
+        // Validate attemptId-answerId relationship exists
+        if (!answerRepo.existsByIdAndAttempt_Id(answerId, attemptId)) {
+            throw new ResourceNotFoundException("Answer not found or does not belong to the attempt");
         }
 
-        QuizAttemptAnswer answer = answerRepo.findById(answerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Answer not found: " + answerId));
-
-        if (!answer.getAttempt().getId().equals(attemptId)) {
-            throw new IllegalArgumentException("Answer does not belong to the specified attempt");
-        }
-
-        return submissionRepo.findByAttemptAnswer_Id(answerId)
+        return submissionRepo.findByAttemptAnswerIdAndUserId(answerId, userId)
                 .map(mapper::toResponse);
     }
 

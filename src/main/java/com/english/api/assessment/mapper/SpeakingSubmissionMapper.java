@@ -15,6 +15,7 @@ import java.util.List;
 public interface SpeakingSubmissionMapper {
 
     @Mapping(target = "attemptAnswerId", source = "attemptAnswer.id")
+    @Mapping(target = "questionContent", source = "attemptAnswer.question.content")
     SpeakingSubmissionResponse toResponse(SpeakingSubmission submission);
 
     @Mapping(target = "id", ignore = true)

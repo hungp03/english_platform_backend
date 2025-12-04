@@ -14,6 +14,7 @@ import com.english.api.assessment.repository.WritingSubmissionRepository;
 import com.english.api.assessment.service.WritingSubmissionService;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.common.exception.ResourceAlreadyExistsException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -38,22 +39,8 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @Transactional(readOnly = true)
-    public WritingSubmissionResponse getSubmission(UUID submissionId) {
-        WritingSubmission submission = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Submission not found: " + submissionId));
-
-        UUID userId = SecurityUtil.getCurrentUserId();
-        if (!submission.getAttemptAnswer().getAttempt().getUser().getId().equals(userId)) {
-            throw new AccessDeniedException("Not authorized to access this submission");
-        }
-
-        return mapper.toResponse(submission);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<WritingSubmissionResponse> getSubmissionByAnswer(UUID attemptId, UUID answerId) {
+    @Transactional
+    public WritingSubmissionResponse submitWriting(UUID attemptId, UUID answerId) {
         UUID userId = SecurityUtil.getCurrentUserId();
 
         QuizAttempt attempt = attemptRepo.findById(attemptId)
@@ -70,7 +57,48 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
             throw new ResourceInvalidException("Answer does not belong to the specified attempt");
         }
 
-        return submissionRepo.findByAttemptAnswer_Id(answerId)
+        if (submissionRepo.existsByAttemptAnswer_Id(answerId)) {
+            throw new ResourceAlreadyExistsException("A writing submission already exists for this answer");
+        }
+
+        if (answer.getAnswerText() == null || answer.getAnswerText().isBlank()) {
+            throw new ResourceInvalidException("Answer text is empty");
+        }
+
+        WritingSubmission submission = WritingSubmission.builder()
+                .attemptAnswer(answer)
+                .build();
+
+        WritingSubmission saved = submissionRepo.save(submission);
+
+        eventPublisher.publishEvent(new WritingSubmissionCreatedEvent(saved.getId()));
+
+        log.info("Created WritingSubmission for answer: {}", answerId);
+
+        return mapper.toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WritingSubmissionResponse getSubmission(UUID submissionId) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        WritingSubmission submission = submissionRepo.findByIdAndUserId(submissionId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found or not authorized: " + submissionId));
+
+        return mapper.toResponse(submission);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<WritingSubmissionResponse> getSubmissionByAnswer(UUID attemptId, UUID answerId) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+
+        // Validate attemptId-answerId relationship exists
+        if (!answerRepo.existsByIdAndAttempt_Id(answerId, attemptId)) {
+            throw new ResourceNotFoundException("Answer not found or does not belong to the attempt");
+        }
+
+        return submissionRepo.findByAttemptAnswerIdAndUserId(answerId, userId)
                 .map(mapper::toResponse);
     }
 
