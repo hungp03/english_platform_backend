@@ -3,6 +3,7 @@ package com.english.api.assessment.service.impl;
 import com.english.api.assessment.dto.request.AICallbackWritingRequest;
 import com.english.api.assessment.dto.response.WritingSubmissionResponse;
 import com.english.api.assessment.dto.response.WritingSubmissionsWithMetadataResponse;
+import com.english.api.assessment.event.WritingSubmissionCreatedEvent;
 import com.english.api.assessment.mapper.WritingSubmissionMapper;
 import com.english.api.assessment.model.QuizAttempt;
 import com.english.api.assessment.model.QuizAttemptAnswer;
@@ -15,21 +16,13 @@ import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
-import com.english.api.quiz.model.Question;
-import com.english.api.quiz.model.Quiz;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -41,14 +34,8 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
     private final WritingSubmissionRepository submissionRepo;
     private final QuizAttemptRepository attemptRepo;
     private final QuizAttemptAnswerRepository answerRepo;
-    private final RestTemplate restTemplate;
     private final WritingSubmissionMapper mapper;
-
-    @Value("${n8n.webhook.writing.url}")
-    private String n8nWritingWebhookUrl;
-
-    @Value("${n8n.webhook.api-key}")
-    private String n8nApiKey;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -117,8 +104,8 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
             throw new AccessDeniedException("Not authorized to access this submission");
         }
 
-        // Trigger n8n workflow again for retry
-        triggerWritingGrading(submission);
+        // Publish event - trigger will run after transaction commits
+        eventPublisher.publishEvent(new WritingSubmissionCreatedEvent(submission.getId()));
 
         return mapper.toResponse(submission);
     }
@@ -146,62 +133,5 @@ public class WritingSubmissionServiceImpl implements WritingSubmissionService {
         mapper.updateFromAICallback(request, submission);
 
         submissionRepo.save(submission);
-    }
-
-    /**
-     * Trigger n8n workflow to grade writing submission
-     */
-    @Async
-    private void triggerWritingGrading(WritingSubmission submission) {
-        try {
-            QuizAttemptAnswer answer = submission.getAttemptAnswer();
-            Question question = answer.getQuestion();
-            Quiz quiz = question.getQuiz();
-
-            Map<String, Object> payload = Map.of(
-                    "submissionId", submission.getId().toString(),
-                    "writingText", answer.getAnswerText() != null ? answer.getAnswerText() : "",
-                    "context", buildContext(quiz, question)
-            );
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer " + n8nApiKey);
-            headers.set("Content-Type", "application/json");
-            HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
-
-            log.info("Triggering n8n writing workflow for submission: {}", submission.getId());
-            restTemplate.postForEntity(n8nWritingWebhookUrl, requestEntity, Void.class);
-            log.info("Successfully triggered n8n writing workflow for submission: {}", submission.getId());
-
-        } catch (Exception e) {
-            // Log error but don't fail the submission
-            log.error("Failed to trigger n8n writing workflow for submission: {}",
-                    submission.getId(), e);
-        }
-    }
-
-    /**
-     * Build context for n8n workflow
-     */
-    private Map<String, Object> buildContext(Quiz quiz, Question question) {
-        Map<String, Object> context = new HashMap<>();
-
-        if (quiz.getContextText() != null) {
-            context.put("quizContextText", quiz.getContextText());
-        }
-        if (quiz.getQuestionText() != null) {
-            context.put("questionText", quiz.getQuestionText());
-        }
-        context.put("questionContent", question.getContent());
-
-        // Add imageUrls, wordLimit, taskType from quiz metadata if needed
-        
-        // context.put("taskType", "task1"); // or "task2"
-        // context.put("wordLimit", 250);
-        // if (!imageUrls.isEmpty()) {
-        //     context.put("imageUrls", imageUrls);
-        // }
-
-        return context;
     }
 }
