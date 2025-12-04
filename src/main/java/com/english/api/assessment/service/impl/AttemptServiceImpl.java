@@ -3,15 +3,12 @@ package com.english.api.assessment.service.impl;
 import com.english.api.assessment.dto.request.SubmitAnswerDto;
 import com.english.api.assessment.dto.request.SubmitAttemptRequest;
 import com.english.api.assessment.dto.response.*;
-import com.english.api.assessment.event.WritingSubmissionCreatedEvent;
 import com.english.api.assessment.mapper.AttemptMapper;
 import com.english.api.assessment.model.QuizAttempt;
 import com.english.api.assessment.model.QuizAttemptAnswer;
-import com.english.api.assessment.model.WritingSubmission;
 import com.english.api.assessment.model.enums.QuizAttemptStatus;
 import com.english.api.assessment.repository.QuizAttemptAnswerRepository;
 import com.english.api.assessment.repository.QuizAttemptRepository;
-import com.english.api.assessment.repository.WritingSubmissionRepository;
 import com.english.api.assessment.service.AttemptService;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
@@ -27,7 +24,6 @@ import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,8 +43,6 @@ public class AttemptServiceImpl implements AttemptService {
     private final QuizRepository quizRepo;
     private final UserRepository userRepo;
     private final QuestionRepository questionRepo;
-    private final WritingSubmissionRepository writingSubmissionRepo;
-    private final ApplicationEventPublisher eventPublisher;
     private final AttemptMapper attemptMapper;
 
     @Transactional
