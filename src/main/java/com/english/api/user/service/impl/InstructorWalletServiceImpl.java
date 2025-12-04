@@ -128,7 +128,7 @@ public class InstructorWalletServiceImpl implements InstructorWalletService {
                 .currency("VND")
                 .balanceAfterCents(balance.getAvailableBalanceCents())
                 .referenceId(item.getId())
-                .description(String.format("Earnings from course: %s (Order: %s)", 
+                .description(String.format("Nhận từ khóa học: %s (Order: %s)", 
                         course.getTitle(), order.getId()))
                 .build();
         transactionRepository.save(transaction);
@@ -171,6 +171,13 @@ public class InstructorWalletServiceImpl implements InstructorWalletService {
         InstructorBalance balance = balanceRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceInvalidException("Instructor balance not found"));
         
+        // Validate pending balance is sufficient to prevent negative balance
+        if (balance.getPendingBalanceCents().compareTo(amountCents) < 0) {
+            log.warn("Pending balance insufficient for refund: userId={}, pending={}, requested={}. Possible duplicate refund.",
+                    userId, balance.getPendingBalanceCents(), amountCents);
+            throw new ResourceInvalidException("Cannot refund: insufficient pending balance. This withdrawal may have already been processed.");
+        }
+        
         // Move from pending back to available
         balance.setPendingBalanceCents(balance.getPendingBalanceCents().subtract(amountCents));
         balance.setAvailableBalanceCents(balance.getAvailableBalanceCents().add(amountCents));
@@ -194,6 +201,13 @@ public class InstructorWalletServiceImpl implements InstructorWalletService {
     public void completeWithdrawal(UUID userId, BigDecimal amountCents) {
         InstructorBalance balance = balanceRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceInvalidException("Instructor balance not found"));
+        
+        // Validate pending balance is sufficient to prevent negative balance
+        if (balance.getPendingBalanceCents().compareTo(amountCents) < 0) {
+            log.warn("Pending balance insufficient for user {}: pending={}, requested={}. Possible duplicate completion.",
+                    userId, balance.getPendingBalanceCents(), amountCents);
+            return;
+        }
         
         // Remove from pending balance (already removed from available when request was created)
         balance.setPendingBalanceCents(balance.getPendingBalanceCents().subtract(amountCents));

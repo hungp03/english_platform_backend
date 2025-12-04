@@ -135,7 +135,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         
         // Deduct balance in the original currency (not the converted USD amount)
         walletService.deductBalance(userId, originalAmountCents, withdrawal.getId(), 
-                "Withdrawal request #" + withdrawal.getId(), originalCurrency.name());
+                "Yêu cầu rút tiền #" + withdrawal.getId(), originalCurrency.name());
         
         log.info("Withdrawal request created: userId={}, originalAmount={} {}, usdAmount={}, requestId={}", 
                 userId, originalAmountCents, originalCurrency, amountUsd, withdrawal.getId());
@@ -220,44 +220,55 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     }
     
     private void rejectWithdrawal(WithdrawalRequest withdrawal, String adminNote) {
-        // Refund the amount back to instructor's balance in original currency
+        // Check if already rejected (idempotency)
+        if (withdrawal.getStatus() == WithdrawalStatus.REJECTED) {
+            log.warn("Withdrawal already rejected: requestId={}", withdrawal.getId());
+            throw new ResourceInvalidException("Withdrawal request has already been rejected");
+        }
+        
+        // Update status FIRST to prevent race condition
+        withdrawal.setStatus(WithdrawalStatus.REJECTED);
+        withdrawal.setAdminNote(adminNote);
+        withdrawal.setProcessedAt(Instant.now());
+        withdrawalRepository.save(withdrawal);
+        
+        // Refund the amount back to instructor's balance in original currency (after status update)
         String currency = withdrawal.getOriginalCurrency() != null ? 
                 withdrawal.getOriginalCurrency() : "USD";
         walletService.refundBalance(
                 withdrawal.getUser().getId(),
                 withdrawal.getOriginalAmountCents(),
                 withdrawal.getId(),
-                "Withdrawal request rejected: " + (adminNote != null ? adminNote : "No reason provided"),
+                "Yêu cầu rút tiền bị từ chối: " + (adminNote != null ? adminNote : "Không có lý do nào được cung cấp"),
                 currency
         );
-        
-        withdrawal.setStatus(WithdrawalStatus.REJECTED);
-        withdrawal.setAdminNote(adminNote);
-        withdrawal.setProcessedAt(Instant.now());
-        
-        withdrawalRepository.save(withdrawal);
         
         log.info("Withdrawal rejected: requestId={}, amount refunded", withdrawal.getId());
     }
     
     private void completeWithdrawal(WithdrawalRequest withdrawal, String adminNote) {
+        if (withdrawal.getStatus() == WithdrawalStatus.COMPLETED) {
+            log.warn("Withdrawal already completed: requestId={}", withdrawal.getId());
+            throw new ResourceInvalidException("Withdrawal request has already been completed");
+        }
+        
         if (withdrawal.getStatus() != WithdrawalStatus.PROCESSING) {
             throw new ResourceInvalidException("Can only mark PROCESSING withdrawals as completed");
         }
         
-        // Remove from pending balance
-        walletService.completeWithdrawal(
-                withdrawal.getUser().getId(),
-                withdrawal.getOriginalAmountCents()
-        );
-        
+        // Update status FIRST to prevent race condition with webhook
         withdrawal.setStatus(WithdrawalStatus.COMPLETED);
         withdrawal.setCompletedAt(Instant.now());
         if (adminNote != null) {
             withdrawal.setAdminNote(adminNote);
         }
-        
         withdrawalRepository.save(withdrawal);
+        
+        // Remove from pending balance (after status update to ensure idempotency)
+        walletService.completeWithdrawal(
+                withdrawal.getUser().getId(),
+                withdrawal.getOriginalAmountCents()
+        );
         
         log.info("Withdrawal marked as completed: requestId={}", withdrawal.getId());
     }
@@ -346,22 +357,22 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             throw new ResourceInvalidException("Only pending withdrawal requests can be cancelled");
         }
         
-        // Refund the amount back to instructor's balance in original currency
+        // Update status FIRST to prevent race condition (double cancel)
+        withdrawal.setStatus(WithdrawalStatus.REJECTED);
+        withdrawal.setAdminNote("Bị hủy bởi người dùng");
+        withdrawal.setProcessedAt(Instant.now());
+        withdrawalRepository.save(withdrawal);
+        
+        // Refund the amount back to instructor's balance in original currency (after status update)
         String currency = withdrawal.getOriginalCurrency() != null ? 
                 withdrawal.getOriginalCurrency() : "USD";
         walletService.refundBalance(
                 userId,
                 withdrawal.getOriginalAmountCents(),
                 withdrawal.getId(),
-                "Withdrawal request cancelled by instructor",
+                "Yêu cầu rút tiền đã bị giảng viên hủy bỏ",
                 currency
         );
-        
-        withdrawal.setStatus(WithdrawalStatus.REJECTED);
-        withdrawal.setAdminNote("Cancelled by instructor");
-        withdrawal.setProcessedAt(Instant.now());
-        
-        withdrawalRepository.save(withdrawal);
         
         log.info("Withdrawal cancelled by instructor: requestId={}, userId={}", requestId, userId);
         
@@ -372,8 +383,21 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     @Transactional
     public void handlePayoutBatchFailed(String payoutBatchId, String reason) {
         withdrawalRepository.findByPaypalPayoutBatchId(payoutBatchId).ifPresent(withdrawal -> {
+            // Skip if already failed/rejected (idempotency check)
+            if (withdrawal.getStatus() == WithdrawalStatus.FAILED || 
+                withdrawal.getStatus() == WithdrawalStatus.REJECTED) {
+                log.info("PayPal payout already failed/rejected, skipping: batchId={}, requestId={}", 
+                        payoutBatchId, withdrawal.getId());
+                return;
+            }
+            
             if (withdrawal.getStatus() == WithdrawalStatus.PROCESSING) {
-                // Refund the amount back to instructor's balance
+                // Update status FIRST to prevent race condition
+                withdrawal.setStatus(WithdrawalStatus.FAILED);
+                withdrawal.setAdminNote("PayPal payout denied/failed: " + (reason != null ? reason : "Unknown error"));
+                withdrawalRepository.save(withdrawal);
+                
+                // Refund the amount back to instructor's balance (after status update)
                 String currency = withdrawal.getOriginalCurrency() != null ? 
                         withdrawal.getOriginalCurrency() : "USD";
                 walletService.refundBalance(
@@ -383,11 +407,6 @@ public class WithdrawalServiceImpl implements WithdrawalService {
                         "PayPal payout failed: " + (reason != null ? reason : "Unknown error"),
                         currency
                 );
-                
-                withdrawal.setStatus(WithdrawalStatus.FAILED);
-                withdrawal.setAdminNote("PayPal payout denied/failed: " + (reason != null ? reason : "Unknown error"));
-                
-                withdrawalRepository.save(withdrawal);
                 
                 // Notify user about failed payout
                 notificationService.sendNotification(
@@ -406,20 +425,27 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     @Transactional
     public void handlePayoutBatchSuccess(String payoutBatchId) {
         withdrawalRepository.findByPaypalPayoutBatchId(payoutBatchId).ifPresent(withdrawal -> {
+            // Skip if already completed (idempotency check)
+            if (withdrawal.getStatus() == WithdrawalStatus.COMPLETED) {
+                log.info("PayPal payout already completed, skipping: batchId={}, requestId={}", 
+                        payoutBatchId, withdrawal.getId());
+                return;
+            }
+            
             if (withdrawal.getStatus() == WithdrawalStatus.PROCESSING) {
-                // Remove from pending balance (payout successful)
+                // Update status FIRST to prevent race condition with admin completion
+                withdrawal.setStatus(WithdrawalStatus.COMPLETED);
+                withdrawal.setCompletedAt(Instant.now());
+                if (withdrawal.getAdminNote() == null) {
+                    withdrawal.setAdminNote("Thanh toán PayPal đã hoàn tất");
+                }
+                withdrawalRepository.save(withdrawal);
+                
+                // Remove from pending balance (after status update to ensure idempotency)
                 walletService.completeWithdrawal(
                         withdrawal.getUser().getId(),
                         withdrawal.getOriginalAmountCents()
                 );
-                
-                withdrawal.setStatus(WithdrawalStatus.COMPLETED);
-                withdrawal.setCompletedAt(Instant.now());
-                if (withdrawal.getAdminNote() == null) {
-                    withdrawal.setAdminNote("PayPal payout completed successfully");
-                }
-                
-                withdrawalRepository.save(withdrawal);
                 
                 // Notify user about successful payout
                 String formattedAmount = formatAmount(withdrawal.getOriginalAmountCents(), 

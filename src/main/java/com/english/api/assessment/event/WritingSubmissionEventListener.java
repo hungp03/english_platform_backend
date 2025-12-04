@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
@@ -28,6 +30,9 @@ public class WritingSubmissionEventListener {
 
     @Value("${n8n.webhook.writing.url}")
     private String n8nWritingWebhookUrl;
+
+    @Value("${n8n.webhook.api-key}")
+    private String n8nApiKey;
 
     /**
      * Listens for WritingSubmissionCreatedEvent and triggers n8n workflow
@@ -51,8 +56,13 @@ public class WritingSubmissionEventListener {
                     "context", buildContext(quiz, question)
             );
 
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + n8nApiKey);
+            headers.set("Content-Type", "application/json");
+            HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
+
             log.info("Triggering n8n writing workflow for submission: {} (after commit)", submission.getId());
-            restTemplate.postForEntity(n8nWritingWebhookUrl, payload, Void.class);
+            restTemplate.postForEntity(n8nWritingWebhookUrl, requestEntity, Void.class);
             log.info("Successfully triggered n8n writing workflow for submission: {}", submission.getId());
 
         } catch (Exception e) {
