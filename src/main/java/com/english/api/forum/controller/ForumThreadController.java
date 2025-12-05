@@ -74,15 +74,15 @@ public class ForumThreadController {
     }
 
     // Get threads created by current user
-    @PreAuthorize("isAuthenticated()")
-    @GetMapping("/me")
-    public ResponseEntity<PaginationResponse> getMyThreads(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize) {
-        PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
-        UUID uid = SecurityUtil.getCurrentUserId();
-        return ResponseEntity.ok(threadService.listByAuthor(uid, pageable));
-    }
+    // @PreAuthorize("isAuthenticated()")
+    // @GetMapping("/me")
+    // public ResponseEntity<PaginationResponse> getMyThreads(
+    //         @RequestParam(defaultValue = "1") int page,
+    //         @RequestParam(defaultValue = "20") int pageSize) {
+    //     PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
+    //     UUID uid = SecurityUtil.getCurrentUserId();
+    //     return ResponseEntity.ok(threadService.listByAuthor(uid, pageable));
+    // }
 
     // Lock own thread
     @PreAuthorize("isAuthenticated()")
@@ -96,6 +96,56 @@ public class ForumThreadController {
     @PostMapping("/{id}/unlock")
     public ResponseEntity<ForumThreadResponse> unlockThread(@PathVariable UUID id) {
         return ResponseEntity.ok(threadService.lockByOwner(id, false));
+    }
+
+    
+    // @PreAuthorize("isAuthenticated()")
+    // @GetMapping("/saved")
+    // public ResponseEntity<PaginationResponse> getSavedThreads(
+    //         @RequestParam(required = false) String keyword,
+    //         @RequestParam(required = false) UUID categoryId,
+    //         @RequestParam(defaultValue = "1") int page,
+    //         @RequestParam(defaultValue = "20") int pageSize) {
+        
+    //     PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
+    //     return ResponseEntity.ok(threadService.listSavedThreads(keyword, categoryId, pageable));
+    // }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/me")
+    public ResponseEntity<PaginationResponse> getMyThreads(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) UUID categoryId,
+            @RequestParam(required = false) Boolean locked,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        
+        UUID uid = SecurityUtil.getCurrentUserId();
+        PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
+        
+        return ResponseEntity.ok(threadService.listByAuthor(uid, keyword, categoryId, locked, pageable));
+    }
+
+    // --- CẬP NHẬT API: Lấy bài đã lưu (thêm bộ lọc locked) ---
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/saved")
+    public ResponseEntity<PaginationResponse> getSavedThreads(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) UUID categoryId,
+            @RequestParam(required = false) Boolean locked,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        
+        PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
+        
+        return ResponseEntity.ok(threadService.listSavedThreads(keyword, categoryId, locked, pageable));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/{id}/save")
+    public ResponseEntity<Void> toggleSaveThread(@PathVariable UUID id) {
+        threadService.toggleSaveThread(id);
+        return ResponseEntity.ok().build();
     }
 
     // Admin: Lock any thread

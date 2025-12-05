@@ -23,11 +23,15 @@ public interface ForumThreadService {
 
     void delete(UUID id);
 
-    PaginationResponse listByAuthor(UUID authorId, Pageable pageable);
+    PaginationResponse listByAuthor(UUID authorId, String keyword, UUID categoryId, Boolean locked, Pageable pageable);
 
     ForumThreadResponse updateByOwner(UUID id, ForumThreadUpdateRequest req);
     
     void deleteByOwner(UUID id);
 
     void adminDelete(UUID id);
+
+    void toggleSaveThread(UUID threadId);
+
+    PaginationResponse listSavedThreads(String keyword, UUID categoryId, Boolean locked, Pageable pageable);
 }
