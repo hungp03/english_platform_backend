@@ -165,4 +165,4 @@ This project is proprietary software. All rights reserved.
 
 ---
 
-*For the Vietnamese version of this README, see [README_VI.md](README_VI.md)*
+*For the Vietnamese version of this README, see [README_vi.md](README_vi.md)*
