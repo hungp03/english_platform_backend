@@ -23,19 +23,20 @@ public interface ForumThreadSaveRepository extends JpaRepository<ForumThreadSave
     void deleteByThreadId(UUID threadId);
 
     @Query("""
-        SELECT DISTINCT s 
+        SELECT s 
         FROM ForumThreadSave s
         JOIN s.thread t
-        LEFT JOIN com.english.api.forum.model.ForumThreadCategory tc ON tc.thread = t
         WHERE s.user.id = :userId
-        AND (:categoryId IS NULL OR tc.category.id = :categoryId)
+        AND (:categoryId IS NULL OR EXISTS (
+            SELECT 1 FROM ForumThreadCategory tc 
+            WHERE tc.thread = t AND tc.category.id = :categoryId
+        ))
         AND (:locked IS NULL OR t.locked = :locked)
         AND (
              :keyword IS NULL 
              OR LOWER(t.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) 
              OR LOWER(t.bodyMd) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))
         )
-        ORDER BY s.createdAt DESC
     """)
     Page<ForumThreadSave> searchSavedThreads(
         @Param("userId") UUID userId, 

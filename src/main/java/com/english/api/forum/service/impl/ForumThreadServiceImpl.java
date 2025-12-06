@@ -28,6 +28,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.english.api.notification.service.NotificationService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.Instant;
 import java.util.List;
@@ -290,15 +292,33 @@ public class ForumThreadServiceImpl implements ForumThreadService {
         UUID userId = SecurityUtil.getCurrentUserId();
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
 
-        // Thêm tham số locked vào query
-        Page<ForumThreadSave> savesPage = saveRepo.searchSavedThreads(userId, normalizedKeyword, categoryId, locked, pageable);
+        Sort newSort = Sort.unsorted();
+        for (Sort.Order order : pageable.getSort()) {
+            String property = order.getProperty();
+            
+            if (List.of("viewCount", "replyCount", "title", "lastPostAt").contains(property)) {
+                property = "thread." + property;
+            }
+
+            newSort = newSort.and(Sort.by(order.getDirection(), property));
+        }
+        
+        // Nếu không có sort nào (mặc định), thì sort theo thời gian lưu mới nhất
+        if (newSort.isUnsorted()) {
+            newSort = Sort.by(Sort.Direction.DESC, "createdAt");
+        }
+
+        Pageable fixedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), newSort);
+
+
+        Page<ForumThreadSave> savesPage = saveRepo.searchSavedThreads(userId, normalizedKeyword, categoryId, locked, fixedPageable);
 
         List<ForumThreadListResponse> responses = savesPage.getContent().stream()
-                        .map(ForumThreadSave::getThread)
-                        .map(this::toListDto) // <--- SỬA LỖI Ở ĐÂY: Gọi method reference hoặc lambda 1 tham số
-                        .toList();
+                .map(ForumThreadSave::getThread)
+                .map(this::toListDto) 
+                .toList();
 
-        return PaginationResponse.from(new PageImpl<>(responses, pageable, savesPage.getTotalElements()), pageable);
+        return PaginationResponse.from(new PageImpl<>(responses, fixedPageable, savesPage.getTotalElements()), fixedPageable);
     }
 
     // --- HELPERS ---

@@ -73,16 +73,6 @@ public class ForumThreadController {
         return ResponseEntity.noContent().build();
     }
 
-    // Get threads created by current user
-    // @PreAuthorize("isAuthenticated()")
-    // @GetMapping("/me")
-    // public ResponseEntity<PaginationResponse> getMyThreads(
-    //         @RequestParam(defaultValue = "1") int page,
-    //         @RequestParam(defaultValue = "20") int pageSize) {
-    //     PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
-    //     UUID uid = SecurityUtil.getCurrentUserId();
-    //     return ResponseEntity.ok(threadService.listByAuthor(uid, pageable));
-    // }
 
     // Lock own thread
     @PreAuthorize("isAuthenticated()")
@@ -98,18 +88,6 @@ public class ForumThreadController {
         return ResponseEntity.ok(threadService.lockByOwner(id, false));
     }
 
-    
-    // @PreAuthorize("isAuthenticated()")
-    // @GetMapping("/saved")
-    // public ResponseEntity<PaginationResponse> getSavedThreads(
-    //         @RequestParam(required = false) String keyword,
-    //         @RequestParam(required = false) UUID categoryId,
-    //         @RequestParam(defaultValue = "1") int page,
-    //         @RequestParam(defaultValue = "20") int pageSize) {
-        
-    //     PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
-    //     return ResponseEntity.ok(threadService.listSavedThreads(keyword, categoryId, pageable));
-    // }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
@@ -117,11 +95,16 @@ public class ForumThreadController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) Boolean locked,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
         
         UUID uid = SecurityUtil.getCurrentUserId();
-        PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
+        Sort sort = sortDirection.equalsIgnoreCase("asc") 
+            ? Sort.by(sortBy).ascending() 
+            : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), pageSize, sort);
         
         return ResponseEntity.ok(threadService.listByAuthor(uid, keyword, categoryId, locked, pageable));
     }
@@ -133,10 +116,17 @@ public class ForumThreadController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) Boolean locked,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
+
+        Sort sort = sortDirection.equalsIgnoreCase("asc") 
+            ? Sort.by(sortBy).ascending() 
+            : Sort.by(sortBy).descending();
+            
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), pageSize, sort);
         
-        PageRequest pageable = PageRequest.of(Math.max(0, page - 1), pageSize);
         
         return ResponseEntity.ok(threadService.listSavedThreads(keyword, categoryId, locked, pageable));
     }
