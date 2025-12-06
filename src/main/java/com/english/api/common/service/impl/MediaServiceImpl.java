@@ -61,8 +61,15 @@ public class MediaServiceImpl implements MediaService {
             "forums", new FolderRule(50 * 1024 * 1024, ALLOWED_MIME_TYPES), // 50MB, tất cả loại hợp lệ
             "course_thumbnail", new FolderRule(2 * 1024 * 1024, IMAGE_MIME_TYPES) ,// 2MB, chỉ ảnh
             "invoices", new FolderRule(2 * 1024 * 1024, INVOICE_MIME_TYPES),
-            "speaking_assessments", new FolderRule(20 * 1024 * 1024, AUDIO_MIME_TYPES) // 20MB, audio only
-    );
+            "speaking_assessments", new FolderRule(20 * 1024 * 1024, AUDIO_MIME_TYPES), // 20MB, audio only
+            "quiz", new FolderRule(
+                10 * 1024 * 1024, // 10MB
+                new HashSet<>() {{
+                    addAll(IMAGE_MIME_TYPES);
+                    addAll(AUDIO_MIME_TYPES);
+                }}
+            )
+        );
 
     // Inner class chứa rule cho từng folder
     private static class FolderRule {
