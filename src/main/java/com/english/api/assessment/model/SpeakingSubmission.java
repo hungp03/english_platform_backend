@@ -1,11 +1,15 @@
 package com.english.api.assessment.model;
 
+import com.english.api.assessment.dto.CorrectionItem;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -41,6 +45,10 @@ public class SpeakingSubmission {
 
     @Column(columnDefinition = "text")
     private String feedback;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<CorrectionItem> corrections;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
