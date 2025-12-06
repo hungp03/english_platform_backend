@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.io.IOException;
 import java.util.List;
 
@@ -53,10 +53,12 @@ public class MediaController {
 
 
     @DeleteMapping("/delete")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteFile(@RequestParam("filename") String filename) {
-        mediaService.deleteFile(filename);
+        mediaService.deleteFileByUrl(filename);
         return ResponseEntity.ok().build();
-}
+    }
+    
     @GetMapping("/list")
     public ResponseEntity<List<String>> listFilesInFolder(@RequestParam("folder") String folder) {
         List<String> fileUrls = mediaService.listFilesInFolder(folder);
@@ -64,6 +66,7 @@ public class MediaController {
     }
     
     @DeleteMapping("/folder")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteFolder(@RequestParam("folder") String folder) {
         mediaService.deleteFolder(folder);
         return ResponseEntity.ok().build();
