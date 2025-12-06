@@ -19,6 +19,7 @@ public record ForumThreadListResponse(
         UUID lastPostAuthor,
         Instant createdAt,
         Instant updatedAt,
-        List<ForumCategoryResponse> categories
+        List<ForumCategoryResponse> categories,
+        Boolean isSaved
 ) {
 }
