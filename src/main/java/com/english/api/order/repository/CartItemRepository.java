@@ -1,7 +1,7 @@
-package com.english.api.cart.repository;
+package com.english.api.order.repository;
 
-import com.english.api.cart.model.CartItem;
-import com.english.api.cart.dto.response.CartCheckoutResponse;
+import com.english.api.order.model.CartItem;
+import com.english.api.order.dto.response.CartCheckoutResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -115,7 +115,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
      * Excludes courses that user has already purchased
      */
     @Query("""
-        SELECT new com.english.api.cart.dto.response.CartCheckoutResponse(
+        SELECT new com.english.api.order.dto.response.CartCheckoutResponse(
             c.id,
             c.title,
             c.thumbnail,

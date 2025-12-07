@@ -1,4 +1,4 @@
-package com.english.api.cart.model;
+package com.english.api.order.model;
 
 import com.english.api.course.model.Course;
 import com.english.api.user.model.User;

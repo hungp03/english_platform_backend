@@ -1,4 +1,4 @@
-package com.english.api.cart.dto.response;
+package com.english.api.order.dto.response;
 
 import java.io.Serial;
 import java.io.Serializable;

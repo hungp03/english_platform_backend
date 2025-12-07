@@ -60,14 +60,13 @@ src/main/java/com/english/api/
 ├── assessment/     # Đánh giá AI cho SW + chấm điểm LR
 ├── auth/           # Xác thực & phân quyền
 ├── blog/           # Bài viết, danh mục, bình luận
-├── cart/           # Quản lý giỏ hàng
 ├── common/         # Tiện ích chung & xử lý media
 ├── course/         # Khóa học, modules, bài học, đánh giá
 ├── enrollment/     # Đăng ký, tiến độ, kế hoạch học tập
 ├── forum/          # Chủ đề diễn đàn, bài đăng, báo cáo
 ├── mail/           # Dịch vụ email
 ├── notification/   # Thông báo đẩy
-├── order/          # Đơn hàng, thanh toán, hóa đơn
+├── order/          # Giỏ hàng, đơn hàng, thanh toán, hóa đơn
 ├── quiz/           # Loại quiz, sections, câu hỏi
 └── user/           # Người dùng, giảng viên
 ```

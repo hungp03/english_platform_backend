@@ -60,14 +60,13 @@ src/main/java/com/english/api/
 ├── assessment/     # Speaking & Writing AI assessment
 ├── auth/           # Authentication & authorization
 ├── blog/           # Blog posts, categories, comments
-├── cart/           # Shopping cart management
 ├── common/         # Shared utilities & media handling
 ├── course/         # Courses, modules, lessons, reviews
 ├── enrollment/     # Enrollments, progress, study plans
 ├── forum/          # Forum threads, posts, reports
 ├── mail/           # Email service
 ├── notification/   # Push notifications
-├── order/          # Orders, payments, invoices
+├── order/          # Cart, Orders, payments, invoices
 ├── quiz/           # Quiz types, sections, questions
 └── user/           # Users, instructors, wallets
 ```

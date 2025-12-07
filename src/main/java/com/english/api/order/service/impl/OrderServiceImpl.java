@@ -1,7 +1,7 @@
 package com.english.api.order.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
-import com.english.api.cart.service.CartService;
+import com.english.api.order.service.CartService;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.ResourceAlreadyOwnedException;
 import com.english.api.common.exception.ResourceInvalidException;
