@@ -1,3 +1,4 @@
+
 package com.english.api.admin.service.impl;
 
 import com.english.api.admin.dto.response.*;
@@ -10,13 +11,19 @@ import com.english.api.order.repository.OrderRepository;
 import com.english.api.user.model.InstructorRequest;
 import com.english.api.user.repository.InstructorRequestRepository;
 import com.english.api.user.repository.UserRepository;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -34,7 +41,13 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
     private final EnrollmentRepository enrollmentRepository;
     private final ForumReportRepository forumReportRepository;
     private final DashboardStatsRepositoryCustom dashboardStatsRepository;
+    
+    // === TEMPLATE ENGINE ===
+    private final SpringTemplateEngine templateEngine;
 
+    // =========================================================================
+    // 1. DASHBOARD SUMMARY
+    // =========================================================================
     @Override
     public DashboardSummaryResponse getDashboardSummary() {
         ZoneId utc = ZoneId.of("UTC");
@@ -49,7 +62,6 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         OffsetDateTime startPrevMonth = prev.atDay(1).atStartOfDay().atOffset(ZoneOffset.UTC);
         OffsetDateTime endPrevMonth = prev.atEndOfMonth().atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC);
 
-        // DÙNG REPOSITORY MỚI
         Map<String, Long> stats = dashboardStatsRepository.getAllDashboardStats(
             weekAgo, sevenDaysAgo, threeDaysAgo,
             startOfMonth, endOfMonth, startPrevMonth, endPrevMonth
@@ -148,7 +160,6 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
             .build();
     }
 
-    // Helper methods
     private Long get(Map<String, Long> stats, String key) {
         return stats.getOrDefault(key, 0L);
     }
@@ -163,17 +174,20 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         return BigDecimal.valueOf((cur - prev) * 100.0 / prev).setScale(2, RoundingMode.HALF_UP);
     }
 
-    // === 2. PENDING ACTIONS ===
+    // =========================================================================
+    // 2. PENDING ACTIONS
+    // =========================================================================
     @Override
     public PendingActionsResponse getPendingActions() {
         Long totalPendingRequest = instructorRequestRepository.countByStatus(InstructorRequest.Status.PENDING);
         Long totalUnsolveReport = forumReportRepository.countByResolvedAtIsNull();
         Long totalPendingOrders = orderRepository.countByStatus(OrderStatus.PENDING);
-
         return new PendingActionsResponse(totalPendingRequest, totalUnsolveReport, totalPendingOrders);
     }
 
-    // === 3. CHARTS ===
+    // =========================================================================
+    // 3. CHARTS
+    // =========================================================================
     @Override
     public UserGrowthResponse getUserGrowthChart(int months) {
         if (months > 24) months = 24;
@@ -196,7 +210,6 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
             Long activeUsers = (Long) row[2];
             monthMap.put(monthStr, new UserGrowthResponse.MonthlyData(monthStr, newUsers, activeUsers));
         }
-
         return new UserGrowthResponse(new ArrayList<>(monthMap.values()));
     }
 
@@ -230,10 +243,8 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
             BigDecimal avg = orders > 0
                     ? totalVnd.divide(BigDecimal.valueOf(orders), 2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO;
-
             monthMap.put(monthStr, new RevenueChartResponse.MonthlyRevenue(monthStr, vnd, usd, orders, avg));
         }
-
         return new RevenueChartResponse(new ArrayList<>(monthMap.values()));
     }
 
@@ -265,18 +276,16 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                     : BigDecimal.ZERO;
 
             monthMap.put(monthStr, new EnrollmentChartResponse.MonthlyEnrollment(
-                monthStr, 
-                newEnroll, 
-                completed, 
-                completionRate,
+                monthStr, newEnroll, completed, completionRate,
                 BigDecimal.valueOf(avgProgress != null ? avgProgress : 0).setScale(2, RoundingMode.HALF_UP)
             ));
         }
-
         return new EnrollmentChartResponse(new ArrayList<>(monthMap.values()));
     }
 
-    // === 4. TOP PERFORMERS ===
+    // =========================================================================
+    // 4. TOP PERFORMERS
+    // =========================================================================
     @Override
     public TopPerformersResponse getTopCourses(int limit) {
         if (limit > 50) limit = 50;
@@ -344,11 +353,8 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 old.averageRating(), old.totalRevenueCents(), i + 1
             ));
         }
-
         return new TopPerformersResponse(null, list, null);
     }
-
-
 
     @Override
     public TopPerformersResponse getTopRevenueCourses(int limit) {
@@ -381,245 +387,146 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 old.currency(), old.totalOrders(), old.enrollmentCount(), old.averageOrderValue(), i + 1
             ));
         }
-        
         return new TopPerformersResponse(null, null, list);
     }
 
-    // === 5. EXPORT ===
     @Override
     public byte[] exportDashboardData(String type) {
-        StringBuilder csv = new StringBuilder();
+        // 1. Tạo Context cho Thymeleaf
+        Context context = new Context();
+        context.setVariable("generatedAt", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        context.setVariable("reportType", formatReportType(type));
+
+        // 2. Chuẩn bị dữ liệu để render vào bảng
+        prepareDataForPdf(type, context);
+
+        // 3. Render HTML từ Thymeleaf Template (resources/templates/dashboard-report.html)
+        String htmlContent = templateEngine.process("dashboard-report", context);
+
+
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.useFastMode();
+
+            try {
+                // 1. Đăng ký Font Thường
+                builder.useFont(() -> {
+                    try {
+                        return new ClassPathResource("fonts/DejaVuSans.ttf").getInputStream();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, "DejaVu Sans"); // Family Name
+
+                // 2. Đăng ký Font Đậm (Bold) cho thẻ <h1>, <th>
+                builder.useFont(() -> {
+                    try {
+                        return new ClassPathResource("fonts/DejaVuSans-Bold.ttf").getInputStream();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, "DejaVu Sans", 700, BaseRendererBuilder.FontStyle.NORMAL, true); 
+
+
+            } catch (Exception e) {
+                // Log lỗi 
+                System.err.println("WARNING: Could not load custom fonts. Vietnamese text may fail.");
+                e.printStackTrace();
+            }
+
+            builder.withHtmlContent(htmlContent, null);
+            builder.toStream(os);
+            builder.run();
+
+            return os.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating PDF export", e);
+        }
+    }
+
+    private String formatReportType(String type) {
+        if (type == null) return "Unknown Report";
+        return type.replace("-", " ").toUpperCase();
+    }
+
+    /**
+     * Hàm helper để map dữ liệu từ các hàm Service sang cấu trúc List để HTML dễ loop
+     */
+    private void prepareDataForPdf(String type, Context context) {
+        List<String> headers = new ArrayList<>();
+        List<List<Object>> rows = new ArrayList<>();
 
         switch (type.toLowerCase()) {
             case "summary":
-                csv.append(exportSummaryData());
+                // Với summary, ta không dùng bảng generic mà dùng layout riêng trong HTML
+                context.setVariable("summary", getDashboardSummary());
                 break;
+
             case "user-growth":
-                csv.append(exportUserGrowthData());
+                context.setVariable("tableTitle", "User Growth Statistics");
+                headers.addAll(List.of("Month", "New Users", "Active Users"));
+                UserGrowthResponse userGrowth = getUserGrowthChart(24); // Lấy 24 tháng
+                for (UserGrowthResponse.MonthlyData d : userGrowth.monthlyData()) {
+                    rows.add(List.of(d.month(), d.newUsers(), d.activeUsers()));
+                }
                 break;
+
             case "revenue":
-                csv.append(exportRevenueData());
+                context.setVariable("tableTitle", "Revenue Statistics");
+                headers.addAll(List.of("Month", "VND", "USD", "Orders", "Avg Order Value"));
+                RevenueChartResponse revenue = getRevenueChart(12);
+                for (RevenueChartResponse.MonthlyRevenue r : revenue.monthlyRevenue()) {
+                    rows.add(List.of(r.month(), r.revenueVND(), r.revenueUSD(), r.totalOrders(), r.averageOrderValue()));
+                }
                 break;
+            
             case "enrollments":
-                csv.append(exportEnrollmentData());
+                context.setVariable("tableTitle", "Enrollment Statistics");
+                headers.addAll(List.of("Month", "New Enroll", "Completed", "Rate (%)", "Avg Progress (%)"));
+                EnrollmentChartResponse enrollment = getEnrollmentChart(12);
+                for (EnrollmentChartResponse.MonthlyEnrollment e : enrollment.monthlyEnrollment()) {
+                    rows.add(List.of(e.month(), e.newEnrollments(), e.completedEnrollments(), e.completionRate(), e.averageProgress()));
+                }
                 break;
+
             case "top-courses":
-                csv.append(exportTopCoursesData());
+                context.setVariable("tableTitle", "Top 50 Performing Courses");
+                headers.addAll(List.of("Rank", "Title", "Instructor", "Enrollments", "Revenue (VND)"));
+                // Lấy 50 khóa học -> Hiển thị hết trong PDF (nhiều trang)
+                TopPerformersResponse courses = getTopCourses(50);
+                for (TopPerformersResponse.TopCourse c : courses.topCourses()) {
+                    rows.add(List.of(c.rank(), c.title(), c.instructorName(), c.enrollmentCount(), c.totalRevenueCents()));
+                }
                 break;
+            
             case "top-instructors":
-                csv.append(exportTopInstructorsData());
+                context.setVariable("tableTitle", "Top 50 Instructors");
+                headers.addAll(List.of("Rank", "Name", "Email", "Courses", "Enrollments", "Revenue"));
+                TopPerformersResponse instructors = getTopInstructors(50);
+                for (TopPerformersResponse.TopInstructor i : instructors.topInstructors()) {
+                    rows.add(List.of(i.rank(), i.fullName(), i.email(), i.totalCourses(), i.totalEnrollments(), i.totalRevenueCents()));
+                }
                 break;
+
             case "top-revenue-courses":
-                csv.append(exportTopRevenueCoursesData());
+                context.setVariable("tableTitle", "Top 50 Highest Revenue Courses");
+                headers.addAll(List.of("Rank", "Title", "Instructor", "Orders", "Revenue", "AOV"));
+                TopPerformersResponse revCourses = getTopRevenueCourses(50);
+                for (TopPerformersResponse.TopRevenueCourse c : revCourses.topRevenueCourses()) {
+                    rows.add(List.of(c.rank(), c.title(), c.instructorName(), c.totalOrders(), c.totalRevenueCents(), c.averageOrderValue()));
+                }
                 break;
+
             default:
-                csv.append(exportSummaryData());
+                // Mặc định trả về summary
+                context.setVariable("summary", getDashboardSummary());
                 break;
         }
 
-        return csv.toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    private String exportSummaryData() {
-        DashboardSummaryResponse summary = getDashboardSummary();
-        StringBuilder csv = new StringBuilder();
-
-        csv.append("Dashboard Summary Export\n");
-        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
-
-        // Users
-        csv.append("=== USERS ===\n");
-        csv.append("Metric,Value\n");
-        csv.append("Total Users,").append(summary.getUsers().getTotal()).append("\n");
-        csv.append("Active Users,").append(summary.getUsers().getActive()).append("\n");
-        csv.append("Verified Users,").append(summary.getUsers().getVerified()).append("\n");
-        csv.append("Inactive Users,").append(summary.getUsers().getInactive()).append("\n");
-        csv.append("Week Growth,").append(summary.getUsers().getWeekGrowth()).append("\n");
-        csv.append("Active Percentage,").append(summary.getUsers().getActivePercentage()).append("%\n");
-        csv.append("Verified Percentage,").append(summary.getUsers().getVerifiedPercentage()).append("%\n\n");
-
-        // Instructors
-        csv.append("=== INSTRUCTORS ===\n");
-        csv.append("Metric,Value\n");
-        csv.append("Total Instructors,").append(summary.getInstructors().getTotalInstructors()).append("\n");
-        csv.append("Pending Requests,").append(summary.getInstructors().getPendingRequests()).append("\n");
-        csv.append("Pending Over 7 Days,").append(summary.getInstructors().getPendingOver7Days()).append("\n");
-        csv.append("Pending 3-7 Days,").append(summary.getInstructors().getPending3To7Days()).append("\n");
-        csv.append("Pending Under 3 Days,").append(summary.getInstructors().getPendingUnder3Days()).append("\n\n");
-
-        // Courses
-        csv.append("=== COURSES ===\n");
-        csv.append("Metric,Value\n");
-        csv.append("Total Courses,").append(summary.getCourses().getTotalCourses()).append("\n");
-        csv.append("Published Courses,").append(summary.getCourses().getPublished()).append("\n");
-        csv.append("Draft Courses,").append(summary.getCourses().getDraft()).append("\n");
-        csv.append("Archived Courses,").append(summary.getCourses().getArchived()).append("\n");
-        csv.append("Total Modules,").append(summary.getCourses().getTotalModules()).append("\n");
-        csv.append("Total Lessons,").append(summary.getCourses().getTotalLessons()).append("\n");
-        csv.append("Free Lessons,").append(summary.getCourses().getFreeLessons()).append("\n");
-        csv.append("Published Percentage,").append(summary.getCourses().getPublishedPercentage()).append("%\n\n");
-
-        // Revenue
-        csv.append("=== REVENUE ===\n");
-        csv.append("Metric,Value\n");
-        csv.append("Total Revenue This Month (cents),").append(summary.getRevenue().getTotalCentsThisMonth()).append("\n");
-        csv.append("Growth Percentage,").append(summary.getRevenue().getGrowthPercentage()).append("%\n");
-        csv.append("Total Revenue VND (cents),").append(summary.getRevenue().getTotalCentsVND()).append("\n\n");
-
-        // Orders
-        csv.append("=== ORDERS ===\n");
-        csv.append("Metric,Value\n");
-        csv.append("Total Orders This Month,").append(summary.getOrders().getTotalOrdersThisMonth()).append("\n");
-        csv.append("Completed Orders,").append(summary.getOrders().getCompleted()).append("\n");
-        csv.append("Pending Orders,").append(summary.getOrders().getPending()).append("\n");
-        csv.append("Cancelled Orders,").append(summary.getOrders().getCancelled()).append("\n");
-        csv.append("Unpaid Carts,").append(summary.getOrders().getUnpaidCarts()).append("\n");
-        csv.append("Completed Percentage,").append(summary.getOrders().getCompletedPercentage()).append("%\n");
-        csv.append("Average Order Value,").append(summary.getOrders().getAverageOrderValue()).append("\n\n");
-
-        // Payments
-        csv.append("=== PAYMENTS ===\n");
-        csv.append("Metric,Value\n");
-        csv.append("Total Payments,").append(summary.getPayments().getTotalPayments()).append("\n");
-        csv.append("PayPal Payments,").append(summary.getPayments().getByPayPal()).append("\n");
-        csv.append("PayOS Payments,").append(summary.getPayments().getByPayOS()).append("\n");
-        csv.append("Succeeded Payments,").append(summary.getPayments().getSucceeded()).append("\n");
-        csv.append("Failed Payments,").append(summary.getPayments().getFailed()).append("\n");
-        csv.append("Refunded Payments,").append(summary.getPayments().getRefunded()).append("\n");
-        csv.append("Success Rate,").append(summary.getPayments().getSuccessRate()).append("%\n\n");
-
-        return csv.toString();
-    }
-
-    private String exportUserGrowthData() {
-        UserGrowthResponse data = getUserGrowthChart(12);
-        StringBuilder csv = new StringBuilder();
-
-        csv.append("User Growth Report\n");
-        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
-        csv.append("Month,New Users,Active Users\n");
-
-        for (UserGrowthResponse.MonthlyData monthly : data.monthlyData()) {
-            csv.append(monthly.month()).append(",")
-               .append(monthly.newUsers()).append(",")
-               .append(monthly.activeUsers()).append("\n");
+        // Đẩy dữ liệu bảng vào context nếu có
+        if (!headers.isEmpty()) {
+            context.setVariable("headers", headers);
+            context.setVariable("tableData", rows);
         }
-
-        return csv.toString();
     }
-
-    private String exportRevenueData() {
-        RevenueChartResponse data = getRevenueChart(12);
-        StringBuilder csv = new StringBuilder();
-
-        csv.append("Revenue Report\n");
-        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
-        csv.append("Month,Revenue VND (cents),Revenue USD (cents),Total Orders,Average Order Value\n");
-
-        for (RevenueChartResponse.MonthlyRevenue monthly : data.monthlyRevenue()) {
-            csv.append(monthly.month()).append(",")
-               .append(monthly.revenueVND()).append(",")
-               .append(monthly.revenueUSD()).append(",")
-               .append(monthly.totalOrders()).append(",")
-               .append(monthly.averageOrderValue()).append("\n");
-        }
-
-        return csv.toString();
-    }
-
-    private String exportEnrollmentData() {
-        EnrollmentChartResponse data = getEnrollmentChart(12);
-        StringBuilder csv = new StringBuilder();
-
-        csv.append("Enrollment Report\n");
-        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
-        csv.append("Month,New Enrollments,Completed Enrollments,Completion Rate (%),Average Progress (%)\n");
-
-        for (EnrollmentChartResponse.MonthlyEnrollment monthly : data.monthlyEnrollment()) {
-            csv.append(monthly.month()).append(",")
-               .append(monthly.newEnrollments()).append(",")
-               .append(monthly.completedEnrollments()).append(",")
-               .append(monthly.completionRate()).append(",")
-               .append(monthly.averageProgress()).append("\n");
-        }
-
-        return csv.toString();
-    }
-
-    private String exportTopCoursesData() {
-        TopPerformersResponse data = getTopCourses(50);
-        StringBuilder csv = new StringBuilder();
-
-        csv.append("Top Courses Report\n");
-        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
-        csv.append("Rank,Course ID,Title,Slug,Instructor,Enrollments,Completions,Completion Rate (%),Revenue (cents),Currency\n");
-
-        for (TopPerformersResponse.TopCourse course : data.topCourses()) {
-            csv.append(course.rank()).append(",")
-               .append(course.id()).append(",")
-               .append("\"").append(escapeCSV(course.title())).append("\",")
-               .append(course.slug()).append(",")
-               .append("\"").append(escapeCSV(course.instructorName())).append("\",")
-               .append(course.enrollmentCount()).append(",")
-               .append(course.completionCount()).append(",")
-               .append(course.completionRate()).append(",")
-               .append(course.totalRevenueCents()).append(",")
-               .append(course.currency()).append("\n");
-        }
-
-        return csv.toString();
-    }
-
-    private String exportTopInstructorsData() {
-        TopPerformersResponse data = getTopInstructors(50);
-        StringBuilder csv = new StringBuilder();
-
-        csv.append("Top Instructors Report\n");
-        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
-        csv.append("Rank,Instructor ID,Full Name,Email,Total Courses,Total Enrollments,Total Revenue (cents)\n");
-
-        for (TopPerformersResponse.TopInstructor instructor : data.topInstructors()) {
-            csv.append(instructor.rank()).append(",")
-               .append(instructor.id()).append(",")
-               .append("\"").append(escapeCSV(instructor.fullName())).append("\",")
-               .append(instructor.email()).append(",")
-               .append(instructor.totalCourses()).append(",")
-               .append(instructor.totalEnrollments()).append(",")
-               .append(instructor.totalRevenueCents()).append("\n");
-        }
-
-        return csv.toString();
-    }
-
-    private String exportTopRevenueCoursesData() {
-        TopPerformersResponse data = getTopRevenueCourses(50);
-        StringBuilder csv = new StringBuilder();
-
-        csv.append("Top Revenue Courses Report\n");
-        csv.append("Generated at: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
-        csv.append("Rank,Course ID,Title,Slug,Instructor,Total Revenue (cents),Currency,Total Orders,Enrollments,Average Order Value\n");
-
-        for (TopPerformersResponse.TopRevenueCourse course : data.topRevenueCourses()) {
-            csv.append(course.rank()).append(",")
-               .append(course.id()).append(",")
-               .append("\"").append(escapeCSV(course.title())).append("\",")
-               .append(course.slug()).append(",")
-               .append("\"").append(escapeCSV(course.instructorName())).append("\",")
-               .append(course.totalRevenueCents()).append(",")
-               .append(course.currency()).append(",")
-               .append(course.totalOrders()).append(",")
-               .append(course.enrollmentCount()).append(",")
-               .append(course.averageOrderValue()).append("\n");
-        }
-
-        return csv.toString();
-    }
-
-    private String escapeCSV(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("\"", "\"\"");
-    }
-
 }
