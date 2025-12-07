@@ -1,7 +1,6 @@
 package com.english.api.enrollment.service.impl;
 
 import com.english.api.auth.util.SecurityUtil;
-import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.CourseModuleResponse;
@@ -28,8 +27,6 @@ import com.english.api.order.model.OrderItem;
 import com.english.api.order.model.enums.OrderItemEntityType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -141,21 +138,21 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public PaginationResponse getMyEnrollments(Pageable pageable) {
+    public List<EnrollmentResponse> getMyEnrollments() {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
-        log.debug("Fetching enrollments for user: {} with pagination", currentUserId);
+        log.debug("Fetching all enrollments for user: {}", currentUserId);
         
-        // Fetch enrollments with course eagerly loaded in one query with pagination
-        Page<Enrollment> enrollmentPage = enrollmentRepository.findByUserIdWithCourse(currentUserId, pageable);
+        // Fetch all enrollments with course eagerly loaded
+        List<Enrollment> enrollments = enrollmentRepository.findByUserIdWithCourse(currentUserId);
         
         // Convert to response DTOs
-        Page<EnrollmentResponse> responsePage = enrollmentPage.map(enrollmentMapper::toEnrollmentResponse);
+        List<EnrollmentResponse> responseList = enrollments.stream()
+                .map(enrollmentMapper::toEnrollmentResponse)
+                .toList();
         
-        log.info("Found {} enrollments for user {} (page {}/{})", 
-                enrollmentPage.getNumberOfElements(), currentUserId, 
-                pageable.getPageNumber() + 1, enrollmentPage.getTotalPages());
+        log.info("Found {} enrollments for user {}", responseList.size(), currentUserId);
         
-        return PaginationResponse.from(responsePage, pageable);
+        return responseList;
     }
 
     @Override

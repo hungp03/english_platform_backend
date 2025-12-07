@@ -318,12 +318,9 @@ public class StudyPlanServiceImpl implements StudyPlanService {
             .collect(Collectors.toList());
 
         // 2. Fetch active enrollments
-        Page<Enrollment> enrollments = enrollmentRepository.findByUserIdWithCourse(
-            userId, 
-            PageRequest.of(0, 5)
-        );
+        List<Enrollment> enrollments = enrollmentRepository.findByUserIdWithCourse(userId);
 
-        List<EnrollmentProgressData> enrollmentData = enrollments.getContent().stream()
+        List<EnrollmentProgressData> enrollmentData = enrollments.stream()
             .map(e -> new EnrollmentProgressData(
                 e.getCourse().getTitle(),
                 e.getProgressPercent()

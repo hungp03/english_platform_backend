@@ -46,7 +46,6 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
      * Find all enrollments for a user with course information eagerly loaded
      * Ordered by enrollment creation date (newest first)
      * Only fetches minimal course fields to avoid loading heavy descriptions
-     * Supports pagination
      */
     @Query("""
         SELECT e FROM Enrollment e
@@ -54,7 +53,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
         WHERE e.user.id = :userId
         ORDER BY e.createdAt DESC
         """)
-    Page<Enrollment> findByUserIdWithCourse(@Param("userId") UUID userId, Pageable pageable);
+    List<Enrollment> findByUserIdWithCourse(@Param("userId") UUID userId);
 
     /**
      * Update progress percentage for an enrollment
