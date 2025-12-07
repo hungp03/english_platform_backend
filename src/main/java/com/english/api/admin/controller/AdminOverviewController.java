@@ -3,6 +3,9 @@ package com.english.api.admin.controller;
 import com.english.api.admin.dto.response.*;
 import com.english.api.admin.service.AdminOverviewService;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDate;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -54,13 +57,16 @@ public class AdminOverviewController {
     public ResponseEntity<TopPerformersResponse> getTopRevenueCourses(@RequestParam(defaultValue = "10") int limit) {
         return ResponseEntity.ok(adminOverviewService.getTopRevenueCourses(limit));
     }
-
+    
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportDashboardData(@RequestParam(defaultValue = "summary") String type) {
-        byte[] csvData = adminOverviewService.exportDashboardData(type);
+        byte[] pdfData = adminOverviewService.exportDashboardData(type);
+        
+        String filename = "dashboard_" + type + "_" + LocalDate.now() + ".pdf";
+
         return ResponseEntity.ok()
-                .header("Content-Type", "text/csv; charset=UTF-8")
-                .header("Content-Disposition", "attachment; filename=dashboard_" + type + ".csv")
-                .body(csvData);
+                .header("Content-Type", "application/pdf") 
+                .header("Content-Disposition", "attachment; filename=" + filename)
+                .body(pdfData);
     }
 }
