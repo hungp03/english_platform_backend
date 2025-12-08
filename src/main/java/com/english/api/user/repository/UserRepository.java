@@ -52,16 +52,30 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.provider = :provider AND u.providerUid = :providerUid")
     Optional<User> findByProviderAndProviderUidWithRoles(@Param("provider") String provider, @Param("providerUid") String providerUid);
 
-    @Query(value = """
+   //  @Query(value = """
+   //    SELECT 
+   //       DATE_TRUNC('month', u.created_at AT TIME ZONE 'UTC')::DATE AS month,
+   //       COUNT(u.id)::BIGINT AS new_users,
+   //       SUM(CASE WHEN u.is_active = true THEN 1 ELSE 0 END)::BIGINT AS active_users,
+   //       SUM(CASE WHEN u.email_verified = true THEN 1 ELSE 0 END)::BIGINT AS verified_users
+   //    FROM users u 
+   //    WHERE u.created_at >= :startDate
+   //    GROUP BY month 
+   //    ORDER BY month DESC
+   //    """, nativeQuery = true)
+   // List<Object[]> getUserGrowthByMonth(@Param("startDate") Instant startDate);
+
+   @Query(value = """
       SELECT 
          DATE_TRUNC('month', u.created_at AT TIME ZONE 'UTC')::DATE AS month,
-         COUNT(u.id)::BIGINT AS new_users,
-         SUM(CASE WHEN u.is_active = true THEN 1 ELSE 0 END)::BIGINT AS active_users,
-         SUM(CASE WHEN u.email_verified = true THEN 1 ELSE 0 END)::BIGINT AS verified_users
+         COUNT(u.id)::BIGINT AS new_users
       FROM users u 
       WHERE u.created_at >= :startDate
       GROUP BY month 
-      ORDER BY month DESC
+      ORDER BY month ASC -- Để order ASC để tính tích lũy từ quá khứ -> hiện tại dễ hơn
       """, nativeQuery = true)
    List<Object[]> getUserGrowthByMonth(@Param("startDate") Instant startDate);
+
+   @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt < :date")
+   long countByCreatedAtBefore(@Param("date") Instant date);
 }

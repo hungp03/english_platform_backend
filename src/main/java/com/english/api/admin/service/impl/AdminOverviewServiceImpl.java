@@ -192,24 +192,44 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
     public UserGrowthResponse getUserGrowthChart(int months) {
         if (months > 24) months = 24;
         Instant start = Instant.now().minus(Duration.ofDays(months * 30L));
+        
+        // Lấy dữ liệu tăng trưởng từng tháng
         List<Object[]> data = userRepository.getUserGrowthByMonth(start);
 
-        Map<String, UserGrowthResponse.MonthlyData> monthMap = new LinkedHashMap<>();
-        LocalDate current = LocalDate.now().withDayOfMonth(1).minusMonths(months - 1);
-        LocalDate end = LocalDate.now().withDayOfMonth(1);
-        while (!current.isAfter(end)) {
-            String key = current.format(DateTimeFormatter.ofPattern("MM-yyyy"));
-            monthMap.put(key, new UserGrowthResponse.MonthlyData(key, 0L, 0L));
-            current = current.plusMonths(1);
-        }
+        //  Tính tổng user đã có TRƯỚC thời điểm 'start'
+        long currentTotal = userRepository.countByCreatedAtBefore(start); 
 
+        Map<String, UserGrowthResponse.MonthlyData> monthMap = new LinkedHashMap<>();
+        
+        // Tạo danh sách các tháng (đảo ngược logic để tính tích lũy từ quá khứ -> hiện tại)
+        LocalDate startDateParams = LocalDate.now().withDayOfMonth(1).minusMonths(months - 1);
+        LocalDate endDateParams = LocalDate.now().withDayOfMonth(1);
+        
+        // Map dữ liệu DB vào 1 Map tạm để dễ lookup
+        Map<String, Long> dbDataMap = new HashMap<>();
         for (Object[] row : data) {
             String monthStr = ((java.sql.Date) row[0]).toLocalDate().withDayOfMonth(1)
                     .format(DateTimeFormatter.ofPattern("MM-yyyy"));
             Long newUsers = (Long) row[1];
-            Long activeUsers = (Long) row[2];
-            monthMap.put(monthStr, new UserGrowthResponse.MonthlyData(monthStr, newUsers, activeUsers));
+            dbDataMap.put(monthStr, newUsers);
         }
+
+        LocalDate current = startDateParams;
+        while (!current.isAfter(endDateParams)) {
+            String key = current.format(DateTimeFormatter.ofPattern("MM-yyyy"));
+            
+            // Lấy số user mới của tháng này (nếu ko có thì là 0)
+            Long newUsersThisMonth = dbDataMap.getOrDefault(key, 0L);
+            
+            // Cộng dồn vào tổng tích lũy
+            currentTotal += newUsersThisMonth;
+            
+            // "Tổng tích lũy"
+            monthMap.put(key, new UserGrowthResponse.MonthlyData(key, newUsersThisMonth, currentTotal));
+            
+            current = current.plusMonths(1);
+        }
+
         return new UserGrowthResponse(new ArrayList<>(monthMap.values()));
     }
 
@@ -444,36 +464,29 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         }
     }
 
-    private String formatReportType(String type) {
-        if (type == null) return "Unknown Report";
-        return type.replace("-", " ").toUpperCase();
-    }
-
-    /**
-     * Hàm helper để map dữ liệu từ các hàm Service sang cấu trúc List để HTML dễ loop
-     */
     private void prepareDataForPdf(String type, Context context) {
         List<String> headers = new ArrayList<>();
         List<List<Object>> rows = new ArrayList<>();
 
         switch (type.toLowerCase()) {
             case "summary":
-                // Với summary, ta không dùng bảng generic mà dùng layout riêng trong HTML
                 context.setVariable("summary", getDashboardSummary());
                 break;
 
             case "user-growth":
-                context.setVariable("tableTitle", "User Growth Statistics");
-                headers.addAll(List.of("Month", "New Users", "Active Users"));
-                UserGrowthResponse userGrowth = getUserGrowthChart(24); // Lấy 24 tháng
+                context.setVariable("tableTitle", "Thống kê tăng trưởng người dùng");
+
+                headers.addAll(List.of("Tháng", "Người dùng mới", "Tổng người dùng")); 
+                UserGrowthResponse userGrowth = getUserGrowthChart(24);
                 for (UserGrowthResponse.MonthlyData d : userGrowth.monthlyData()) {
-                    rows.add(List.of(d.month(), d.newUsers(), d.activeUsers()));
+                    // rows.add(List.of(d.month(), d.newUsers(), d.activeUsers()));
+                    rows.add(List.of(d.month(), d.newUsers(), d.totalUsers()));
                 }
                 break;
 
             case "revenue":
-                context.setVariable("tableTitle", "Revenue Statistics");
-                headers.addAll(List.of("Month", "VND", "USD", "Orders", "Avg Order Value"));
+                context.setVariable("tableTitle", "Thống kê doanh thu");
+                headers.addAll(List.of("Tháng", "VND", "USD", "Đơn hàng", "TB đơn hàng"));
                 RevenueChartResponse revenue = getRevenueChart(12);
                 for (RevenueChartResponse.MonthlyRevenue r : revenue.monthlyRevenue()) {
                     rows.add(List.of(r.month(), r.revenueVND(), r.revenueUSD(), r.totalOrders(), r.averageOrderValue()));
@@ -481,8 +494,8 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 break;
             
             case "enrollments":
-                context.setVariable("tableTitle", "Enrollment Statistics");
-                headers.addAll(List.of("Month", "New Enroll", "Completed", "Rate (%)", "Avg Progress (%)"));
+                context.setVariable("tableTitle", "Thống kê tham gia khóa học");
+                headers.addAll(List.of("Tháng", "Ghi danh mới", "Hoàn thành", "Tỷ lệ (%)", "Tiến độ TB (%)"));
                 EnrollmentChartResponse enrollment = getEnrollmentChart(12);
                 for (EnrollmentChartResponse.MonthlyEnrollment e : enrollment.monthlyEnrollment()) {
                     rows.add(List.of(e.month(), e.newEnrollments(), e.completedEnrollments(), e.completionRate(), e.averageProgress()));
@@ -490,9 +503,8 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 break;
 
             case "top-courses":
-                context.setVariable("tableTitle", "Top 50 Performing Courses");
-                headers.addAll(List.of("Rank", "Title", "Instructor", "Enrollments", "Revenue (VND)"));
-                // Lấy 50 khóa học -> Hiển thị hết trong PDF (nhiều trang)
+                context.setVariable("tableTitle", "Top 50 Khóa học phổ biến nhất");
+                headers.addAll(List.of("Hạng", "Tên khóa học", "Giảng viên", "Lượt tham gia", "Doanh thu (VND)"));
                 TopPerformersResponse courses = getTopCourses(50);
                 for (TopPerformersResponse.TopCourse c : courses.topCourses()) {
                     rows.add(List.of(c.rank(), c.title(), c.instructorName(), c.enrollmentCount(), c.totalRevenueCents()));
@@ -500,8 +512,8 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 break;
             
             case "top-instructors":
-                context.setVariable("tableTitle", "Top 50 Instructors");
-                headers.addAll(List.of("Rank", "Name", "Email", "Courses", "Enrollments", "Revenue"));
+                context.setVariable("tableTitle", "Top 50 Giảng viên xuất sắc");
+                headers.addAll(List.of("Hạng", "Họ tên", "Email", "Số khóa", "Lượt học", "Doanh thu(VND)"));
                 TopPerformersResponse instructors = getTopInstructors(50);
                 for (TopPerformersResponse.TopInstructor i : instructors.topInstructors()) {
                     rows.add(List.of(i.rank(), i.fullName(), i.email(), i.totalCourses(), i.totalEnrollments(), i.totalRevenueCents()));
@@ -509,8 +521,8 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 break;
 
             case "top-revenue-courses":
-                context.setVariable("tableTitle", "Top 50 Highest Revenue Courses");
-                headers.addAll(List.of("Rank", "Title", "Instructor", "Orders", "Revenue", "AOV"));
+                context.setVariable("tableTitle", "Top 50 Khóa học doanh thu cao nhất");
+                headers.addAll(List.of("Hạng", "Tên khóa học", "Giảng viên", "Đơn hàng", "Doanh thu(VND)", "TB đơn(VND)"));
                 TopPerformersResponse revCourses = getTopRevenueCourses(50);
                 for (TopPerformersResponse.TopRevenueCourse c : revCourses.topRevenueCourses()) {
                     rows.add(List.of(c.rank(), c.title(), c.instructorName(), c.totalOrders(), c.totalRevenueCents(), c.averageOrderValue()));
@@ -518,15 +530,27 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 break;
 
             default:
-                // Mặc định trả về summary
                 context.setVariable("summary", getDashboardSummary());
                 break;
         }
 
-        // Đẩy dữ liệu bảng vào context nếu có
         if (!headers.isEmpty()) {
             context.setVariable("headers", headers);
             context.setVariable("tableData", rows);
+        }
+    }
+
+    private String formatReportType(String type) {
+        if (type == null) return "Không xác định";
+        switch (type.toLowerCase()) {
+            case "summary": return "TỔNG QUAN HỆ THỐNG";
+            case "user-growth": return "TĂNG TRƯỞNG NGƯỜI DÙNG";
+            case "revenue": return "BÁO CÁO DOANH THU";
+            case "enrollments": return "BÁO CÁO GHI DANH";
+            case "top-courses": return "KHÓA HỌC PHỔ BIẾN";
+            case "top-instructors": return "GIẢNG VIÊN XUẤT SẮC";
+            case "top-revenue-courses": return "DOANH THU KHÓA HỌC";
+            default: return type.toUpperCase();
         }
     }
 }

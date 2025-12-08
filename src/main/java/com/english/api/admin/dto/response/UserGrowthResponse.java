@@ -8,6 +8,7 @@ public record UserGrowthResponse(
     public record MonthlyData(
         String month,
         Long newUsers,
-        Long activeUsers
+        // Long activeUsers
+        Long totalUsers
     ) {}
 }
