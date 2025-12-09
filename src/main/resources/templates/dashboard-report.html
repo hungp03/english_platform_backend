@@ -1,94 +1,125 @@
+
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>Admin Dashboard Report</title>
+    <title>Báo cáo Quản trị</title>
     <style>
-        body { 
-            /* font-family: 'Arial', sans-serif;  */
-            /* font-family: 'Roboto', sans-serif; */
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 12px; color: #333; 
+        /* 1. ĐỊNH NGHĨA TRANG GIẤY CHUẨN A4 ĐỂ TRÁNH TRÀN TRANG */
+        @page {
+            size: A4;
+            margin: 15mm 15mm 15mm 15mm; /* Căn lề rõ ràng */
         }
+
+        /* 2. KHẮC PHỤC LỖI TÍNH TOÁN KÍCH THƯỚC */
+        * {
+            box-sizing: border-box; /* Đảm bảo Padding không làm phình to kích thước gây tràn trang */
+        }
+
+        body { 
+            font-family: 'DejaVu Sans', sans-serif;
+            font-size: 12px; 
+            color: #333; 
+            margin: 0; /* Margin đã được set ở @page */
+        }
+
         .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
-        .header h1 { color: #0056b3; margin: 0; }
-        .timestamp { color: #666; font-style: italic; }
+        .header h1 { color: #0056b3; margin: 0; font-size: 20px; }
+        .timestamp { color: #666; font-style: italic; font-size: 10px; margin-top: 5px;}
         
         /* Section Styling */
-        .section { margin-bottom: 25px; page-break-inside: avoid; }
-        .section-title { background-color: #f0f4f8; padding: 8px; font-weight: bold; border-left: 4px solid #0056b3; font-size: 14px; margin-bottom: 10px; }
+        /* 3. QUAN TRỌNG: ĐỔI page-break-inside TỪ avoid THÀNH auto HOẶC XÓA DÒNG ĐÓ */
+        .section { 
+            margin-bottom: 25px; 
+            page-break-inside: auto; /* Cho phép cắt trang nếu bảng quá dài */
+            width: 100%;
+        }
+
+        .section-title { 
+            background-color: #f0f4f8; 
+            padding: 8px; 
+            font-weight: bold; 
+            border-left: 4px solid #0056b3; 
+            font-size: 14px; 
+            margin-bottom: 10px; 
+            /* Giữ tiêu đề đi liền với ít nhất nội dung bên dưới nó, tránh tiêu đề nằm cuối trang trơ trọi */
+            page-break-after: avoid; 
+        }
 
         /* Summary Cards */
         .summary-grid { width: 100%; margin-bottom: 10px; }
-        .card { width: 32%; display: inline-block; background: #fafafa; border: 1px solid #ddd; padding: 10px; margin-right: 1%; vertical-align: top; box-sizing: border-box; }
-        .card-title { color: #666; font-size: 10px; text-transform: uppercase; }
-        .card-value { font-size: 18px; font-weight: bold; color: #333; margin: 5px 0; }
-        .card-sub { font-size: 10px; color: #888; }
+        /* Fix lỗi wrap dòng cho thẻ div inline-block */
+        .card { 
+            width: 32%; 
+            display: inline-block; 
+            background: #fafafa; 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            margin-right: 1%; 
+            vertical-align: top; 
+            margin-bottom: 10px;
+        }
 
         /* Tables */
         table {
             width: 100%;
             border-collapse: collapse;
-            
-            /* Quan trọng: Lặp lại thanh tiêu đề (Header) khi sang trang mới */
             -fs-table-paginate: paginate; 
             border-spacing: 0;
+            margin-bottom: 0; /* Tránh margin bảng đẩy footer sang trang mới */
         }
         thead {
-            /* Đảm bảo header lặp lại ở đầu mỗi trang */
             display: table-header-group; 
         }
-
         tfoot {
             display: table-footer-group;
         }
 
         tr {
-            /* Tránh trường hợp 1 dòng bị cắt đôi giữa 2 trang (nửa chữ trang trước, nửa chữ trang sau) */
+            /* Chỉ tránh cắt đôi 1 dòng cụ thể, nhưng cho phép cắt giữa các dòng */
             page-break-inside: avoid; 
         }
 
         td, th {
-            /* Cắt chữ nếu quá dài để không làm vỡ bảng */
             word-wrap: break-word; 
-            max-width: 300px; /* Tùy chỉnh */
+            border: 1px solid #e1e4e8; 
+            padding: 8px; 
+            text-align: left; 
+            vertical-align: top;
         }
-        th, td { border: 1px solid #e1e4e8; padding: 8px; text-align: left; }
         th { background-color: #0056b3; color: white; font-weight: bold; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .badge { padding: 2px 5px; border-radius: 3px; font-size: 10px; color: white; }
-        .bg-green { background-color: #28a745; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>ENGLISH PLATFORM - ADMIN REPORT</h1>
-        <div class="timestamp" th:text="'Generated at: ' + ${generatedAt}"></div>
-        <div class="timestamp" th:text="'Report Type: ' + ${reportType}"></div>
+        <h1>ENGLISH PLATFORM - BÁO CÁO QUẢN TRỊ HỆ THỐNG</h1>
+        <div class="timestamp" th:text="'Ngày tạo: ' + ${generatedAt}"></div>
+        <div class="timestamp" th:text="'Loại báo cáo: ' + ${reportType}"></div>
     </div>
 
     <div class="section" th:if="${summary != null}">
         <div class="section-title">DASHBOARD OVERVIEW</div>
         
-        <div style="margin-bottom: 10px;">
-            <strong>Users:</strong>
-            <span th:text="${summary.users.total} + ' Total'"></span> | 
-            <span th:text="${summary.users.active} + ' Active'"></span>
-        </div>
-
-        <div style="margin-bottom: 10px;">
-            <strong>Revenue (This Month):</strong>
-            <span th:text="${summary.revenue.totalCentsThisMonth} + ' cents'"></span>
-        </div>
-        
-        </div>
+        <table style="border: none;">
+            <tr style="background: none;">
+                <td style="border: none; padding: 5px;">
+                    <strong>Tổng người dùng:</strong> <span th:text="${summary.users.total}"></span>
+                </td>
+                <td style="border: none; padding: 5px;">
+                    <strong>Đang hoạt động:</strong> <span th:text="${summary.users.active}"></span>
+                </td>
+                <td style="border: none; padding: 5px;">
+                     <strong>Doanh thu tháng:</strong> <span th:text="${summary.revenue.totalCentsThisMonth}"></span>
+                </td>
+            </tr>
+        </table>
+    </div>
 
     <div class="section" th:if="${tableData != null and not #lists.isEmpty(tableData)}">
-        <div class="section-title" th:text="${tableTitle}">DATA DETAILS</div>
+        <div class="section-title" th:text="${tableTitle}">CHI TIẾT</div>
         <table>
             <thead>
                 <tr>
