@@ -9,6 +9,7 @@ import com.english.api.user.repository.UserOAuth2TokenRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -27,6 +28,7 @@ import java.time.ZoneOffset;
 /**
  * Created by hungpham on 9/25/2025
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
@@ -111,8 +113,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         } catch (Exception e) {
             // Log but don't fail the login process
             // Just means calendar integration won't work for this user
-            System.err.println("Error storing OAuth2 tokens for user " + user.getId() + ": " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error storing OAuth2 tokens for user {}: {}", user.getId(), e.getMessage(), e);
         }
     }
 }

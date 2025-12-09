@@ -32,6 +32,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpEntity;
@@ -65,6 +66,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -589,7 +591,7 @@ public class AuthServiceImpl implements AuthService {
             oauth2TokenRepository.save(token);
         } catch (Exception e) {
             // Log but don't fail the linking process
-            System.err.println("Error storing OAuth2 tokens for user " + user.getId() + ": " + e.getMessage());
+            log.error("Error storing OAuth2 tokens for user {}: {}", user.getId(), e.getMessage(), e);
         }
     }
 

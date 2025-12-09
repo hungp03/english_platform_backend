@@ -13,6 +13,7 @@ import com.english.api.user.repository.InstructorRequestRepository;
 import com.english.api.user.repository.UserRepository;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -449,9 +451,7 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
 
 
             } catch (Exception e) {
-                // Log lỗi 
-                System.err.println("WARNING: Could not load custom fonts. Vietnamese text may fail.");
-                e.printStackTrace();
+                log.error("WARNING: Could not load custom fonts. Vietnamese text may fail.", e);
             }
 
             builder.withHtmlContent(htmlContent, null);

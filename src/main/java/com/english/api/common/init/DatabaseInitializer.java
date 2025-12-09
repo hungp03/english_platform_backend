@@ -1,6 +1,7 @@
 package com.english.api.common.init;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ import com.english.api.user.repository.RoleRepository;
 import com.english.api.user.repository.UserRepository;
 import com.github.f4b6a3.uuid.UuidCreator;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DatabaseInitializer implements CommandLineRunner {
@@ -49,9 +51,9 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .build();
 
             roleRepository.saveAll(List.of(adminRole, userRole, instructorRole));
-            System.out.println("-----INIT ROLES-----");
+            log.info("-----INIT ROLES-----");
         } else {
-            System.out.println("-----ROLES ALREADY EXIST, SKIP INIT ROLES-----");
+            log.info("-----ROLES ALREADY EXIST, SKIP INIT ROLES-----");
         }
     }
 
@@ -96,9 +98,9 @@ public class DatabaseInitializer implements CommandLineRunner {
 
             userRepository.saveAll(List.of(adminUser, normalUser));
 
-            System.out.println("-----INIT ADMIN & USER ACCOUNTS-----");
+            log.info("-----INIT ADMIN & USER ACCOUNTS-----");
         } else {
-            System.out.println("-----USERS ALREADY EXIST, SKIP INIT USERS-----");
+            log.info("-----USERS ALREADY EXIST, SKIP INIT USERS-----");
         }
     }
 }

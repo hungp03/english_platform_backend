@@ -11,6 +11,7 @@ import com.english.api.notification.repository.NotificationRepository;
 import com.english.api.notification.repository.UserFcmTokenRepository;
 import com.english.api.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
@@ -50,14 +52,16 @@ public class NotificationServiceImpl implements NotificationService {
             try {
                 Message message = Message.builder()
                         .setToken(t.getToken())
-                        .putData("title", title)
-                        .putData("body", content)
+                        .setNotification(com.google.firebase.messaging.Notification.builder()
+                                .setTitle(title)
+                                .setBody(content)
+                                .build())
                         .build();
                 FirebaseMessaging.getInstance().send(message);
             } catch (FirebaseMessagingException e) {
-                System.err.println("Failed to send FCM notification: " + e.getMessage());
+                log.error("Failed to send FCM notification: {}", e.getMessage());
             } catch (IllegalStateException e) {
-                System.err.println("Firebase not initialized. Push notifications are disabled.");
+                log.error("Firebase not initialized. Push notifications are disabled.");
                 break;
             }
         }

@@ -4,6 +4,7 @@ import com.english.api.mail.service.MailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Created by hungpham on 9/24/2025
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MailServiceImpl implements MailService {
@@ -38,7 +40,7 @@ public class MailServiceImpl implements MailService {
             message.setText(content, isHtml);
             this.javaMailSender.send(mimeMessage);
         } catch (MailException | MessagingException e) {
-            System.out.println(e.getMessage());
+            log.error("Failed to send email: {}", e.getMessage(), e);
         }
     }
 

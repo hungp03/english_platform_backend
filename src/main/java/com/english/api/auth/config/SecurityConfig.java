@@ -6,6 +6,7 @@ import com.english.api.auth.security.CookieBearerTokenResolver;
 import com.english.api.user.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +26,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import java.util.Arrays;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 @EnableMethodSecurity(prePostEnabled = true)
@@ -152,9 +154,9 @@ public class SecurityConfig {
                         .loginPage("/oauth2/authorization/google")
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler((request, response, exception) -> {
-                            System.err.println("OAuth2 Login Error: " + exception.getMessage());
-                            System.err.println("Request URI: " + request.getRequestURI());
-                            System.err.println("Query String: " + request.getQueryString());
+                            log.error("OAuth2 Login Error: {}", exception.getMessage());
+                            log.error("Request URI: {}", request.getRequestURI());
+                            log.error("Query String: {}", request.getQueryString());
                             response.sendRedirect(client + "/authentication/error?isLogin=false");
                         })
                 );
