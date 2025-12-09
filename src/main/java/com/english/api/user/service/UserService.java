@@ -23,7 +23,7 @@ public interface UserService {
     void changePassword(UpdatePasswordRequest request);
     UserUpdateResponse updateCurrentUser(UpdateUserRequest request);
     void toggleUserStatus(UUID userId);
-    PaginationResponse getUsers(String searchTerm, Pageable pageable);
+    PaginationResponse getUsers(String searchTerm, Boolean isActive, Pageable pageable);
     boolean isUserActive(UUID userId);
     void resetPassword(String email, String newPassword);
     Optional<User> findByProviderAndProviderUid(String provider, String providerUid);

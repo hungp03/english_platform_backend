@@ -46,6 +46,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     )
     Page<User> findByFullNameOrEmail(@Param("searchTerm") String searchTerm, Pageable pageable);
 
+    @Query("""
+            SELECT u FROM User u
+            WHERE (:isActive IS NULL OR u.isActive = :isActive)
+              AND (:searchTerm IS NULL OR :searchTerm = '' 
+                   OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+            """)
+    Page<User> findByStatusAndSearch(@Param("isActive") Boolean isActive, @Param("searchTerm") String searchTerm, Pageable pageable);
+
     @Query("SELECT u FROM User u WHERE u.id IN :ids")
     List<User> findByIdIn(@Param("ids") List<UUID> ids);
 

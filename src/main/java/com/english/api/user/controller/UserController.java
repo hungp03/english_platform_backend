@@ -49,8 +49,9 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaginationResponse> getUsers(
             Pageable pageable,
-            @RequestParam(defaultValue = "", required = false) String searchTerm) {
-        return ResponseEntity.ok(userService.getUsers(searchTerm, pageable));
+            @RequestParam(defaultValue = "", required = false) String searchTerm,
+            @RequestParam(required = false) Boolean isActive) {
+        return ResponseEntity.ok(userService.getUsers(searchTerm, isActive, pageable));
     }
 
     @PatchMapping("/{userId}/toggle-status")

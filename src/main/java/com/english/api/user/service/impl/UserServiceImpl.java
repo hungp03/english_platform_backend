@@ -169,11 +169,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public PaginationResponse getUsers(String searchTerm, Pageable pageable) {
-        Page<User> pageResult = (searchTerm == null || searchTerm.isBlank())
-                ? userRepository.findAll(pageable)
-                : userRepository.findByFullNameOrEmail(searchTerm, pageable);
-
+    public PaginationResponse getUsers(String searchTerm, Boolean isActive, Pageable pageable) {
+        Page<User> pageResult = userRepository.findByStatusAndSearch(isActive, searchTerm, pageable);
         return PaginationResponse.from(pageResult.map(userMapper::toListUserResponse), pageable);
     }
 
