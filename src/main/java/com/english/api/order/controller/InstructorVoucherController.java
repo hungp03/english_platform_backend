@@ -30,7 +30,7 @@ public class InstructorVoucherController {
     /**
      * Create a new voucher (Instructor only)
      */
-    @PostMapping("/instructor/vouchers")
+    @PostMapping("/vouchers/instructor")
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<VoucherResponse> createVoucher(@Valid @RequestBody CreateVoucherRequest request) {
         VoucherResponse response = voucherService.createVoucher(request);
@@ -40,7 +40,7 @@ public class InstructorVoucherController {
     /**
      * Update a voucher (Instructor only)
      */
-    @PutMapping("/instructor/vouchers/{voucherId}")
+    @PutMapping("/vouchers/instructor/{voucherId}")
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<VoucherResponse> updateVoucher(
             @PathVariable UUID voucherId,
@@ -52,7 +52,7 @@ public class InstructorVoucherController {
     /**
      * Delete a voucher (Instructor only)
      */
-    @DeleteMapping("/instructor/vouchers/{voucherId}")
+    @DeleteMapping("/vouchers/instructor/{voucherId}")
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<Void> deleteVoucher(@PathVariable UUID voucherId) {
         voucherService.deleteVoucher(voucherId);
@@ -62,7 +62,7 @@ public class InstructorVoucherController {
     /**
      * Get voucher by ID (Instructor only)
      */
-    @GetMapping("/instructor/vouchers/{voucherId}")
+    @GetMapping("/vouchers/instructor/{voucherId}")
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<VoucherResponse> getVoucherById(@PathVariable UUID voucherId) {
         VoucherResponse response = voucherService.getVoucherById(voucherId);
@@ -72,7 +72,7 @@ public class InstructorVoucherController {
     /**
      * Get all vouchers for the current instructor with pagination
      */
-    @GetMapping("/instructor/vouchers")
+    @GetMapping("/vouchers/instructor")
     @PreAuthorize("hasRole('INSTRUCTOR')")
     public ResponseEntity<PaginationResponse> getMyVouchers(
             @RequestParam(required = false) VoucherStatus status,
