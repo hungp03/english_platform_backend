@@ -12,8 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import vn.payos.type.CheckoutResponseData;
-import vn.payos.type.Webhook;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.webhooks.Webhook;
 
 import java.util.List;
 import java.util.UUID;
@@ -48,9 +48,9 @@ public class PaymentController {
 
     @PostMapping("/payos/checkout")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<CheckoutResponseData> createPayOSCheckout(
+    public ResponseEntity<CreatePaymentLinkResponse> createPayOSCheckout(
             @Valid @RequestBody PayOSCheckoutRequest request) {
-        CheckoutResponseData response = paymentService.createPayOSCheckout(request);
+        CreatePaymentLinkResponse response = paymentService.createPayOSCheckout(request);
         return ResponseEntity.ok(response);
     }
 
@@ -78,6 +78,7 @@ public class PaymentController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Webhook failed: " + e.getMessage());
         }
+        // return ResponseEntity.ok("Webhook processed");
     }
 
     @PostMapping("/paypal/webhook")

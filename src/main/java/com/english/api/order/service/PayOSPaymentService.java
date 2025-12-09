@@ -1,7 +1,7 @@
 package com.english.api.order.service;
 
 import org.springframework.transaction.annotation.Transactional;
-import vn.payos.type.CheckoutResponseData;
+import vn.payos.model.webhooks.Webhook;
 
 import java.util.UUID;
 
@@ -12,9 +12,9 @@ import java.util.UUID;
 public interface PayOSPaymentService {
     // Tạo link thanh toán
     @Transactional
-    CheckoutResponseData createPaymentLink(UUID orderId);
+    Object createPaymentLink(UUID orderId);
 
     // Xử lý webhook callback
     @Transactional
-    void handleWebhook(vn.payos.type.Webhook webhookBody);
+    void handleWebhook(Webhook webhookBody);
 }

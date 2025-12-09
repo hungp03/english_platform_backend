@@ -14,7 +14,7 @@ import com.english.api.order.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.payos.type.CheckoutResponseData;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -56,7 +56,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public CheckoutResponseData createPayOSCheckout(PayOSCheckoutRequest request) {
-        return payOSPaymentService.createPaymentLink(request.orderId());
+    public CreatePaymentLinkResponse createPayOSCheckout(PayOSCheckoutRequest request) {
+        return (CreatePaymentLinkResponse) payOSPaymentService.createPaymentLink(request.orderId());
     }
 }

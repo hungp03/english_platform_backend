@@ -4,7 +4,7 @@ import com.english.api.order.dto.request.PayOSCheckoutRequest;
 import com.english.api.order.dto.request.PayPalCheckoutRequest;
 import com.english.api.order.dto.response.PaymentResponse;
 import com.english.api.order.dto.response.PayPalCheckoutResponse;
-import vn.payos.type.CheckoutResponseData;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +36,6 @@ public interface PaymentService {
      */
     PaymentResponse getPaymentById(UUID paymentId);
 
-    CheckoutResponseData createPayOSCheckout(PayOSCheckoutRequest request);
+    CreatePaymentLinkResponse createPayOSCheckout(PayOSCheckoutRequest request);
 }
 

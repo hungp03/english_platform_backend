@@ -16,11 +16,14 @@ import com.english.api.order.service.InvoiceService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.payos.PayOS;
-import vn.payos.type.*;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
+import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
+import vn.payos.model.webhooks.Webhook;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -29,6 +32,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PayOSServiceImpl implements PayOSPaymentService {
 
     private final OrderRepository orderRepository;
@@ -48,65 +52,68 @@ public class PayOSServiceImpl implements PayOSPaymentService {
     // Tạo link thanh toán
     @Transactional
     @Override
-    public CheckoutResponseData createPaymentLink(UUID orderId) {
+    public Object createPaymentLink(UUID orderId) {
+        log.info("Creating PayOS payment link for orderId: {}", orderId);
+        
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+        
+        log.debug("Order found - ID: {}, Status: {}, TotalCents: {}", order.getId(), order.getStatus(), order.getTotalCents());
 
         if (order.getStatus() != OrderStatus.PENDING) {
+            log.error("Order status is not PENDING. Current status: {}", order.getStatus());
             throw new ResourceInvalidException("Order must be in PENDING status to create PayOS link");
         }
 
         paymentRepository.findTopByOrderIdAndProviderOrderByCreatedAtDesc(order.getId(), PaymentProvider.PAYOS)
                 .ifPresent(payment -> {
+                    log.debug("Existing PayOS payment found - Status: {}", payment.getStatus());
                     if (payment.getStatus() == PaymentStatus.SUCCESS) {
+                        log.error("Order already has a successful PayOS payment");
                         throw new ResourceInvalidException("Order already has a successful PayOS payment");
                     }
                 });
 
-        String successUrl = String.format(
-                "%s?orderId=%s",
-                defaultSuccessUrl,
-                order.getId()
-        );
-
-        String cancelUrl = String.format(
-                "%s?orderId=%s",
-                defaultCancelUrl,
-                order.getId()
-        );
+        String successUrl = String.format("%s?orderId=%s", defaultSuccessUrl, order.getId());
+        String cancelUrl = String.format("%s?orderId=%s", defaultCancelUrl, order.getId());
+        
+        log.debug("URLs configured - Success: {}, Cancel: {}", successUrl, cancelUrl);
 
         try {
-            // Map OrderItem -> ItemData
-            List<ItemData> items = order.getItems().stream()
-                    .map(this::mapToItemData)
+            List<PaymentLinkItem> items = order.getItems().stream()
+                    .map(this::mapToPaymentLinkItem)
                     .toList();
+            
+            log.debug("Mapped {} order items", items.size());
 
-            // Build payment data
-            PaymentData paymentData = PaymentData.builder()
-                    .orderCode(System.currentTimeMillis())
-                    .amount(Math.toIntExact(order.getTotalCents()))
-                    .description("Thanh toán đơn hàng")
+            CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
+                    .orderCode(System.currentTimeMillis() / 1000)
+                    .amount(order.getTotalCents())
+                    .description("Thanh toan don hang")
                     .items(items)
-                    .returnUrl(successUrl)
                     .cancelUrl(cancelUrl)
+                    .returnUrl(successUrl)
                     .build();
+            
+            log.debug("PaymentRequest built - OrderCode: {}, Amount: {}", request.getOrderCode(), request.getAmount());
 
-            CheckoutResponseData checkout = payOS.createPaymentLink(paymentData);
-
-            // Lưu record Payment
+            var paymentLink = payOS.paymentRequests().create(request);
             Payment payment = Payment.builder()
                     .order(order)
                     .provider(PaymentProvider.PAYOS)
-                    .providerTxn(checkout.getPaymentLinkId())
+                    .providerTxn(String.valueOf(paymentLink.getOrderCode()))
                     .amountCents(order.getTotalCents())
                     .status(PaymentStatus.INITIATED)
-                    .rawPayload(serializeToJson(checkout))
+                    .rawPayload(serializeToJson(paymentLink))
                     .build();
             paymentRepository.save(payment);
+            
+            log.info("Payment record saved - ID: {}", payment.getId());
 
-            return checkout;
+            return paymentLink;
 
         } catch (Exception e) {
+            log.error("Failed to create PayOS payment link for orderId: {}. Error: {}", orderId, e.getMessage(), e);
             throw new RuntimeException("Failed to create PayOS payment link: " + e.getMessage(), e);
         }
     }
@@ -116,9 +123,11 @@ public class PayOSServiceImpl implements PayOSPaymentService {
     @Override
     public void handleWebhook(Webhook webhookBody) {
         try {
-            WebhookData data = payOS.verifyPaymentWebhookData(webhookBody);
-            Payment payment = paymentRepository.findByProviderTxnWithOrderDetails(data.getPaymentLinkId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Payment not found for PayOS link " + data.getPaymentLinkId()));
+            var data = payOS.webhooks().verify(webhookBody);
+            log.info("Webhook verified - OrderCode: {}", data.getOrderCode());
+            
+            Payment payment = paymentRepository.findByProviderTxnWithOrderDetails(String.valueOf(data.getOrderCode()))
+                    .orElseThrow(() -> new ResourceNotFoundException("Payment not found for OrderCode " + data.getOrderCode()));
 
             Order order = payment.getOrder();
 
@@ -133,32 +142,27 @@ public class PayOSServiceImpl implements PayOSPaymentService {
                     order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
                     orderRepository.save(order);
                     
-                    // Credit instructors for their course sales
                     instructorWalletService.processOrderEarnings(order);
-                    
-                    // Create enrollments for purchased courses
                     enrollmentService.createEnrollmentsAfterPayment(order);
-                    
-                    // Generate and send invoice asynchronously
                     invoiceService.generateAndSendInvoiceAsync(order, payment);
                 }
             }
 
         } catch (Exception e) {
+            log.error("Failed to process PayOS webhook: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to process PayOS webhook: " + e.getMessage(), e);
         }
     }
 
     
     // Helper methods
-    private ItemData mapToItemData(OrderItem item) {
-        // Calculate final price after discount
+    private PaymentLinkItem mapToPaymentLinkItem(OrderItem item) {
         Long finalPrice = item.getUnitPriceCents() - (item.getDiscountCents() != null ? item.getDiscountCents() : 0L);
         
-        return ItemData.builder()
+        return PaymentLinkItem.builder()
                 .name(item.getTitle())
                 .quantity(item.getQuantity())
-                .price(Math.toIntExact(finalPrice))
+                .price((long) Math.toIntExact(finalPrice))
                 .build();
     }
 

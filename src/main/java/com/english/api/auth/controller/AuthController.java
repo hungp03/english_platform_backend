@@ -41,9 +41,17 @@ public class AuthController {
     }
 
     @GetMapping("/verify-register")
-    public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
-        authService.verifyAccount(token);
-        return ResponseEntity.ok("Account verified successfully.");
+    public ResponseEntity<?> verifyAccount(@RequestParam("token") String token, @Value("${app.client-url}") String clientUrl) {
+        try {
+            authService.verifyAccount(token);
+            return ResponseEntity.status(302)
+                    .header("Location", clientUrl + "/auth/verify-success")
+                    .build();
+        } catch (Exception e) {
+            return ResponseEntity.status(302)
+                    .header("Location", clientUrl + "/auth/verify-error")
+                    .build();
+        }
     }
 
     @PostMapping("login")
