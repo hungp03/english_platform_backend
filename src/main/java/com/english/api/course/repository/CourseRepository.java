@@ -147,7 +147,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
      * @return total revenue in cents
      */
     @Query("""
-        SELECT COALESCE(SUM(oi.totalPriceCents), 0L)
+        SELECT COALESCE(SUM(oi.unitPriceCents * oi.quantity - COALESCE(oi.discountCents, 0L)), 0L)
         FROM Order o
         JOIN o.items oi
         JOIN Course c ON oi.entityId = c.id

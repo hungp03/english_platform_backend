@@ -152,10 +152,13 @@ public class PayOSServiceImpl implements PayOSPaymentService {
     
     // Helper methods
     private ItemData mapToItemData(OrderItem item) {
+        // Calculate final price after discount
+        Long finalPrice = item.getUnitPriceCents() - (item.getDiscountCents() != null ? item.getDiscountCents() : 0L);
+        
         return ItemData.builder()
                 .name(item.getTitle())
                 .quantity(item.getQuantity())
-                .price(Math.toIntExact(item.getUnitPriceCents()))
+                .price(Math.toIntExact(finalPrice))
                 .build();
     }
 

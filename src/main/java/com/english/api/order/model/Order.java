@@ -48,6 +48,13 @@ public class Order {
     @Column(name = "total_cents", nullable = false)
     private Long totalCents;
 
+    @Column(name = "discount_cents")
+    @Builder.Default
+    private Long discountCents = 0L;
+
+    @Column(name = "voucher_code", length = 50)
+    private String voucherCode;
+
     @Builder.Default
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

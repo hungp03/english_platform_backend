@@ -8,9 +8,11 @@ import java.util.UUID;
  */
 public record CartCheckoutResponse(
     UUID id,
+    UUID courseId,
     String title,
     String thumbnail,
     Long priceCents,
-    String currency
+    String currency,
+    UUID instructorId
 ) {
 }

@@ -41,6 +41,10 @@ public class OrderItem {
     @Column(name = "unit_price_cents", nullable = false)
     private Long unitPriceCents;
 
+    @Column(name = "discount_cents")
+    @Builder.Default
+    private Long discountCents = 0L;
+
     @Column(name = "total_price_cents", insertable = false, updatable = false)
     private Long totalPriceCents; // generated column
 

@@ -256,9 +256,11 @@ public class PayPalPaymentServiceImpl implements PayPalPaymentService {
         ArrayNode itemsNode = purchaseUnit.putArray("items");
         if (order.getItems() != null && !order.getItems().isEmpty()) {
             for (OrderItem item : order.getItems()) {
-                BigDecimal itemAmount = BigDecimal.valueOf(item.getUnitPriceCents());
+                // Calculate final price after discount
+                Long finalPriceCents = item.getUnitPriceCents() - (item.getDiscountCents() != null ? item.getDiscountCents() : 0L);
+                BigDecimal itemAmount = BigDecimal.valueOf(finalPriceCents);
                 if (order.getCurrency() == CurrencyType.VND && paymentCurrency == CurrencyType.USD) {
-                    itemAmount = exchangeRateService.convertAmount(item.getUnitPriceCents(), CurrencyType.VND, CurrencyType.USD);
+                    itemAmount = exchangeRateService.convertAmount(finalPriceCents, CurrencyType.VND, CurrencyType.USD);
                 }
                 
                 ObjectNode itemNode = itemsNode.addObject();

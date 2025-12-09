@@ -20,11 +20,11 @@ BEGIN
         -- Total number of unique students enrolled in instructor's courses
         COUNT(DISTINCT e.user_id)::BIGINT AS total_students,
         
-        -- Total revenue from successful course purchases (PAID orders only)
+        -- Total revenue from successful course purchases (PAID orders only, after discount)
         COALESCE(SUM(
             CASE 
                 WHEN o.status = 'PAID' AND oi.entity = 'COURSE' 
-                THEN oi.total_price_cents 
+                THEN oi.unit_price_cents * oi.quantity - COALESCE(oi.discount_cents, 0)
                 ELSE 0 
             END
         ), 0)::BIGINT AS total_revenue_cents

@@ -14,7 +14,9 @@ public record CreateOrderRequest(
         List<OrderItemRequest> items,
         
         @NotNull(message = "Order source is required")
-        OrderSource orderSource
+        OrderSource orderSource,
+        
+        String voucherCode
 ) {
 
     public record OrderItemRequest(

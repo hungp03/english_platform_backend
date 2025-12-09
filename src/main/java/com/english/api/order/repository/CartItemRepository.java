@@ -116,11 +116,13 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
      */
     @Query("""
         SELECT new com.english.api.order.dto.response.CartCheckoutResponse(
+            ci.id,
             c.id,
             c.title,
             c.thumbnail,
             c.priceCents,
-            c.currency
+            c.currency,
+            c.createdBy.id
         )
         FROM CartItem ci
         JOIN ci.course c

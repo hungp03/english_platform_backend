@@ -98,9 +98,16 @@ public class InstructorWalletServiceImpl implements InstructorWalletService {
         }
         
         User instructor = course.getCreatedBy();
-        BigDecimal itemPriceCents = BigDecimal.valueOf(item.getUnitPriceCents()).multiply(BigDecimal.valueOf(item.getQuantity()));
         
-        // Calculate instructor share (after platform fee)
+        // Calculate final price after discount (instructor bears the discount cost)
+        Long discountCents = item.getDiscountCents() != null ? item.getDiscountCents() : 0L;
+        Long finalPriceCents = item.getUnitPriceCents() - discountCents;
+        BigDecimal itemPriceCents = BigDecimal.valueOf(finalPriceCents).multiply(BigDecimal.valueOf(item.getQuantity()));
+        
+        log.info("Processing earning for OrderItem: id={}, unitPrice={}, discount={}, finalPrice={}, quantity={}", 
+                item.getId(), item.getUnitPriceCents(), discountCents, finalPriceCents, item.getQuantity());
+        
+        // Calculate instructor share (after platform fee, based on discounted price)
         BigDecimal instructorShareCents = itemPriceCents
                 .multiply(BigDecimal.valueOf(100 - platformFeePercentage))
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);

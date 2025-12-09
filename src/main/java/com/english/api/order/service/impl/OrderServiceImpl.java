@@ -7,20 +7,29 @@ import com.english.api.common.exception.ResourceAlreadyOwnedException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
+import com.english.api.course.model.Course;
 import com.english.api.course.service.CourseService;
 import com.english.api.enrollment.service.EnrollmentService;
 import com.english.api.notification.service.NotificationService;
+import com.english.api.order.dto.request.ApplyVoucherRequest;
 import com.english.api.order.dto.request.CreateOrderRequest;
 import com.english.api.order.dto.request.OrderSource;
 import com.english.api.order.dto.response.OrderDetailResponse;
 import com.english.api.order.dto.response.OrderResponse;
 import com.english.api.order.dto.response.OrderSummaryResponse;
+import com.english.api.order.dto.response.VoucherApplyResponse;
 import com.english.api.order.mapper.OrderMapper;
+import com.english.api.order.model.InstructorVoucher;
+import com.english.api.order.model.InstructorVoucherUsage;
 import com.english.api.order.model.Order;
 import com.english.api.order.model.OrderItem;
 import com.english.api.order.model.enums.OrderItemEntityType;
 import com.english.api.order.model.enums.OrderStatus;
+import com.english.api.order.model.enums.VoucherScope;
+import com.english.api.order.repository.InstructorVoucherRepository;
+import com.english.api.order.repository.InstructorVoucherUsageRepository;
 import com.english.api.order.repository.OrderRepository;
+import com.english.api.order.service.InstructorVoucherService;
 import com.english.api.order.service.OrderService;
 import com.english.api.user.model.User;
 import com.english.api.user.service.UserService;
@@ -31,11 +40,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -49,6 +61,9 @@ public class OrderServiceImpl implements OrderService {
     private final CartService cartService;
     private final EnrollmentService enrollmentService;
     private final NotificationService notificationService;
+    private final InstructorVoucherService voucherService;
+    private final InstructorVoucherRepository voucherRepository;
+    private final InstructorVoucherUsageRepository voucherUsageRepository;
 
     // Valid status transitions mapping
     private static final Set<OrderStatus> PENDING_TRANSITIONS = Set.of(OrderStatus.PAID, OrderStatus.CANCELLED,
@@ -66,18 +81,60 @@ public class OrderServiceImpl implements OrderService {
         User currentUser = userService.findById(currentUserId);
         // Check if user has already purchased any of the courses in the order
         validateNoPurchasedCourses(currentUserId, request);
-        // Validate order items and calculate total
+        
+        // Validate order items and calculate total (before discount)
         Long totalCents = validateAndCalculateTotal(request);
+        
+        // Apply voucher if provided
+        VoucherApplyResponse voucherResult = null;
+        InstructorVoucher voucher = null;
+        Long totalDiscountCents = 0L;
+        Map<UUID, Long> courseDiscountMap = Map.of();
+        
+        if (request.voucherCode() != null && !request.voucherCode().isBlank()) {
+            // Get course IDs from request items
+            List<UUID> courseIds = request.items().stream()
+                    .filter(item -> item.entityType() == OrderItemEntityType.COURSE)
+                    .map(CreateOrderRequest.OrderItemRequest::entityId)
+                    .toList();
+            
+            // Apply voucher to the specific courses in the order (not from cart)
+            voucherResult = voucherService.applyVoucherToCourseIds(request.voucherCode(), courseIds);
+            if (!voucherResult.valid()) {
+                throw new ResourceInvalidException(voucherResult.message());
+            }
+            totalDiscountCents = voucherResult.totalDiscount().longValue();
+            voucher = voucherRepository.findByCode(request.voucherCode().toUpperCase()).orElse(null);
+            
+            // Create map of courseId -> discountAmount for order items
+            courseDiscountMap = voucherResult.courseDiscounts().stream()
+                    .collect(Collectors.toMap(
+                            VoucherApplyResponse.CourseDiscountDetail::courseId,
+                            d -> d.discountAmount().longValue()
+                    ));
+        }
+        
+        // Calculate final total after discount
+        Long finalTotalCents = totalCents - totalDiscountCents;
+        if (finalTotalCents < 0) {
+            finalTotalCents = 0L;
+        }
+        
         Order order = Order.builder()
                 .user(currentUser)
                 .status(OrderStatus.PENDING)
-                .totalCents(totalCents)
+                .totalCents(finalTotalCents)
+                .discountCents(totalDiscountCents)
+                .voucherCode(request.voucherCode() != null ? request.voucherCode().toUpperCase() : null)
                 .build();
+                
         // Create order items with optimized entity validation and title/price fetching
         List<OrderItem> orderItems = new ArrayList<>();
         for (CreateOrderRequest.OrderItemRequest itemRequest : request.items()) {
             String entityTitle = getEntityTitleOptimized(itemRequest.entityType(), itemRequest.entityId());
             Long entityPrice = getEntityPrice(itemRequest.entityType(), itemRequest.entityId());
+            Long itemDiscount = courseDiscountMap.getOrDefault(itemRequest.entityId(), 0L);
+            
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .entity(itemRequest.entityType())
@@ -85,19 +142,27 @@ public class OrderServiceImpl implements OrderService {
                     .title(entityTitle)
                     .quantity(1)  // Quantity is always 1 for courses
                     .unitPriceCents(entityPrice)
+                    .discountCents(itemDiscount)
                     .build();
             orderItems.add(orderItem);
         }
         order.setItems(orderItems);
+        
         // Save order
         Order savedOrder = orderRepository.save(order);
-        // If order is from cart, remove the purchased items from cart after successful
-        if (request.orderSource() == OrderSource.CART) {
-            removeOrderedItemsFromCart(request.items());
+        
+        // Record voucher usage if voucher was applied
+        if (voucher != null && voucherResult != null) {
+            recordVoucherUsage(voucher, savedOrder, currentUser, voucherResult);
         }
+        
+        // Remove purchased items from cart
+        // For CART orders: remove all ordered items
+        // For DIRECT orders: remove item if it exists in cart
+        removeOrderedItemsFromCart(request.items());
 
         // Handle free courses (total = 0) - skip payment and complete order immediately
-        if (totalCents == 0) {
+        if (finalTotalCents == 0) {
             savedOrder.setStatus(OrderStatus.PAID);
             savedOrder.setPaidAt(OffsetDateTime.now());
             savedOrder = orderRepository.save(savedOrder);
@@ -378,5 +443,30 @@ public class OrderServiceImpl implements OrderService {
                 log.warn("Failed to batch remove courses from cart: {}", e.getMessage());
             }
         }
+    }
+
+    /**
+     * Records voucher usage and updates voucher used count
+     */
+    private void recordVoucherUsage(InstructorVoucher voucher, Order order, User user, 
+                                    VoucherApplyResponse voucherResult) {
+        // Record usage for each applicable course
+        for (VoucherApplyResponse.CourseDiscountDetail discount : voucherResult.courseDiscounts()) {
+            InstructorVoucherUsage usage = InstructorVoucherUsage.builder()
+                    .voucher(voucher)
+                    .user(user)
+                    .order(order)
+                    .course(Course.builder().id(discount.courseId()).build())
+                    .originalAmount(discount.originalPrice())
+                    .discountAmount(discount.discountAmount())
+                    .build();
+            voucherUsageRepository.save(usage);
+        }
+
+        // Update voucher used count
+        voucher.setUsedCount(voucher.getUsedCount() + 1);
+        voucherRepository.save(voucher);
+        
+        log.info("Recorded voucher usage for voucher {} on order {}", voucher.getCode(), order.getId());
     }
 }

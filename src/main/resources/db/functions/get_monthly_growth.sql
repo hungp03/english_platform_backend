@@ -41,7 +41,7 @@ BEGIN
         SELECT 
             pd.period_start,
             pd.period_end,
-            COALESCE(SUM(oi.total_price_cents), 0)::BIGINT AS revenue_cents
+            COALESCE(SUM(oi.unit_price_cents * oi.quantity - COALESCE(oi.discount_cents, 0)), 0)::BIGINT AS revenue_cents
         FROM period_dates pd
         LEFT JOIN orders o ON 
             o.paid_at >= pd.start_time 
