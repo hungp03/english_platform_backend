@@ -12,6 +12,10 @@ public interface NotificationService {
     
     void registerToken(UUID userId, String token);
     
+    void removeToken(UUID userId, String token);
+    
+    void removeAllTokens(UUID userId);
+    
     PaginationResponse getNotificationsByUser(Pageable pageable);
     
     void markAsRead(Long notificationId);

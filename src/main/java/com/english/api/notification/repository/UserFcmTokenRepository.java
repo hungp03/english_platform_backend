@@ -12,4 +12,8 @@ public interface UserFcmTokenRepository extends JpaRepository<UserFcmToken, Long
     List<UserFcmToken> findByUserId(UUID userId);
     
     boolean existsByUserIdAndToken(UUID userId, String token);
+    
+    void deleteByUserIdAndToken(UUID userId, String token);
+    
+    void deleteByUserId(UUID userId);
 }

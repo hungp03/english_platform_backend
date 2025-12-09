@@ -20,11 +20,26 @@ public class NotificationController {
 
     @PostMapping("/register-token")
     public ResponseEntity<String> registerToken(@RequestBody Map<String, String> body) {
-        UUID userId = UUID.fromString(body.get("userId"));
+        UUID userId = SecurityUtil.getCurrentUserId();
         String token = body.get("token");
 
         notificationService.registerToken(userId, token);
         return ResponseEntity.ok("Token saved");
+    }
+
+    @DeleteMapping("/remove-token")
+    public ResponseEntity<String> removeToken(@RequestBody Map<String, String> body) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        String token = body.get("token");
+        notificationService.removeToken(userId, token);
+        return ResponseEntity.ok("Token removed");
+    }
+
+    @DeleteMapping("/remove-all-tokens")
+    public ResponseEntity<String> removeAllTokens() {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        notificationService.removeAllTokens(userId);
+        return ResponseEntity.ok("All tokens removed");
     }
 
     @GetMapping

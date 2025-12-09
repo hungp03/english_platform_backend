@@ -76,6 +76,20 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    @Async
+    @Transactional
+    @Override
+    public void removeToken(UUID userId, String token) {
+        userFcmTokenRepository.deleteByUserIdAndToken(userId, token);
+    }
+
+    @Async
+    @Transactional
+    @Override
+    public void removeAllTokens(UUID userId) {
+        userFcmTokenRepository.deleteByUserId(userId);
+    }
+
     @Override
     public PaginationResponse getNotificationsByUser(Pageable pageable) {
         UUID userId = SecurityUtil.getCurrentUserId();
