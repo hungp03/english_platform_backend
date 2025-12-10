@@ -79,26 +79,26 @@ public class MailServiceImpl implements MailService {
     @Override
     public void sendInstructorRequestReviewEmail(String email, String userName, boolean isApproved, String adminNotes) {
         StringBuilder content = new StringBuilder();
-        content.append("Dear ").append(userName).append(",\n\n");
+        content.append("Xin chào ").append(userName).append(",\n\n");
         
         if (isApproved) {
-            content.append("Congratulations! Your instructor request has been APPROVED.\n\n");
-            content.append("You now have instructor privileges on English Pro platform.\n");
+            content.append("Chúc mừng! Yêu cầu trở thành giảng viên của bạn đã được PHÊ DUYỆT.\n\n");
+            content.append("Bạn hiện đã có quyền giảng viên trên nền tảng English Pro.\n");
         } else {
-            content.append("We regret to inform you that your instructor request has been REJECTED.\n\n");
+            content.append("Chúng tôi rất tiếc phải thông báo rằng yêu cầu trở thành giảng viên của bạn đã bị TỪ CHỐI.\n\n");
         }
         
         if (adminNotes != null && !adminNotes.isEmpty()) {
-            content.append("\nAdmin Notes:\n");
+            content.append("\nGhi chú từ quản trị viên:\n");
             content.append(adminNotes).append("\n");
         }
         
-        content.append("\nBest regards,\n");
-        content.append("English Pro Team");
+        content.append("\nTrân trọng,\n");
+        content.append("Đội ngũ English Pro");
         
         String subject = isApproved 
-            ? "Instructor Request Approved - English Pro" 
-            : "Instructor Request Rejected - English Pro";
+            ? "Yêu cầu giảng viên đã được phê duyệt - English Pro" 
+            : "Yêu cầu giảng viên bị từ chối - English Pro";
             
         this.sendEmail(email, subject, content.toString(), false, false);
     }
@@ -118,7 +118,7 @@ public class MailServiceImpl implements MailService {
     @Override
     public void sendInstructorRoleRevokedEmail(String email, String userName, String reason) {
         StringBuilder content = new StringBuilder();
-        content.append("Kính gửi ").append(userName).append(",\n\n");
+        content.append("Xin chào ").append(userName).append(",\n\n");
         content.append("Chúng tôi xin thông báo rằng quyền giảng viên của bạn trên nền tảng English Pro đã bị thu hồi.\n\n");
         content.append("Lý do thu hồi:\n");
         content.append(reason).append("\n\n");
@@ -133,7 +133,7 @@ public class MailServiceImpl implements MailService {
     @Override
     public void sendInstructorRoleRestoredEmail(String email, String userName, String reason) {
         StringBuilder content = new StringBuilder();
-        content.append("Kính gửi ").append(userName).append(",\n\n");
+        content.append("Xin chào ").append(userName).append(",\n\n");
         content.append("Chúng tôi xin thông báo rằng quyền giảng viên của bạn trên nền tảng English Pro đã được khôi phục.\n\n");
         content.append("Lý do khôi phục:\n");
         content.append(reason).append("\n\n");
@@ -143,6 +143,37 @@ public class MailServiceImpl implements MailService {
         content.append("Đội ngũ English Pro");
         
         this.sendEmail(email, "Thông báo khôi phục quyền giảng viên - English Pro", content.toString(), false, false);
+    }
+
+    @Async
+    @Override
+    public void sendAccountLockedEmail(String email, String userName, String reason) {
+        StringBuilder content = new StringBuilder();
+        content.append("Xin chào ").append(userName).append(",\n\n");
+        content.append("Chúng tôi xin thông báo rằng tài khoản của bạn trên nền tảng English Pro đã bị khóa.\n\n");
+        content.append("Lý do khóa tài khoản:\n");
+        content.append(reason).append("\n\n");
+        content.append("Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với đội ngũ quản trị viên của chúng tôi.\n\n");
+        content.append("Trân trọng,\n");
+        content.append("Đội ngũ English Pro");
+        
+        this.sendEmail(email, "Thông báo khóa tài khoản - English Pro", content.toString(), false, false);
+    }
+
+    @Async
+    @Override
+    public void sendAccountUnlockedEmail(String email, String userName, String reason) {
+        StringBuilder content = new StringBuilder();
+        content.append("Xin chào ").append(userName).append(",\n\n");
+        content.append("Chúng tôi xin thông báo rằng tài khoản của bạn trên nền tảng English Pro đã được mở khóa.\n\n");
+        content.append("Lý do mở khóa:\n");
+        content.append(reason).append("\n\n");
+        content.append("Bạn có thể tiếp tục sử dụng các dịch vụ trên nền tảng của chúng tôi.\n\n");
+        content.append("Cảm ơn bạn đã tiếp tục đồng hành cùng chúng tôi.\n\n");
+        content.append("Trân trọng,\n");
+        content.append("Đội ngũ English Pro");
+        
+        this.sendEmail(email, "Thông báo mở khóa tài khoản - English Pro", content.toString(), false, false);
     }
 
 }

@@ -5,6 +5,7 @@ import com.english.api.common.dto.MediaUploadResponse;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.*;
 import com.english.api.common.service.MediaService;
+import com.english.api.mail.service.MailService;
 import com.english.api.user.dto.request.UpdatePasswordRequest;
 import com.english.api.user.dto.request.UpdateUserRequest;
 import com.english.api.user.dto.response.UserResponse;
@@ -42,6 +43,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final MediaService mediaService;
+    private final MailService mailService;
 
     @Override
     public boolean existsByEmail(String email) {
@@ -157,15 +159,26 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @CacheEvict(value = "userStatus", key = "#userId")
     @Override
-    public void toggleUserStatus(UUID userId) {
+    public void toggleUserStatus(UUID userId, String reason) {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         if (currentUserId.equals(userId)) {
             throw new OperationNotAllowedException("You cannot change your own status");
         }
 
         User user = findById(userId);
-        user.setActive(!user.isActive());
+        boolean wasActive = user.isActive();
+        user.setActive(!wasActive);
         userRepository.save(user);
+        
+        // Send email notification
+        String userName = user.getFullName() != null ? user.getFullName() : user.getEmail();
+        if (wasActive) {
+            // Account was locked
+            mailService.sendAccountLockedEmail(user.getEmail(), userName, reason);
+        } else {
+            // Account was unlocked
+            mailService.sendAccountUnlockedEmail(user.getEmail(), userName, reason);
+        }
     }
 
     @Override

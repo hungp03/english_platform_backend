@@ -115,18 +115,6 @@ public class CourseController {
     ) {
         return ResponseEntity.ok(courseService.changeStatus(id, status));
     }
-
-    /**
-     * Get comprehensive statistics for the current instructor
-     * Returns: total courses, published courses, total students, and total revenue
-     */
-    @GetMapping("/instructor/stats")
-    @PreAuthorize("hasRole('INSTRUCTOR')")
-    public ResponseEntity<InstructorStatsResponse> getMyStats() {
-        UUID instructorId = SecurityUtil.getCurrentUserId();
-        InstructorStatsResponse stats = courseService.getInstructorStats(instructorId);
-        return ResponseEntity.ok(stats);
-    }
     
     /**
      * Get monthly growth statistics for the current instructor

@@ -7,6 +7,7 @@ import com.english.api.course.service.CourseService;
 import com.english.api.user.dto.request.CreateInstructorRequest;
 import com.english.api.user.dto.request.ReviewInstructorRequest;
 import com.english.api.user.dto.request.RevokeInstructorRoleRequest;
+import com.english.api.user.dto.request.UpdateInstructorProfileRequest;
 import com.english.api.user.dto.request.UpdateInstructorRequest;
 import com.english.api.user.dto.request.UploadCertificateProofRequest;
 import com.english.api.common.dto.PaginationResponse;
@@ -163,6 +164,13 @@ public class InstructorController {
         UUID instructorId = SecurityUtil.getCurrentUserId();
         InstructorStatsResponse stats = courseService.getInstructorStats(instructorId);
         return ResponseEntity.ok(stats);
+    }
+
+    @PutMapping("/profile")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<InstructorProfileResponse> updateProfile(
+            @Valid @RequestBody UpdateInstructorProfileRequest request) {
+        return ResponseEntity.ok(instructorService.updateInstructorProfile(request));
     }
     
     /**

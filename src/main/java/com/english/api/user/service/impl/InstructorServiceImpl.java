@@ -6,11 +6,13 @@ import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.user.dto.request.CreateInstructorRequest;
 import com.english.api.user.dto.request.ReviewInstructorRequest;
+import com.english.api.user.dto.request.UpdateInstructorProfileRequest;
 import com.english.api.user.dto.request.UpdateInstructorRequest;
 import com.english.api.user.dto.request.UploadCertificateProofRequest;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.user.dto.response.CertificateProofResponse;
 import com.english.api.user.dto.response.InstructorBasicInfoResponse;
+import com.english.api.user.dto.response.InstructorProfileResponse;
 import com.english.api.user.mapper.CertificateProofMapper;
 import com.english.api.user.model.InstructorCertificateProof;
 import com.english.api.user.repository.InstructorCertificateProofRepository;
@@ -280,10 +282,12 @@ public class InstructorServiceImpl implements InstructorService {
         }
 
         // Batch create certificate proofs for all file URLs
+        Instant now = Instant.now();
         List<InstructorCertificateProof> proofs = request.fileUrls().stream()
                 .map(fileUrl -> InstructorCertificateProof.builder()
                         .instructorRequest(instructorRequest)
                         .fileUrl(fileUrl)
+                        .uploadedAt(now)
                         .build())
                 .toList();
 
@@ -467,5 +471,26 @@ public class InstructorServiceImpl implements InstructorService {
                 throw new ResourceInvalidException("User already has INSTRUCTOR role");
             }
         }
+    }
+
+    @Override
+    public InstructorProfileResponse updateInstructorProfile(UpdateInstructorProfileRequest request) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        InstructorProfile profile = instructorProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor profile not found"));
+
+        if (request.bio() != null) profile.setBio(request.bio());
+        if (request.expertise() != null) profile.setExpertise(request.expertise());
+        if (request.experienceYears() != null) profile.setExperienceYears(request.experienceYears());
+        if (request.qualification() != null) profile.setQualification(request.qualification());
+
+        InstructorProfile saved = instructorProfileRepository.save(profile);
+        User user = saved.getUser();
+        
+        return new InstructorProfileResponse(
+                saved.getId(), user.getId(), user.getFullName(), user.getEmail(),
+                user.getAvatarUrl(), saved.getBio(), saved.getExpertise(),
+                saved.getExperienceYears(), saved.getQualification(),
+                saved.getCreatedAt(), saved.getUpdatedAt());
     }
 }
