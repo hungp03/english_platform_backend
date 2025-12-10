@@ -3,6 +3,7 @@ package com.english.api.user.controller;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.InstructorStatsResponse;
+import com.english.api.course.dto.response.PublicInstructorStatsResponse;
 import com.english.api.course.service.CourseService;
 import com.english.api.user.dto.request.CreateInstructorRequest;
 import com.english.api.user.dto.request.ReviewInstructorRequest;
@@ -231,8 +232,13 @@ public class InstructorController {
                 profile.getCreatedAt(),
                 profile.getUpdatedAt());
 
-        InstructorStatsResponse stats = courseService.getInstructorStats(userId);
-        return ResponseEntity.ok(new PublicInstructorResponse(profileDto, stats));
+        InstructorStatsResponse fullStats = courseService.getInstructorStats(userId);
+        PublicInstructorStatsResponse publicStats = new PublicInstructorStatsResponse(
+                fullStats.totalCourses(),
+                fullStats.publishedCourses(),
+                fullStats.totalStudents()
+        );
+        return ResponseEntity.ok(new PublicInstructorResponse(profileDto, publicStats));
     }
 
     // Get published courses by instructor
