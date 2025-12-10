@@ -13,7 +13,6 @@ public record ForumThreadCreateRequest(
         String title,
 
         @NotBlank(message = "Thread content is required")
-        @Size(min = 10, max = 50000, message = "Thread content must be between 10 and 50000 characters")
         String bodyMd,
 
         @NotEmpty(message = "At least one category is required")

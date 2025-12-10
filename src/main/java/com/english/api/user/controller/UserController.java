@@ -57,8 +57,9 @@ public class UserController {
     @PatchMapping("/{userId}/toggle-status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> toggleUserStatus(
-            @PathVariable UUID userId) {
-        userService.toggleUserStatus(userId);
+            @PathVariable UUID userId,
+            @RequestParam String reason) {
+        userService.toggleUserStatus(userId, reason);
         return ResponseEntity.ok().build();
     }
 }

@@ -12,4 +12,6 @@ public interface MailService {
     void sendInvoiceEmail(String email, Object order, Object payment, Object invoice);
     void sendInstructorRoleRevokedEmail(String email, String userName, String reason);
     void sendInstructorRoleRestoredEmail(String email, String userName, String reason);
+    void sendAccountLockedEmail(String email, String userName, String reason);
+    void sendAccountUnlockedEmail(String email, String userName, String reason);
 }
