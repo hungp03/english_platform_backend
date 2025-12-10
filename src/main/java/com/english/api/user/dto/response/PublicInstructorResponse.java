@@ -1,5 +1,6 @@
 package com.english.api.user.dto.response;
-import com.english.api.course.dto.response.InstructorStatsResponse;
+import com.english.api.course.dto.response.PublicInstructorStatsResponse;
+
 import java.io.Serializable;
 
 /**
@@ -7,5 +8,5 @@ import java.io.Serializable;
  */
 public record PublicInstructorResponse(
         InstructorProfileResponse profile,
-        InstructorStatsResponse stats
+        PublicInstructorStatsResponse stats
 ) implements Serializable {}
