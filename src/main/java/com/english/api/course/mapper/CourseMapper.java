@@ -3,17 +3,20 @@ package com.english.api.course.mapper;
 import com.english.api.course.dto.request.CourseRequest;
 import com.english.api.course.dto.response.CourseResponse;
 import com.english.api.course.model.Course;
+import com.english.api.course.model.Skill;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by hungpham on 10/2/2025
  */
-@Mapper(componentModel = "spring", imports = Arrays.class)
+@Mapper(componentModel = "spring")
 public interface CourseMapper {
-    @Mapping(target = "skillFocus", expression = "java(req.skillFocus() != null ? req.skillFocus().toArray(new String[0]) : null)")
+    @Mapping(target = "skills", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -23,6 +26,13 @@ public interface CourseMapper {
     @Mapping(target = "status", constant = "DRAFT")
     Course toEntity(CourseRequest req);
 
-    @Mapping(target = "skillFocus", expression = "java(c.getSkillFocus() != null ? Arrays.asList(c.getSkillFocus()) : null)")
+    @Mapping(target = "skillFocus", expression = "java(mapSkillsToList(c.getSkills()))")
     CourseResponse toResponse(Course c);
+    
+    default List<String> mapSkillsToList(Set<Skill> skills) {
+        if (skills == null) return null;
+        return skills.stream()
+                .map(Skill::getName)
+                .collect(Collectors.toList());
+    }
 }

@@ -24,61 +24,59 @@ import java.util.UUID;
 public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRepositoryCustom {
     boolean existsBySlug(String slug);
 
-    @Query("""
-        SELECT new com.english.api.course.dto.response.CourseDetailResponse(
-            c.id,
-            c.title,
-            c.slug,
-            c.description,
-            c.detailedDescription,
-            c.language,
-            c.thumbnail,
-            c.skillFocus,
-            c.priceCents,
-            c.currency,
-            c.status,
-            cb.id,
-            cb.fullName,
-            c.updatedAt,
-            COALESCE((SELECT COUNT(m) FROM CourseModule m WHERE m.course.id = c.id), 0L),
-            COALESCE((SELECT COUNT(l) FROM Lesson l WHERE l.module.course.id = c.id), 0L),
-            COALESCE((SELECT COUNT(e) FROM Enrollment e WHERE e.course.id = c.id AND e.status = com.english.api.enrollment.model.enums.EnrollmentStatus.ACTIVE), 0L),
-            COALESCE((SELECT AVG(r.rating) FROM CourseReview r WHERE r.course.id = c.id AND r.isPublished = true), 0.0),
-            COALESCE((SELECT COUNT(r) FROM CourseReview r WHERE r.course.id = c.id AND r.isPublished = true), 0L)
-        )
-        FROM Course c
-        LEFT JOIN c.createdBy cb
+    @Query(value = """
+        SELECT c.id, c.title, c.slug, c.description, c.detailed_description, 
+               c.language, c.thumbnail, 
+               COALESCE(ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as skills,
+               c.price_cents, c.currency, c.status, 
+               cb.id as instructor_id, cb.full_name as created_by, c.updated_at,
+               COALESCE((SELECT COUNT(*) FROM course_modules m WHERE m.course_id = c.id), 0) as module_count,
+               COALESCE((SELECT COUNT(*) FROM course_modules m 
+                        INNER JOIN lessons l ON l.module_id = m.id 
+                        WHERE m.course_id = c.id), 0) as lesson_count,
+               COALESCE((SELECT COUNT(*) FROM enrollments e 
+                        WHERE e.course_id = c.id AND e.status = 'ACTIVE'), 0) as student_count,
+               COALESCE((SELECT AVG(r.rating) FROM course_reviews r 
+                        WHERE r.course_id = c.id AND r.is_published = true), 0.0) as average_rating,
+               COALESCE((SELECT COUNT(*) FROM course_reviews r 
+                        WHERE r.course_id = c.id AND r.is_published = true), 0) as total_reviews
+        FROM courses c
+        LEFT JOIN users cb ON c.created_by = cb.id
+        LEFT JOIN course_skills cs ON c.id = cs.course_id
+        LEFT JOIN skills s ON cs.skill_id = s.id
         WHERE c.id = :id
-    """)
-    Optional<CourseDetailResponse> findDetailById(@Param("id") UUID id);
+        GROUP BY c.id, c.title, c.slug, c.description, c.detailed_description, 
+                 c.language, c.thumbnail, c.price_cents, c.currency, c.status, 
+                 cb.id, cb.full_name, c.updated_at
+    """, nativeQuery = true)
+    List<Object[]> findDetailByIdNative(@Param("id") UUID id);
 
-    @Query("""
-        SELECT new com.english.api.course.dto.response.CourseDetailResponse(
-            c.id,
-            c.title,
-            c.slug,
-            c.description,
-            c.detailedDescription,
-            c.language,
-            c.thumbnail,
-            c.skillFocus,
-            c.priceCents,
-            c.currency,
-            c.status,
-            cb.id,
-            cb.fullName,
-            c.updatedAt,
-            COALESCE((SELECT COUNT(m) FROM CourseModule m WHERE m.course.id = c.id AND m.published = true), 0L),
-            COALESCE((SELECT COUNT(l) FROM Lesson l WHERE l.module.course.id = c.id AND l.published = true), 0L),
-            COALESCE((SELECT COUNT(e) FROM Enrollment e WHERE e.course.id = c.id AND e.status = com.english.api.enrollment.model.enums.EnrollmentStatus.ACTIVE), 0L),
-            COALESCE((SELECT AVG(r.rating) FROM CourseReview r WHERE r.course.id = c.id AND r.isPublished = true), 0.0),
-            COALESCE((SELECT COUNT(r) FROM CourseReview r WHERE r.course.id = c.id AND r.isPublished = true), 0L)
-        )
-        FROM Course c
-        LEFT JOIN c.createdBy cb
-        WHERE c.slug = :slug AND c.status = com.english.api.course.model.enums.CourseStatus.PUBLISHED
-    """)
-    Optional<CourseDetailResponse> findDetailBySlug(@Param("slug") String slug);
+    @Query(value = """
+        SELECT c.id, c.title, c.slug, c.description, c.detailed_description, 
+               c.language, c.thumbnail, 
+               COALESCE(ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as skills,
+               c.price_cents, c.currency, c.status, 
+               cb.id as instructor_id, cb.full_name as created_by, c.updated_at,
+               COALESCE((SELECT COUNT(*) FROM course_modules m WHERE m.course_id = c.id AND m.published = true), 0) as module_count,
+               COALESCE((SELECT COUNT(*) FROM course_modules m 
+                        INNER JOIN lessons l ON l.module_id = m.id 
+                        WHERE m.course_id = c.id AND l.published = true), 0) as lesson_count,
+               COALESCE((SELECT COUNT(*) FROM enrollments e 
+                        WHERE e.course_id = c.id AND e.status = 'ACTIVE'), 0) as student_count,
+               COALESCE((SELECT AVG(r.rating) FROM course_reviews r 
+                        WHERE r.course_id = c.id AND r.is_published = true), 0.0) as average_rating,
+               COALESCE((SELECT COUNT(*) FROM course_reviews r 
+                        WHERE r.course_id = c.id AND r.is_published = true), 0) as total_reviews
+        FROM courses c
+        LEFT JOIN users cb ON c.created_by = cb.id
+        LEFT JOIN course_skills cs ON c.id = cs.course_id
+        LEFT JOIN skills s ON cs.skill_id = s.id
+        WHERE c.slug = :slug AND c.status = 'PUBLISHED'
+        GROUP BY c.id, c.title, c.slug, c.description, c.detailed_description, 
+                 c.language, c.thumbnail, c.price_cents, c.currency, c.status, 
+                 cb.id, cb.full_name, c.updated_at
+    """, nativeQuery = true)
+    List<Object[]> findDetailBySlugNative(@Param("slug") String slug);
 
     
     @Query("SELECT c.createdBy.id FROM Course c WHERE c.id = :id")

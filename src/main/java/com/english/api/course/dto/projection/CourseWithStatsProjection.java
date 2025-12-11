@@ -1,6 +1,7 @@
 package com.english.api.course.dto.projection;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -13,7 +14,7 @@ public interface CourseWithStatsProjection {
     String getDescription();
     String getLanguage();
     String getThumbnail();
-    String[] getSkillFocus();
+    List<String> getSkillFocus();
     Long getPriceCents();
     String getCurrency();
     String getStatus();

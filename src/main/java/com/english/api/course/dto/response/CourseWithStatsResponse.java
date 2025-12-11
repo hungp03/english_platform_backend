@@ -1,6 +1,7 @@
 package com.english.api.course.dto.response;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -13,7 +14,7 @@ public record CourseWithStatsResponse(
     String description,
     String language,
     String thumbnail,
-    String[] skillFocus,
+    List<String> skillFocus,
     Long priceCents,
     String currency,
     String status,

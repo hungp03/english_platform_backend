@@ -122,6 +122,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/forum/threads/*/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/instructors/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/instructors/*/courses").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/skills").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/payos/webhook").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/paypal/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hello").hasRole("ADMIN")

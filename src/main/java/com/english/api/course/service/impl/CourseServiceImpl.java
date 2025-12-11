@@ -17,8 +17,10 @@ import com.english.api.course.dto.response.InstructorStatsResponse;
 import com.english.api.course.dto.response.MonthlyGrowthResponse;
 import com.english.api.course.mapper.CourseMapper;
 import com.english.api.course.model.Course;
+import com.english.api.course.model.Skill;
 import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.course.repository.CourseRepository;
+import com.english.api.course.repository.SkillRepository;
 import com.english.api.course.service.CourseService;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.user.model.User;
@@ -35,8 +37,10 @@ import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -46,21 +50,28 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
+    private final SkillRepository skillRepository;
     private final CourseMapper mapper;
     private final MediaService mediaService;
     private final OrderRepository orderRepository;
 
     @Override
     public CourseDetailResponse getById(UUID id) {
-        return courseRepository.findDetailById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+        List<Object[]> result = courseRepository.findDetailByIdNative(id);
+        if (result == null || result.isEmpty()) {
+            throw new ResourceNotFoundException("Course not found");
+        }
+        return mapToDetailResponse(result.get(0));
     }
 
     @Override
     @CachePut(value = "courses", key = "#result.id()")
     public CourseDetailResponse getPublishedBySlug(String slug) {
-        return courseRepository.findDetailBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+        List<Object[]> result = courseRepository.findDetailBySlugNative(slug);
+        if (result == null || result.isEmpty()) {
+            throw new ResourceNotFoundException("Course not found");
+        }
+        return mapToDetailResponse(result.get(0));
     }
 
     @Transactional
@@ -76,6 +87,12 @@ public class CourseServiceImpl implements CourseService {
         UUID currentUserId = SecurityUtil.getCurrentUserId();
         Course course = mapper.toEntity(req);
         course.setCreatedBy(User.builder().id(currentUserId).build());
+        
+        // Handle skills
+        if (req.skillFocus() != null && !req.skillFocus().isEmpty()) {
+            course.setSkills(getOrCreateSkills(req.skillFocus()));
+        }
+        
         return mapper.toResponse(courseRepository.save(course));
     }
 
@@ -166,7 +183,7 @@ public class CourseServiceImpl implements CourseService {
         }
 
         if (req.skillFocus() != null) {
-            course.setSkillFocus(req.skillFocus().toArray(new String[0]));
+            course.setSkills(getOrCreateSkills(req.skillFocus()));
         }
 
         course.setPriceCents(req.priceCents());
@@ -389,6 +406,50 @@ public class CourseServiceImpl implements CourseService {
                         projection.getUpdatedAt()
                 ));
         return PaginationResponse.from(page, pageable);
+    }
+    
+    private Set<Skill> getOrCreateSkills(List<String> skillNames) {
+        Set<Skill> skills = skillRepository.findByNameIn(skillNames);
+        
+        if (skills.size() != skillNames.size()) {
+            Set<String> foundNames = skills.stream()
+                    .map(Skill::getName)
+                    .collect(java.util.stream.Collectors.toSet());
+            List<String> notFound = skillNames.stream()
+                    .filter(name -> !foundNames.contains(name))
+                    .toList();
+            throw new ResourceNotFoundException("Skills not found: " + String.join(", ", notFound));
+        }
+        
+        return skills;
+    }
+    
+    private CourseDetailResponse mapToDetailResponse(Object[] row) {
+        Instant updatedAt = row[13] instanceof Instant 
+            ? (Instant) row[13] 
+            : ((java.sql.Timestamp) row[13]).toInstant();
+            
+        return new CourseDetailResponse(
+            row[0] instanceof UUID ? (UUID) row[0] : UUID.fromString(row[0].toString()), // id
+            (String) row[1],                                  // title
+            (String) row[2],                                  // slug
+            (String) row[3],                                  // description
+            (String) row[4],                                  // detailedDescription
+            (String) row[5],                                  // language
+            (String) row[6],                                  // thumbnail
+            row[7] != null ? List.of((String[]) row[7]) : List.of(), // skills
+            row[8] != null ? ((Number) row[8]).longValue() : null,   // priceCents
+            (String) row[9],                                  // currency
+            CourseStatus.valueOf((String) row[10]),           // status
+            row[11] instanceof UUID ? (UUID) row[11] : UUID.fromString(row[11].toString()), // instructorId
+            (String) row[12],                                 // createdBy
+            updatedAt,                                        // updatedAt
+            ((Number) row[14]).longValue(),                   // moduleCount
+            ((Number) row[15]).longValue(),                   // lessonCount
+            ((Number) row[16]).longValue(),                   // studentCount
+            ((Number) row[17]).doubleValue(),                 // averageRating
+            ((Number) row[18]).longValue()                    // totalReviews
+        );
     }
 
 }

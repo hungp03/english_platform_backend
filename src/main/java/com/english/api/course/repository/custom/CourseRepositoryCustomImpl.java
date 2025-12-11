@@ -64,7 +64,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.description AS description,
                 c.language AS language,
                 c.thumbnail AS thumbnail,
-                c.skill_focus AS skill_focus,
+                ARRAY_AGG(DISTINCT s.name) AS skill_focus,
                 c.price_cents AS price_cents,
                 c.currency AS currency,
                 c.status AS status,
@@ -79,6 +79,8 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.created_at AS created_at,
                 c.updated_at AS updated_at
             FROM courses c
+            LEFT JOIN course_skills cs ON c.id = cs.course_id
+            LEFT JOIN skills s ON cs.skill_id = s.id
             WHERE (CAST(:keyword AS text) IS NULL OR
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
@@ -86,16 +88,22 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
               AND (CAST(:status AS text) IS NOT NULL OR c.status != 'DRAFT')
               AND (:skillsCount = 0 OR
                    EXISTS (
-                       SELECT 1 FROM unnest(c.skill_focus) AS skill
-                       WHERE LOWER(skill) = ANY(
+                       SELECT 1 FROM course_skills cs2
+                       JOIN skills s2 ON cs2.skill_id = s2.id
+                       WHERE cs2.course_id = c.id
+                       AND LOWER(s2.name) = ANY(
                            SELECT LOWER(unnest) FROM unnest(CAST(:skills AS text[]))
                        )
                    ))
+            GROUP BY c.id, c.title, c.slug, c.description, c.language, c.thumbnail, 
+                     c.price_cents, c.currency, c.status, c.created_at, c.updated_at
             """;
 
         String countQuery = """
             SELECT COUNT(DISTINCT c.id)
             FROM courses c
+            LEFT JOIN course_skills cs ON c.id = cs.course_id
+            LEFT JOIN skills s ON cs.skill_id = s.id
             WHERE (CAST(:keyword AS text) IS NULL OR
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
@@ -103,8 +111,10 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
               AND (CAST(:status AS text) IS NOT NULL OR c.status != 'DRAFT')
               AND (:skillsCount = 0 OR
                    EXISTS (
-                       SELECT 1 FROM unnest(c.skill_focus) AS skill
-                       WHERE LOWER(skill) = ANY(
+                       SELECT 1 FROM course_skills cs2
+                       JOIN skills s2 ON cs2.skill_id = s2.id
+                       WHERE cs2.course_id = c.id
+                       AND LOWER(s2.name) = ANY(
                            SELECT LOWER(unnest) FROM unnest(CAST(:skills AS text[]))
                        )
                    ))
@@ -128,7 +138,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.description AS description,
                 c.language AS language,
                 c.thumbnail AS thumbnail,
-                c.skill_focus AS skill_focus,
+                ARRAY_AGG(DISTINCT s.name) AS skill_focus,
                 c.price_cents AS price_cents,
                 c.currency AS currency,
                 c.status AS status,
@@ -143,6 +153,8 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                 c.created_at AS created_at,
                 c.updated_at AS updated_at
             FROM courses c
+            LEFT JOIN course_skills cs ON c.id = cs.course_id
+            LEFT JOIN skills s ON cs.skill_id = s.id
             WHERE c.created_by = :ownerId
               AND c.is_deleted = false
               AND (
@@ -153,16 +165,22 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
               AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
               AND (:skillsCount = 0 OR
                    EXISTS (
-                       SELECT 1 FROM unnest(c.skill_focus) AS skill
-                       WHERE LOWER(skill) = ANY(
+                       SELECT 1 FROM course_skills cs2
+                       JOIN skills s2 ON cs2.skill_id = s2.id
+                       WHERE cs2.course_id = c.id
+                       AND LOWER(s2.name) = ANY(
                            SELECT LOWER(unnest) FROM unnest(CAST(:skills AS text[]))
                        )
                    ))
+            GROUP BY c.id, c.title, c.slug, c.description, c.language, c.thumbnail, 
+                     c.price_cents, c.currency, c.status, c.created_at, c.updated_at
             """;
 
         String countQuery = """
             SELECT COUNT(DISTINCT c.id)
             FROM courses c
+            LEFT JOIN course_skills cs ON c.id = cs.course_id
+            LEFT JOIN skills s ON cs.skill_id = s.id
             WHERE c.created_by = :ownerId
               AND c.is_deleted = false
               AND (
@@ -173,8 +191,10 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
               AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
               AND (:skillsCount = 0 OR
                    EXISTS (
-                       SELECT 1 FROM unnest(c.skill_focus) AS skill
-                       WHERE LOWER(skill) = ANY(
+                       SELECT 1 FROM course_skills cs2
+                       JOIN skills s2 ON cs2.skill_id = s2.id
+                       WHERE cs2.course_id = c.id
+                       AND LOWER(s2.name) = ANY(
                            SELECT LOWER(unnest) FROM unnest(CAST(:skills AS text[]))
                        )
                    ))
@@ -286,12 +306,12 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             }
 
             @Override
-            public String[] getSkillFocus() {
+            public List<String> getSkillFocus() {
                 Object skillFocus = row[6];
                 if (skillFocus instanceof String[]) {
-                    return (String[]) skillFocus;
+                    return List.of((String[]) skillFocus);
                 }
-                return null;
+                return List.of();
             }
 
             @Override

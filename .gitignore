@@ -40,4 +40,4 @@ logs/
 
 
 src/main/resources/fcm-service-account.json
-src/main/resources/db/migrations
+src/main/resources/db/migration

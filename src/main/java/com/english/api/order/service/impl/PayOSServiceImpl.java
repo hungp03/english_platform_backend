@@ -65,14 +65,27 @@ public class PayOSServiceImpl implements PayOSPaymentService {
             throw new ResourceInvalidException("Order must be in PENDING status to create PayOS link");
         }
 
-        paymentRepository.findTopByOrderIdAndProviderOrderByCreatedAtDesc(order.getId(), PaymentProvider.PAYOS)
-                .ifPresent(payment -> {
-                    log.debug("Existing PayOS payment found - Status: {}", payment.getStatus());
-                    if (payment.getStatus() == PaymentStatus.SUCCESS) {
-                        log.error("Order already has a successful PayOS payment");
-                        throw new ResourceInvalidException("Order already has a successful PayOS payment");
+        // Check existing payment
+        var existingPayment = paymentRepository.findTopByOrderIdAndProviderOrderByCreatedAtDesc(order.getId(), PaymentProvider.PAYOS);
+        if (existingPayment.isPresent()) {
+            Payment payment = existingPayment.get();
+            if (payment.getStatus() == PaymentStatus.SUCCESS) {
+                log.error("Order already has a successful PayOS payment");
+                throw new ResourceInvalidException("Order already has a successful PayOS payment");
+            }
+            // Reuse existing INITIATED payment - get payment link info from PayOS
+            if (payment.getStatus() == PaymentStatus.INITIATED && payment.getProviderTxn() != null) {
+                try {
+                    var paymentInfo = payOS.paymentRequests().get(Long.parseLong(payment.getProviderTxn()));
+                    if ("PENDING".equals(paymentInfo.getStatus())) {
+                        log.info("Reusing existing PayOS payment - OrderCode: {}", payment.getProviderTxn());
+                        return paymentInfo;
                     }
-                });
+                } catch (Exception e) {
+                    log.warn("Failed to get existing PayOS payment info, creating new one: {}", e.getMessage());
+                }
+            }
+        }
 
         String successUrl = String.format("%s?orderId=%s", defaultSuccessUrl, order.getId());
         String cancelUrl = String.format("%s?orderId=%s", defaultCancelUrl, order.getId());
@@ -124,27 +137,45 @@ public class PayOSServiceImpl implements PayOSPaymentService {
     public void handleWebhook(Webhook webhookBody) {
         try {
             var data = payOS.webhooks().verify(webhookBody);
-            log.info("Webhook verified - OrderCode: {}", data.getOrderCode());
+            log.info("Webhook verified - OrderCode: {}, Code: {}", data.getOrderCode(), data.getCode());
             
             Payment payment = paymentRepository.findByProviderTxnWithOrderDetails(String.valueOf(data.getOrderCode()))
                     .orElseThrow(() -> new ResourceNotFoundException("Payment not found for OrderCode " + data.getOrderCode()));
 
             Order order = payment.getOrder();
+            String code = data.getCode();
 
-            if (payment.getStatus() != PaymentStatus.SUCCESS) {
-                payment.setStatus(PaymentStatus.SUCCESS);
-                payment.setConfirmedAt(OffsetDateTime.now());
-                payment.setRawPayload(serializeToJson(webhookBody));
-                paymentRepository.save(payment);
+            // code "00" = success, code khác = cancelled/failed
+            if ("00".equals(code)) {
+                if (payment.getStatus() != PaymentStatus.SUCCESS) {
+                    payment.setStatus(PaymentStatus.SUCCESS);
+                    payment.setConfirmedAt(OffsetDateTime.now());
+                    payment.setRawPayload(serializeToJson(webhookBody));
+                    paymentRepository.save(payment);
 
-                if (order.getStatus() == OrderStatus.PENDING) {
-                    order.setStatus(OrderStatus.PAID);
-                    order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
-                    orderRepository.save(order);
-                    
-                    instructorWalletService.processOrderEarnings(order);
-                    enrollmentService.createEnrollmentsAfterPayment(order);
-                    invoiceService.generateAndSendInvoiceAsync(order, payment);
+                    if (order.getStatus() == OrderStatus.PENDING) {
+                        order.setStatus(OrderStatus.PAID);
+                        order.setPaidAt(OffsetDateTime.now(ZoneOffset.UTC));
+                        orderRepository.save(order);
+                        
+                        instructorWalletService.processOrderEarnings(order);
+                        enrollmentService.createEnrollmentsAfterPayment(order);
+                        invoiceService.generateAndSendInvoiceAsync(order, payment);
+                    }
+                }
+            } else {
+                // Payment cancelled or failed
+                log.info("Payment cancelled/failed - OrderCode: {}, Code: {}", data.getOrderCode(), code);
+                if (payment.getStatus() == PaymentStatus.INITIATED || payment.getStatus() == PaymentStatus.PROCESSING) {
+                    payment.setStatus(PaymentStatus.FAILED);
+                    payment.setRawPayload(serializeToJson(webhookBody));
+                    paymentRepository.save(payment);
+
+                    if (order.getStatus() == OrderStatus.PENDING) {
+                        order.setStatus(OrderStatus.CANCELLED);
+                        order.setCancelReason("Thanh toán bị hủy");
+                        orderRepository.save(order);
+                    }
                 }
             }
 
