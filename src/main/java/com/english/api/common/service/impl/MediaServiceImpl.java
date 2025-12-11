@@ -57,11 +57,23 @@ public class MediaServiceImpl implements MediaService {
             "audio/mpeg", "audio/wav", "audio/ogg", "audio/x-wav", "audio/mp4", "audio/webm"
     );
 
+    // Lesson attachments - support documents, images, audio
+    private static final Set<String> LESSON_ATTACHMENT_MIME_TYPES = Set.of(
+            "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp",
+            "audio/mpeg", "audio/wav", "audio/ogg", "audio/x-wav", "audio/mp4", "audio/webm",
+            "application/pdf",
+            "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain"
+    );
+
     private static final Map<String, FolderRule> FOLDER_RULES = Map.of(
             "users", new FolderRule(2 * 1024 * 1024, IMAGE_MIME_TYPES), // 2MB, chỉ ảnh
             "certificate_proofs", new FolderRule(5 * 1024 * 1024, PROOF_MIME_TYPES),
             "forums", new FolderRule(50 * 1024 * 1024, ALLOWED_MIME_TYPES), // 50MB, tất cả loại hợp lệ
             "course_thumbnail", new FolderRule(2 * 1024 * 1024, IMAGE_MIME_TYPES) ,// 2MB, chỉ ảnh
+            "lesson_attachments", new FolderRule(20 * 1024 * 1024, LESSON_ATTACHMENT_MIME_TYPES), // 20MB, documents + media
             "invoices", new FolderRule(2 * 1024 * 1024, INVOICE_MIME_TYPES),
             "speaking_assessments", new FolderRule(20 * 1024 * 1024, AUDIO_MIME_TYPES), // 20MB, audio only
             "quiz", new FolderRule(
@@ -129,7 +141,7 @@ public class MediaServiceImpl implements MediaService {
         }
 
         // Kiểm tra phần mở rộng file
-        if (!originalFilename.matches("(?i).+\\.(png|jpe?g|gif|webp|bmp|mp3|wav|ogg|mp4|webm|pdf)$")) {
+        if (!originalFilename.matches("(?i).+\\.(png|jpe?g|gif|webp|bmp|mp3|wav|ogg|mp4|webm|pdf|docx?|pptx?|xlsx?|txt)$")) {
             throw new ResourceInvalidException("Unsupported file extension.");
         }
 

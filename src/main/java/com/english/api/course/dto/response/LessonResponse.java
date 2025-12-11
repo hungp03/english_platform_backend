@@ -1,5 +1,6 @@
 package com.english.api.course.dto.response;
 
+import com.english.api.course.model.MediaAsset;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.Serializable;
@@ -20,5 +21,5 @@ public record LessonResponse(
         Boolean published,
         JsonNode content,
         UUID primaryMediaId,
-        List<UUID> attachmentIds
+        List<MediaAsset> mediaAssets
 ) implements Serializable {}

@@ -30,6 +30,14 @@ public class MediaAssetController {
                     .body(response);
     }
 
+    @PostMapping("/upload-attachment")
+    public ResponseEntity<MediaAssetResponse> uploadAttachment(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "title", required = false) String title) {
+        MediaAssetResponse response = mediaService.uploadAttachment(file, title);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/callback")
     public ResponseEntity<Void> handleWorkerCallback(
             HttpServletRequest request,

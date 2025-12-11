@@ -63,7 +63,7 @@ public class Lesson implements Serializable {
 
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<LessonMedia> mediaLinks = new ArrayList<>();
+    private List<MediaAsset> mediaAssets = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
@@ -73,9 +73,8 @@ public class Lesson implements Serializable {
     }
 
     public Optional<MediaAsset> getPrimaryMedia() {
-        return mediaLinks.stream()
-                .filter(lm -> lm.getRole() == LessonMediaRole.PRIMARY)
-                .map(LessonMedia::getMedia)
+        return mediaAssets.stream()
+                .filter(media -> media.getRole() == LessonMediaRole.PRIMARY)
                 .findFirst();
     }
 }

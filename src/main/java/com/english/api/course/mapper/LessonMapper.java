@@ -46,9 +46,8 @@ public interface LessonMapper {
     // Convert entity -> response
     default LessonResponse toResponse(Lesson lesson) {
         UUID primaryId = lesson.getPrimaryMedia().map(MediaAsset::getId).orElse(null);
-        List<UUID> attachmentIds = lesson.getMediaLinks().stream()
-                .filter(lm -> lm.getRole() == LessonMediaRole.ATTACHMENT)
-                .map(lm -> lm.getMedia().getId())
+        List<MediaAsset> attachments = lesson.getMediaAssets().stream()
+                .filter(asset -> asset.getRole() == LessonMediaRole.ATTACHMENT)
                 .toList();
 
         return new LessonResponse(
@@ -61,7 +60,7 @@ public interface LessonMapper {
                 lesson.getPublished(),
                 lesson.getContent(),
                 primaryId,
-                attachmentIds
+                lesson.getMediaAssets()
         );
     }
 }

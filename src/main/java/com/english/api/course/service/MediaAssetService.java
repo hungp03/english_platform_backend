@@ -14,6 +14,8 @@ public interface MediaAssetService {
 
     MediaAssetResponse uploadVideo(MultipartFile file);
 
+    MediaAssetResponse uploadAttachment(MultipartFile file, String title);
+
     void handleWorkerCallback(HttpServletRequest request, String signature);
 
     @Transactional(readOnly = true)

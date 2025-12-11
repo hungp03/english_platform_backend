@@ -32,7 +32,6 @@ public class LessonServiceImpl implements LessonService {
     private final CourseModuleRepository moduleRepository;
     private final LessonRepository lessonRepository;
     private final MediaAssetRepository assetRepository;
-    private final LessonMediaRepository lessonMediaRepository;
     private final LessonMapper lessonMapper;
     private final MediaService mediaService;
 
@@ -58,17 +57,14 @@ public class LessonServiceImpl implements LessonService {
         lesson.setPosition(position);
         lessonRepository.save(lesson);
 
-        // Nếu có mediaId → thêm link PRIMARY
+        // Nếu có mediaId → thêm media PRIMARY
         if (request.mediaId() != null) {
             MediaAsset media = assetRepository.findById(request.mediaId())
                     .orElseThrow(() -> new ResourceNotFoundException("Media not found"));
-            LessonMedia link = LessonMedia.builder()
-                    .lesson(lesson)
-                    .media(media)
-                    .role(LessonMediaRole.PRIMARY)
-                    .position(0)
-                    .build();
-            lessonMediaRepository.save(link);
+            media.setLesson(lesson);
+            media.setRole(LessonMediaRole.PRIMARY);
+            media.setPosition(0);
+            assetRepository.save(media);
         }
 
         return lessonMapper.toResponse(lesson);
@@ -167,14 +163,10 @@ public class LessonServiceImpl implements LessonService {
             MediaAsset newMedia = assetRepository.findById(mediaId)
                     .orElseThrow(() -> new ResourceNotFoundException("Media not found"));
 
-            LessonMedia newPrimary = LessonMedia.builder()
-                    .lesson(lesson)
-                    .media(newMedia)
-                    .role(LessonMediaRole.PRIMARY)
-                    .position(0)
-                    .build();
-
-            lesson.getMediaLinks().add(newPrimary);
+            newMedia.setLesson(lesson);
+            newMedia.setRole(LessonMediaRole.PRIMARY);
+            newMedia.setPosition(0);
+            assetRepository.save(newMedia);
         } else {
             // Nếu client gửi null → chỉ cần xóa media cũ
             removePrimaryMedia(lessonId);
@@ -196,14 +188,13 @@ public class LessonServiceImpl implements LessonService {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
-        // Lấy danh sách LessonMedia đóng vai trò PRIMARY
-        List<LessonMedia> toRemove = lesson.getMediaLinks().stream()
+        // Lấy danh sách MediaAsset đóng vai trò PRIMARY
+        List<MediaAsset> toRemove = lesson.getMediaAssets().stream()
                 .filter(m -> m.getRole() == LessonMediaRole.PRIMARY)
                 .toList();
 
         if (!toRemove.isEmpty()) {
-            for (LessonMedia lm : toRemove) {
-                MediaAsset asset = lm.getMedia();
+            for (MediaAsset asset : toRemove) {
                 String fileUrl = asset.getUrl();
 
                 // Xóa file vật lý (nếu có)
@@ -211,7 +202,7 @@ public class LessonServiceImpl implements LessonService {
                     mediaService.deleteFileByUrl(fileUrl);
                 }
 
-                // Xóa luôn MediaAsset (Hibernate sẽ tự xóa LessonMedia vì cascade REMOVE)
+                // Xóa MediaAsset
                 assetRepository.delete(asset);
             }
 
@@ -233,9 +224,8 @@ public class LessonServiceImpl implements LessonService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
         // Xóa tất cả media và file vật lý trước khi xóa lesson
-        if (!lesson.getMediaLinks().isEmpty()) {
-            for (LessonMedia lm : lesson.getMediaLinks()) {
-                MediaAsset asset = lm.getMedia();
+        if (!lesson.getMediaAssets().isEmpty()) {
+            for (MediaAsset asset : lesson.getMediaAssets()) {
                 if (asset != null) {
                     String url = asset.getUrl();
 
@@ -256,7 +246,7 @@ public class LessonServiceImpl implements LessonService {
             }
         }
 
-        // Hibernate sẽ tự xóa LessonMedia nhờ cascade + orphanRemoval
+        // Hibernate sẽ tự xóa MediaAsset nhờ cascade + orphanRemoval
         lessonRepository.delete(lesson);
     }
 
@@ -271,17 +261,18 @@ public class LessonServiceImpl implements LessonService {
         MediaAsset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new ResourceNotFoundException("Asset not found"));
 
-        boolean exists = lessonMediaRepository.existsByLessonIdAndMediaId(lessonId, assetId);
-        if (!exists) {
-            int nextPos = lessonMediaRepository.findByLessonIdOrderByPositionAsc(lessonId).size() + 1;
-            LessonMedia link = LessonMedia.builder()
-                    .lesson(lesson)
-                    .media(asset)
-                    .role(LessonMediaRole.ATTACHMENT)
-                    .position(nextPos)
-                    .build();
-            lessonMediaRepository.save(link);
+        // Kiểm tra asset đã được attach chưa
+        if (asset.getLesson() != null) {
+            throw new ResourceInvalidException("Asset already attached to a lesson");
         }
+
+        // Tính position tiếp theo
+        int nextPos = lesson.getMediaAssets().size() + 1;
+        
+        asset.setLesson(lesson);
+        asset.setRole(LessonMediaRole.ATTACHMENT);
+        asset.setPosition(nextPos);
+        assetRepository.save(asset);
 
         return lessonMapper.toResponse(lesson);
     }
@@ -294,14 +285,26 @@ public class LessonServiceImpl implements LessonService {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
 
-        LessonMedia link = lessonMediaRepository.findByLessonIdAndMediaId(lessonId, assetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Asset not attached to this lesson"));
+        MediaAsset asset = assetRepository.findById(assetId)
+                .orElseThrow(() -> new ResourceNotFoundException("Asset not found"));
 
-        if (link.getRole() == LessonMediaRole.PRIMARY) {
+        if (!lesson.equals(asset.getLesson())) {
+            throw new ResourceNotFoundException("Asset not attached to this lesson");
+        }
+
+        if (asset.getRole() == LessonMediaRole.PRIMARY) {
             throw new ResourceInvalidException("Cannot detach primary media via this endpoint");
         }
 
-        lessonMediaRepository.delete(link);
+        // Xóa file vật lý
+        if (asset.getUrl() != null && !asset.getUrl().isBlank()) {
+            try {
+                mediaService.deleteFileByUrl(asset.getUrl());
+            } catch (Exception ignored) {
+            }
+        }
+
+        assetRepository.delete(asset);
         return lessonMapper.toResponse(lesson);
     }
 

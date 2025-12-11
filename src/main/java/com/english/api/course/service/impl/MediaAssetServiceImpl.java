@@ -30,7 +30,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-
+import com.english.api.common.service.MediaService;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
@@ -58,6 +58,7 @@ public class MediaAssetServiceImpl implements MediaAssetService {
     private final MediaAssetRepository assetRepository;
     private final UserService userService;
     private final MediaAssetMapper mediaAssetMapper;
+    private final MediaService mediaService;
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${app.worker.url:http://localhost:10000/upload}")
@@ -141,6 +142,46 @@ public class MediaAssetServiceImpl implements MediaAssetService {
         }
 
         // Trả kết quả tạm thời cho frontend
+        return mediaAssetMapper.toResponse(asset);
+    }
+
+    @Override
+    @Transactional
+    public MediaAssetResponse uploadAttachment(MultipartFile file, String title) {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        User user = userService.findById(userId);
+
+        String mimeType = file.getContentType();
+        if (mimeType == null) {
+            throw new IllegalArgumentException("Unknown file type");
+        }
+
+        // Upload file lên S3 trước
+        com.english.api.common.dto.MediaUploadResponse uploadResponse;
+        try {
+            uploadResponse = mediaService.uploadFile(file, "lesson_attachments");
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload file", e);
+        }
+
+        // Tạo MediaAsset trong database
+        MediaAsset asset = MediaAsset.builder()
+                .owner(user)
+                .mimeType(mimeType)
+                .url(uploadResponse.url())
+                .title(title)
+                .createdAt(Instant.now())
+                .build();
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode meta = mapper.createObjectNode();
+        meta.put("originalName", file.getOriginalFilename());
+        meta.put("size", file.getSize());
+        meta.put("status", "ready");
+        meta.put("uploadedAt", Instant.now().toString());
+        asset.setMeta(meta);
+
+        asset = assetRepository.save(asset);
         return mediaAssetMapper.toResponse(asset);
     }
 
