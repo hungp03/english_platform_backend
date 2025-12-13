@@ -368,16 +368,6 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
     }
-
-    /**
-     * Optimized method that validates course existence and gets title in a single
-     * database query
-     */
-    private String getCourseTitle(UUID courseId) {
-        CourseCheckoutResponse courseInfo = validateAndGetCourseInfo(courseId);
-        return courseInfo.title();
-    }
-
     /**
      * Fetches the actual price from database for the given course
      */

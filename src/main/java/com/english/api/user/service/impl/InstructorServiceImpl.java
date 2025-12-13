@@ -4,11 +4,7 @@ import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.exception.ResourceAlreadyExistsException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
-import com.english.api.user.dto.request.CreateInstructorRequest;
-import com.english.api.user.dto.request.ReviewInstructorRequest;
-import com.english.api.user.dto.request.UpdateInstructorProfileRequest;
-import com.english.api.user.dto.request.UpdateInstructorRequest;
-import com.english.api.user.dto.request.UploadCertificateProofRequest;
+import com.english.api.user.dto.request.*;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.user.dto.response.CertificateProofResponse;
 import com.english.api.user.dto.response.InstructorBasicInfoResponse;
@@ -410,7 +406,7 @@ public class InstructorServiceImpl implements InstructorService {
     }
 
     @Override
-    public void manageInstructorRole(UUID userId, com.english.api.user.dto.request.RevokeInstructorRoleRequest.Action action, String reason) {
+    public void manageInstructorRole(UUID userId, RevokeInstructorRoleRequest.Action action, String reason) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
@@ -419,7 +415,7 @@ public class InstructorServiceImpl implements InstructorService {
 
         String userName = user.getFullName() != null ? user.getFullName() : user.getEmail();
 
-        if (action == com.english.api.user.dto.request.RevokeInstructorRoleRequest.Action.REVOKE) {
+        if (action == RevokeInstructorRoleRequest.Action.REVOKE) {
             // Revoke instructor permissions
             if (user.getRoles().contains(instructorRole)) {
                 user.getRoles().remove(instructorRole);
