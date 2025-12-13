@@ -148,9 +148,8 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
         SELECT COALESCE(SUM(oi.unitPriceCents * oi.quantity - COALESCE(oi.discountCents, 0L)), 0L)
         FROM Order o
         JOIN o.items oi
-        JOIN Course c ON oi.entityId = c.id
+        JOIN oi.course c
         WHERE c.createdBy.id = :instructorId
-        AND oi.entity = 'COURSE'
         AND o.status = 'PAID'
         AND o.paidAt >= :startDate
         AND o.paidAt <= :endDate

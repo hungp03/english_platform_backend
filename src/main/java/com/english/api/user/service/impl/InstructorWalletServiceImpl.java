@@ -7,7 +7,6 @@ import com.english.api.course.model.Course;
 import com.english.api.course.repository.CourseRepository;
 import com.english.api.order.model.Order;
 import com.english.api.order.model.OrderItem;
-import com.english.api.order.model.enums.OrderItemEntityType;
 import com.english.api.user.dto.response.InstructorBalanceResponse;
 import com.english.api.user.dto.response.InstructorTransactionResponse;
 import com.english.api.user.model.InstructorBalance;
@@ -82,15 +81,13 @@ public class InstructorWalletServiceImpl implements InstructorWalletService {
         }
         
         for (OrderItem item : order.getItems()) {
-            if (item.getEntity() == OrderItemEntityType.COURSE) {
-                processCourseEarning(item, order);
-            }
+            // All items are courses now
+            processCourseEarning(item, order);
         }
     }
     
     private void processCourseEarning(OrderItem item, Order order) {
-        Course course = courseRepository.findById(item.getEntityId())
-                .orElse(null);
+        Course course = item.getCourse();
         
         if (course == null || course.getCreatedBy() == null) {
             log.warn("Course or instructor not found for OrderItem: {}", item.getId());

@@ -133,8 +133,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
             JOIN o.items oi
             WHERE o.user.id = :userId
             AND o.status = 'PAID'
-            AND oi.entity = 'COURSE'
-            AND oi.entityId = c.id
+            AND oi.course.id = c.id
         )
     """)
     List<CartCheckoutResponse> findCoursesForCheckoutByUserId(@Param("userId") UUID userId);

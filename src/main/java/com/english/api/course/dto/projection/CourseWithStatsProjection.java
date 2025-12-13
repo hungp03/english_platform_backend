@@ -24,4 +24,5 @@ public interface CourseWithStatsProjection {
     Instant getUpdatedAt();
     Double getAverageRating();
     Long getTotalReviews();
+    Long getStudentCount();
 }

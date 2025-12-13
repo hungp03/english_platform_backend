@@ -110,8 +110,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             SELECT 1 FROM OrderItem oi 
             WHERE oi.order.user.id = :userId 
             AND oi.order.status = 'PAID' 
-            AND oi.entity = 'COURSE' 
-            AND oi.entityId = :courseId
+            AND oi.course.id = :courseId
         ) THEN true ELSE false END
         """)
     boolean hasUserPurchasedCourse(@Param("userId") UUID userId, @Param("courseId") UUID courseId);
@@ -120,12 +119,11 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
      * Get all course IDs that user has already purchased (batch check)
      */
     @Query("""
-        SELECT DISTINCT oi.entityId FROM Order o 
+        SELECT DISTINCT oi.course.id FROM Order o 
         JOIN o.items oi 
         WHERE o.user.id = :userId 
         AND o.status = 'PAID' 
-        AND oi.entity = 'COURSE' 
-        AND oi.entityId IN :courseIds
+        AND oi.course.id IN :courseIds
         """)
     Set<UUID> findPurchasedCourseIds(@Param("userId") UUID userId, @Param("courseIds") List<UUID> courseIds);
 
@@ -140,10 +138,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
                (SELECT COUNT(e) FROM Enrollment e WHERE e.course.id = c.id) as enrollmentCount
         FROM Order o 
         JOIN o.items oi 
-        JOIN Course c ON c.id = oi.entityId
+        JOIN oi.course c
         JOIN c.createdBy u
-        WHERE o.status = 'PAID' 
-          AND oi.entity = 'COURSE'
+        WHERE o.status = 'PAID'
         GROUP BY c.id, c.title, c.slug, u.fullName, c.currency
         ORDER BY totalRevenue DESC
         """)
@@ -159,7 +156,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             COUNT(DISTINCT e.id)
         FROM Order o 
         JOIN o.items oi 
-        JOIN Course c ON oi.entityId = c.id AND oi.entity = 'COURSE'
+        JOIN oi.course c
         JOIN c.createdBy u
         LEFT JOIN c.enrollments e
         WHERE o.status = 'PAID'

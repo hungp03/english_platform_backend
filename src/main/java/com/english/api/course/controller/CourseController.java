@@ -10,6 +10,7 @@ import com.english.api.course.dto.response.InstructorStatsResponse;
 import com.english.api.course.dto.response.MonthlyGrowthResponse;
 import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.course.service.CourseService;
+import com.english.api.user.annotation.ActiveInstructor;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -87,12 +88,14 @@ public class CourseController {
     // === Create new course ===
     @PostMapping
     @PreAuthorize("hasRole('INSTRUCTOR')")
+    @ActiveInstructor
     public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(courseService.create(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('INSTRUCTOR')")
+    @ActiveInstructor
     public ResponseEntity<CourseResponse> updateCourse(
             @PathVariable UUID id,
             @Valid @RequestBody CourseRequest request
@@ -102,6 +105,7 @@ public class CourseController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('INSTRUCTOR')")
+    @ActiveInstructor
     public ResponseEntity<Void> deleteCourse(@PathVariable UUID id) {
         courseService.delete(id);
         return ResponseEntity.noContent().build();

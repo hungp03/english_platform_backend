@@ -46,6 +46,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
         SORT_COLUMN_MAP.put("moduleCount", "module_count");
         SORT_COLUMN_MAP.put("lessonCount", "lesson_count");
         SORT_COLUMN_MAP.put("students", "student_count");
+        SORT_COLUMN_MAP.put("studentCount", "student_count");
         SORT_COLUMN_MAP.put("rating", "average_rating");
         SORT_COLUMN_MAP.put("totalReviews","total_reviews");
     }
@@ -76,6 +77,8 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                           WHERE r.course_id = c.id AND r.is_published = true), 0) AS average_rating,
                 (SELECT COUNT(*) FROM course_reviews r
                  WHERE r.course_id = c.id AND r.is_published = true) AS total_reviews,
+                COALESCE((SELECT COUNT(*) FROM enrollments e
+                          WHERE e.course_id = c.id AND e.status = 'ACTIVE'), 0) AS student_count,
                 c.created_at AS created_at,
                 c.updated_at AS updated_at
             FROM courses c
@@ -150,6 +153,8 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
                           WHERE r.course_id = c.id AND r.is_published = true), 0) AS average_rating,
                 (SELECT COUNT(*) FROM course_reviews r
                  WHERE r.course_id = c.id AND r.is_published = true) AS total_reviews,
+                COALESCE((SELECT COUNT(*) FROM enrollments e
+                          WHERE e.course_id = c.id AND e.status = 'ACTIVE'), 0) AS student_count,
                 c.created_at AS created_at,
                 c.updated_at AS updated_at
             FROM courses c
@@ -364,8 +369,14 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             }
 
             @Override
+            public Long getStudentCount() {
+                Object val = row[14];
+                return val != null ? ((Number) val).longValue() : 0L;
+            }
+
+            @Override
             public Instant getCreatedAt() {
-                Object timestamp = row[14];
+                Object timestamp = row[15];
                 if (timestamp instanceof Timestamp) {
                     return ((Timestamp) timestamp).toInstant();
                 }
@@ -374,7 +385,7 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
 
             @Override
             public Instant getUpdatedAt() {
-                Object timestamp = row[15];
+                Object timestamp = row[16];
                 if (timestamp instanceof Timestamp) {
                     return ((Timestamp) timestamp).toInstant();
                 }

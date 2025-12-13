@@ -23,7 +23,7 @@ BEGIN
         -- Total revenue from successful course purchases (PAID orders only, after discount)
         COALESCE(SUM(
             CASE 
-                WHEN o.status = 'PAID' AND oi.entity = 'COURSE' 
+                WHEN o.status = 'PAID' 
                 THEN oi.unit_price_cents * oi.quantity - COALESCE(oi.discount_cents, 0)
                 ELSE 0 
             END
@@ -31,7 +31,7 @@ BEGIN
         
     FROM courses c
     LEFT JOIN enrollments e ON e.course_id = c.id AND e.status = 'ACTIVE'
-    LEFT JOIN order_items oi ON oi.entity_id = c.id AND oi.entity = 'COURSE'
+    LEFT JOIN order_items oi ON oi.course_id = c.id
     LEFT JOIN orders o ON o.id = oi.order_id
     WHERE c.created_by = instructor_id
       AND c.is_deleted = false;
@@ -39,5 +39,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create index to optimize the function if not exists
-CREATE INDEX IF NOT EXISTS idx_order_items_entity_and_id ON order_items(entity, entity_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_course_id ON order_items(course_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);

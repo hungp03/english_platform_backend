@@ -22,6 +22,8 @@ public interface InstructorProfileRepository extends JpaRepository<InstructorPro
     
     boolean existsByUserId(UUID userId);
     
+    boolean existsByUserIdAndIsActiveTrue(UUID userId);
+    
     void deleteByUserId(UUID userId);
     
     @Query("SELECT new com.english.api.user.dto.response.InstructorBasicInfoResponse(" +

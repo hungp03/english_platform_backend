@@ -47,12 +47,9 @@ BEGIN
             o.paid_at >= pd.start_time 
             AND o.paid_at <= pd.end_time
             AND o.status = 'PAID'
-        LEFT JOIN order_items oi ON 
-            oi.order_id = o.id 
-            AND oi.entity = 'COURSE'
-        LEFT JOIN courses c ON 
-            c.id = oi.entity_id 
-            AND c.created_by = instructor_id
+        LEFT JOIN order_items oi ON oi.order_id = o.id
+        LEFT JOIN courses c ON c.id = oi.course_id
+        WHERE c.created_by = instructor_id OR c.created_by IS NULL
         GROUP BY pd.period_start, pd.period_end
     ),
     student_data AS (
@@ -65,9 +62,8 @@ BEGIN
             e.created_at >= pd.start_time 
             AND e.created_at <= pd.end_time
             AND e.status = 'ACTIVE'
-        LEFT JOIN courses c ON 
-            c.id = e.course_id 
-            AND c.created_by = instructor_id
+        LEFT JOIN courses c ON c.id = e.course_id
+        WHERE c.created_by = instructor_id OR c.created_by IS NULL
         GROUP BY pd.period_start, pd.period_end
     )
     SELECT 

@@ -1,6 +1,5 @@
 package com.english.api.order.dto.request;
 
-import com.english.api.order.model.enums.OrderItemEntityType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -20,10 +19,7 @@ public record CreateOrderRequest(
 ) {
 
     public record OrderItemRequest(
-            @NotNull(message = "Entity type is required")
-            OrderItemEntityType entityType,
-
-            @NotNull(message = "Entity ID is required")
-            UUID entityId
+            @NotNull(message = "Course ID is required")
+            UUID courseId
     ) {}
 }

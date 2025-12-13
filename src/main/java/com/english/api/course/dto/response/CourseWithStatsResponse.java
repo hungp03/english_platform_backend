@@ -20,6 +20,7 @@ public record CourseWithStatsResponse(
     String status,
     Long moduleCount,
     Long lessonCount,
+    Long studentCount,
     Long totalReviews,
     Double averageRating,
     Instant createdAt,

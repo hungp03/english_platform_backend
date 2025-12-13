@@ -5,6 +5,7 @@ import com.english.api.course.dto.request.CourseModuleUpdateRequest;
 import com.english.api.course.dto.response.CourseModuleResponse;
 import com.english.api.course.dto.response.CourseModuleUpdateResponse;
 import com.english.api.course.service.CourseModuleService;
+import com.english.api.user.annotation.ActiveInstructor;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -47,6 +48,7 @@ public class CourseModuleController {
 
     @PostMapping
     @PreAuthorize("hasRole('INSTRUCTOR')")
+    @ActiveInstructor
     public ResponseEntity<CourseModuleResponse> create(
             @PathVariable UUID courseId,
             @Valid @RequestBody CourseModuleRequest requests

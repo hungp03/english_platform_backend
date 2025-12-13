@@ -44,8 +44,8 @@ public interface OrderMapper {
 
     UserBasicInfo toUserBasicInfo(User user);
 
-    @Mapping(target = "entityType", source = "entity")
-    @Mapping(target = "totalPriceCents", expression = "java(item.getQuantity() * item.getUnitPriceCents())")
+    @Mapping(target = "courseId", source = "course.id")
+    @Mapping(target = "totalPriceCents", expression = "java((item.getQuantity() * item.getUnitPriceCents()) - (item.getDiscountCents() != null ? item.getDiscountCents() : 0L))")
     OrderItemResponse toOrderItemResponse(OrderItem item);
 
     List<OrderItemResponse> toOrderItemResponses(List<OrderItem> items);

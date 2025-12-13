@@ -24,7 +24,6 @@ import com.english.api.enrollment.repository.LessonProgressRepository;
 import com.english.api.enrollment.service.EnrollmentService;
 import com.english.api.order.model.Order;
 import com.english.api.order.model.OrderItem;
-import com.english.api.order.model.enums.OrderItemEntityType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -64,10 +63,9 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
         log.info("Creating enrollments for order ID: {}", order.getId());
 
-        // Extract all course IDs from order items (avoiding N+1)
+        // Extract all course IDs from order items (all items are courses now)
         List<UUID> courseIds = order.getItems().stream()
-                .filter(item -> item.getEntity() == OrderItemEntityType.COURSE)
-                .map(OrderItem::getEntityId)
+                .map(item -> item.getCourse().getId())
                 .toList();
 
         if (courseIds.isEmpty()) {

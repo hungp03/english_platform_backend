@@ -1,6 +1,6 @@
 package com.english.api.order.model;
 
-import com.english.api.order.model.enums.OrderItemEntityType;
+import com.english.api.course.model.Course;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,12 +24,9 @@ public class OrderItem {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private OrderItemEntityType entity;
-
-    @Column(name = "entity_id", nullable = false)
-    private UUID entityId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
     @Column(nullable = false)
     private String title;

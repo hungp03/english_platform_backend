@@ -29,18 +29,6 @@ public class InstructorBankAccount {
     @Column(name = "paypal_email", nullable = false)
     private String paypalEmail;
     
-    @Column(name = "account_holder_name")
-    private String accountHolderName;
-    
-    @Column(name = "bank_name")
-    private String bankName;
-    
-    @Column(name = "account_number")
-    private String accountNumber;
-    
-    @Column(name = "swift_code")
-    private String swiftCode;
-    
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
     

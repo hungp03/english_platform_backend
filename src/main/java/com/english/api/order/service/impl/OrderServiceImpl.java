@@ -8,6 +8,7 @@ import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.model.Course;
+import com.english.api.course.repository.CourseRepository;
 import com.english.api.course.service.CourseService;
 import com.english.api.enrollment.service.EnrollmentService;
 import com.english.api.notification.service.NotificationService;
@@ -23,7 +24,6 @@ import com.english.api.order.model.InstructorVoucher;
 import com.english.api.order.model.InstructorVoucherUsage;
 import com.english.api.order.model.Order;
 import com.english.api.order.model.OrderItem;
-import com.english.api.order.model.enums.OrderItemEntityType;
 import com.english.api.order.model.enums.OrderStatus;
 import com.english.api.order.model.enums.VoucherScope;
 import com.english.api.order.repository.InstructorVoucherRepository;
@@ -57,6 +57,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserService userService;
     private final CourseService courseService;
+    private final CourseRepository courseRepository;
     private final OrderMapper orderMapper;
     private final CartService cartService;
     private final EnrollmentService enrollmentService;
@@ -94,8 +95,7 @@ public class OrderServiceImpl implements OrderService {
         if (request.voucherCode() != null && !request.voucherCode().isBlank()) {
             // Get course IDs from request items
             List<UUID> courseIds = request.items().stream()
-                    .filter(item -> item.entityType() == OrderItemEntityType.COURSE)
-                    .map(CreateOrderRequest.OrderItemRequest::entityId)
+                    .map(CreateOrderRequest.OrderItemRequest::courseId)
                     .toList();
             
             // Apply voucher to the specific courses in the order (not from cart)
@@ -131,17 +131,17 @@ public class OrderServiceImpl implements OrderService {
         // Create order items with optimized entity validation and title/price fetching
         List<OrderItem> orderItems = new ArrayList<>();
         for (CreateOrderRequest.OrderItemRequest itemRequest : request.items()) {
-            String entityTitle = getEntityTitleOptimized(itemRequest.entityType(), itemRequest.entityId());
-            Long entityPrice = getEntityPrice(itemRequest.entityType(), itemRequest.entityId());
-            Long itemDiscount = courseDiscountMap.getOrDefault(itemRequest.entityId(), 0L);
+            Course course = courseRepository.findById(itemRequest.courseId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+            
+            Long itemDiscount = courseDiscountMap.getOrDefault(itemRequest.courseId(), 0L);
             
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
-                    .entity(itemRequest.entityType())
-                    .entityId(itemRequest.entityId())
-                    .title(entityTitle)
+                    .course(course)
+                    .title(course.getTitle())
                     .quantity(1)  // Quantity is always 1 for courses
-                    .unitPriceCents(entityPrice)
+                    .unitPriceCents(course.getPriceCents())
                     .discountCents(itemDiscount)
                     .build();
             orderItems.add(orderItem);
@@ -337,15 +337,12 @@ public class OrderServiceImpl implements OrderService {
         long totalCents = 0;
         for (CreateOrderRequest.OrderItemRequest item : request.items()) {
             // Validate item fields
-            if (item.entityType() == null) {
-                throw new ResourceInvalidException("Entity type is required for all items");
-            }
-            if (item.entityId() == null) {
-                throw new ResourceInvalidException("Entity ID is required for all items");
+            if (item.courseId() == null) {
+                throw new ResourceInvalidException("Course ID is required for all items");
             }
 
-            // Fetch actual price from database based on entity type
-            Long unitPriceCents = getEntityPrice(item.entityType(), item.entityId());
+            // Fetch actual price from database
+            Long unitPriceCents = getCoursePrice(item.courseId());
 
             // Add price to total (quantity is always 1)
             totalCents += unitPriceCents;
@@ -373,40 +370,20 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Optimized method that validates entity existence and gets title in a single
+     * Optimized method that validates course existence and gets title in a single
      * database query
      */
-    private String getEntityTitleOptimized(OrderItemEntityType entityType, UUID entityId) {
-        return switch (entityType) {
-            case COURSE -> {
-                CourseCheckoutResponse courseInfo = validateAndGetCourseInfo(entityId);
-                yield courseInfo.title();
-            }
-            case SUBSCRIPTION -> {
-                throw new ResourceInvalidException("SUBSCRIPTION entities are not supported yet");
-            }
-            case BUNDLE -> {
-                throw new ResourceInvalidException("BUNDLE entities are not supported yet");
-            }
-        };
+    private String getCourseTitle(UUID courseId) {
+        CourseCheckoutResponse courseInfo = validateAndGetCourseInfo(courseId);
+        return courseInfo.title();
     }
 
     /**
-     * Fetches the actual price from database for the given entity
+     * Fetches the actual price from database for the given course
      */
-    private Long getEntityPrice(OrderItemEntityType entityType, UUID entityId) {
-        return switch (entityType) {
-            case COURSE -> {
-                CourseCheckoutResponse courseInfo = validateAndGetCourseInfo(entityId);
-                yield courseInfo.priceCents();
-            }
-            case SUBSCRIPTION -> {
-                throw new ResourceInvalidException("SUBSCRIPTION entities are not supported yet");
-            }
-            case BUNDLE -> {
-                throw new ResourceInvalidException("BUNDLE entities are not supported yet");
-            }
-        };
+    private Long getCoursePrice(UUID courseId) {
+        CourseCheckoutResponse courseInfo = validateAndGetCourseInfo(courseId);
+        return courseInfo.priceCents();
     }
 
     /**
@@ -414,14 +391,11 @@ public class OrderServiceImpl implements OrderService {
      */
     private void validateNoPurchasedCourses(UUID userId, CreateOrderRequest request) {
         for (CreateOrderRequest.OrderItemRequest item : request.items()) {
-            // Only check for COURSE entities
-            if (item.entityType() == OrderItemEntityType.COURSE) {
-                if (orderRepository.hasUserPurchasedCourse(userId, item.entityId())) {
-                    throw new ResourceAlreadyOwnedException(
-                            String.format(
-                                    "You have already purchased the course with ID: %s. Please remove it from your order.",
-                                    item.entityId()));
-                }
+            if (orderRepository.hasUserPurchasedCourse(userId, item.courseId())) {
+                throw new ResourceAlreadyOwnedException(
+                        String.format(
+                                "You have already purchased the course with ID: %s. Please remove it from your order.",
+                                item.courseId()));
             }
         }
     }
@@ -432,8 +406,7 @@ public class OrderServiceImpl implements OrderService {
      */
     private void removeOrderedItemsFromCart(List<CreateOrderRequest.OrderItemRequest> items) {
         List<UUID> courseIdsToRemove = items.stream()
-                .filter(item -> item.entityType() == OrderItemEntityType.COURSE)
-                .map(CreateOrderRequest.OrderItemRequest::entityId)
+                .map(CreateOrderRequest.OrderItemRequest::courseId)
                 .toList();
 
         if (!courseIdsToRemove.isEmpty()) {
