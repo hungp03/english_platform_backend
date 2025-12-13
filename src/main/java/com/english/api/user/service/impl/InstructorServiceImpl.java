@@ -28,6 +28,7 @@ import com.english.api.user.repository.InstructorRequestRepository;
 import com.english.api.user.repository.RoleRepository;
 import com.english.api.user.repository.UserRepository;
 import com.english.api.user.service.InstructorService;
+import com.english.api.user.util.InstructorCacheUtil;
 import com.english.api.common.service.MediaService;
 import com.english.api.mail.service.MailService;
 import com.english.api.notification.service.NotificationService;
@@ -57,6 +58,7 @@ public class InstructorServiceImpl implements InstructorService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final InstructorRequestMapper instructorRequestMapper;
+    private final InstructorCacheUtil instructorCacheUtil;
     private final InstructorCertificateProofRepository certificateProofRepository;
     private final CertificateProofMapper certificateProofMapper;
     private final MediaService mediaService;
@@ -428,6 +430,7 @@ public class InstructorServiceImpl implements InstructorService {
                 instructorProfileRepository.findByUserId(userId).ifPresent(profile -> {
                     profile.setActive(false);
                     instructorProfileRepository.save(profile);
+                    instructorCacheUtil.clearInstructorStatusCache(userId);
                     log.info("Set instructor profile to inactive for user: {}", user.getEmail());
                 });
 
@@ -456,6 +459,7 @@ public class InstructorServiceImpl implements InstructorService {
                 
                 instructorProfile.setActive(true);
                 instructorProfileRepository.save(instructorProfile);
+                instructorCacheUtil.clearInstructorStatusCache(userId);
                 log.info("Set instructor profile to active for user: {}", user.getEmail());
 
                 // Send email notification to user

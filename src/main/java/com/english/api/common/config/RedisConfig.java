@@ -83,6 +83,10 @@ public class RedisConfig {
                 .entryTtl(Duration.ofMinutes(15))
                 .disableCachingNullValues());
 
+        cacheConfigurations.put("instructorStatus", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(30))
+                .disableCachingNullValues());
+
         cacheConfigurations.put("courses", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1))
                 .disableCachingNullValues());

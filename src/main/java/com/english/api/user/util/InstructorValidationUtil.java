@@ -4,6 +4,7 @@ import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.exception.AccessDeniedException;
 import com.english.api.user.repository.InstructorProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -29,9 +30,17 @@ public class InstructorValidationUtil {
      * @throws AccessDeniedException if instructor is not active
      */
     public void validateActiveInstructor(UUID userId) {
-        boolean isActive = instructorProfileRepository.existsByUserIdAndIsActiveTrue(userId);
+        boolean isActive = isInstructorActive(userId);
         if (!isActive) {
             throw new AccessDeniedException("Instructor account is not active");
         }
+    }
+    
+    /**
+     * Check if instructor is active (cached)
+     */
+    @Cacheable(value = "instructorStatus", key = "#userId")
+    public boolean isInstructorActive(UUID userId) {
+        return instructorProfileRepository.existsByUserIdAndIsActiveTrue(userId);
     }
 }
