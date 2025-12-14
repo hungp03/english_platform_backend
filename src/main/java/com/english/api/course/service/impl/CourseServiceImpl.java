@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,6 +55,11 @@ public class CourseServiceImpl implements CourseService {
     private final CourseMapper mapper;
     private final MediaService mediaService;
     private final OrderRepository orderRepository;
+
+    @Override
+    public Optional<Course> findPublishedById(UUID id) {
+        return courseRepository.findByIdAndStatus(id, CourseStatus.PUBLISHED);
+    }
 
     @Override
     public CourseDetailResponse getById(UUID id) {

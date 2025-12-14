@@ -25,11 +25,9 @@ public class LearningProfileServiceImpl implements LearningProfileService {
     @Transactional(readOnly = true)
     public LearningProfileResponse getMyProfile() {
         UUID userId = SecurityUtil.getCurrentUserId();
-        LearningProfile profile = repository.findByUserId(userId)
-                .orElseGet(() -> LearningProfile.builder()
-                        .user(User.builder().id(userId).build())
-                        .build());
-        return mapper.toResponse(profile);
+        return repository.findByUserId(userId)
+                .map(mapper::toResponse)
+                .orElse(null);
     }
 
     @Override

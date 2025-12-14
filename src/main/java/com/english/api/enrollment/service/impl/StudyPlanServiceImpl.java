@@ -10,6 +10,7 @@ import com.english.api.enrollment.dto.request.AIStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanScheduleRequest;
 import com.english.api.enrollment.dto.request.EnrollmentProgressData;
+import com.english.api.enrollment.dto.request.LearningProfileData;
 import com.english.api.enrollment.dto.request.QuizPerformanceData;
 import com.english.api.enrollment.dto.request.StudyPlanScheduleRequest;
 import com.english.api.enrollment.dto.request.UpdateStudyPlanRequest;
@@ -26,7 +27,9 @@ import com.english.api.enrollment.repository.StudyPlanRepository;
 import com.english.api.enrollment.repository.StudyPlanScheduleRepository;
 import com.english.api.enrollment.service.GoogleCalendarService;
 import com.english.api.enrollment.service.StudyPlanService;
+import com.english.api.user.model.LearningProfile;
 import com.english.api.user.model.User;
+import com.english.api.user.repository.LearningProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,6 +57,7 @@ public class StudyPlanServiceImpl implements StudyPlanService {
     private final StudyPlanScheduleRepository studyPlanScheduleRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final LearningProfileRepository learningProfileRepository;
     private final StudyPlanMapper studyPlanMapper;
     private final GoogleCalendarService googleCalendarService;
     private final RestTemplate restTemplate;
@@ -301,7 +305,19 @@ public class StudyPlanServiceImpl implements StudyPlanService {
         UUID userId = SecurityUtil.getCurrentUserId();
         log.debug("Gathering context for AI plan generation for user: {}", userId);
 
-        // 1. Fetch recent quiz attempts (last 10)
+        // 1. Fetch learning profile
+        LearningProfileData profileData = learningProfileRepository.findByUserId(userId)
+            .map(p -> new LearningProfileData(
+                p.getCurrentLevel().name(),
+                p.getLearningGoal().name(),
+                p.getTargetScore(),
+                p.getDailyStudyMinutes(),
+                p.getPreferredStudyTime().name(),
+                p.getStudyDaysPerWeek()
+            ))
+            .orElse(null);
+
+        // 2. Fetch recent quiz attempts (last 10)
         Page<QuizAttempt> recentQuizzes = quizAttemptRepository.findByUser_IdOrderBySubmittedAtDesc(
             userId, 
             PageRequest.of(0, 10)
@@ -317,7 +333,7 @@ public class StudyPlanServiceImpl implements StudyPlanService {
             ))
             .collect(Collectors.toList());
 
-        // 2. Fetch active enrollments
+        // 3. Fetch active enrollments
         List<Enrollment> enrollments = enrollmentRepository.findByUserIdWithCourse(userId);
 
         List<EnrollmentProgressData> enrollmentData = enrollments.stream()
@@ -327,9 +343,10 @@ public class StudyPlanServiceImpl implements StudyPlanService {
             ))
             .collect(Collectors.toList());
 
-        // 3. Construct Enriched Payload
+        // 4. Construct Enriched Payload
         AIStudyPlanContextRequest contextRequest = new AIStudyPlanContextRequest(
             request,
+            profileData,
             quizData,
             enrollmentData
         );

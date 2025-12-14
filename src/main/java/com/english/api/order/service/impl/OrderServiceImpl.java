@@ -8,7 +8,6 @@ import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.course.dto.response.CourseCheckoutResponse;
 import com.english.api.course.model.Course;
-import com.english.api.course.repository.CourseRepository;
 import com.english.api.course.service.CourseService;
 import com.english.api.enrollment.service.EnrollmentService;
 import com.english.api.notification.service.NotificationService;
@@ -57,7 +56,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserService userService;
     private final CourseService courseService;
-    private final CourseRepository courseRepository;
     private final OrderMapper orderMapper;
     private final CartService cartService;
     private final EnrollmentService enrollmentService;
@@ -131,8 +129,8 @@ public class OrderServiceImpl implements OrderService {
         // Create order items with optimized entity validation and title/price fetching
         List<OrderItem> orderItems = new ArrayList<>();
         for (CreateOrderRequest.OrderItemRequest itemRequest : request.items()) {
-            Course course = courseRepository.findById(itemRequest.courseId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+            Course course = courseService.findPublishedById(itemRequest.courseId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Course not found or not available for purchase"));
             
             Long itemDiscount = courseDiscountMap.getOrDefault(itemRequest.courseId(), 0L);
             

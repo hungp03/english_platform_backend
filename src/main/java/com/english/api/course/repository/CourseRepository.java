@@ -124,6 +124,8 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
      */
     @Query("SELECT COUNT(c) > 0 FROM Course c WHERE c.id = :id AND c.status = com.english.api.course.model.enums.CourseStatus.PUBLISHED")
     boolean existsByIdAndStatusPublished(@Param("id") UUID id);
+
+    Optional<Course> findByIdAndStatus(UUID id, CourseStatus status);
     
     /**
      * Get comprehensive statistics for an instructor using optimized PostgreSQL function

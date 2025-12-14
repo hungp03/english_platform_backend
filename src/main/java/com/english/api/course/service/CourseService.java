@@ -10,13 +10,16 @@ import com.english.api.course.dto.response.MonthlyGrowthResponse;
 import com.english.api.course.model.enums.CourseStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.english.api.course.model.Course;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Created by hungpham on 10/2/2025
  */
 public interface CourseService {
+    Optional<Course> findPublishedById(UUID id);
+
     CourseDetailResponse getById(UUID id);
 
     CourseDetailResponse getPublishedBySlug(String slug);
