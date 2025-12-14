@@ -116,6 +116,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/blog/posts/slug/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/blog/comments/post/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/courses/*/modules/published").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/modules/*/lessons/published").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/forum/categories").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/forum/threads").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/forum/threads/*").permitAll()
