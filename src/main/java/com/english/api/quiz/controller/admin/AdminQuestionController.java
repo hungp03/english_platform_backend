@@ -11,7 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -51,5 +52,17 @@ public class AdminQuestionController {
     @GetMapping("/by-section/{sectionId}")
     public ResponseEntity<PaginationResponse> listBySection(@PathVariable UUID sectionId, Pageable pageable) {
         return ResponseEntity.ok(service.listBySection(sectionId, pageable));
+    }
+
+    @PostMapping("/{quizId}/import-csv")
+    public ResponseEntity<String> importCsv(@PathVariable UUID quizId, @RequestParam("file") MultipartFile file) {
+        try {
+            service.importFromCsv(quizId, file);
+            return ResponseEntity.ok("Import thành công");
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().body("Lỗi đọc file: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi import: " + e.getMessage());
+        }
     }
 }

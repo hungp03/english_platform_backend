@@ -20,7 +20,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -156,5 +161,130 @@ public class QuestionServiceImpl implements QuestionService {
     public PaginationResponse listBySection(UUID sectionId, Pageable pageable) {
         Page<Question> page = questionRepository.findByQuiz_QuizSection_Id(sectionId, pageable);
         return PaginationResponse.from(page.map(this::toResponse), pageable);
+    }
+
+    @Override
+    @Transactional
+    public void importFromCsv(UUID quizId, MultipartFile file) throws IOException {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz not found"));
+
+        Integer maxIndexDb = questionRepository.findMaxOrderIndexByQuizId(quizId);
+        int currentMaxIndex = (maxIndexDb == null) ? 0 : maxIndexDb;
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            boolean isHeader = true;
+
+            while ((line = reader.readLine()) != null) {
+                if (isHeader) { isHeader = false; continue; }
+                if (line.trim().isEmpty()) continue;
+
+                List<String> columns = parseCsvLine(line);
+                if (columns.size() < 2) continue; 
+
+                try {
+                    // --- 1. XỬ LÝ ORDER INDEX (Logic cũ) ---
+                    String indexStr = columns.get(0).trim();
+                    int orderIndex;
+
+                    if (indexStr.isEmpty()) {
+                        currentMaxIndex++; 
+                        orderIndex = currentMaxIndex;
+                    } else {
+                        try {
+                            orderIndex = Integer.parseInt(indexStr);
+                            if (orderIndex > currentMaxIndex) currentMaxIndex = orderIndex;
+                        } catch (NumberFormatException e) {
+                            currentMaxIndex++;
+                            orderIndex = currentMaxIndex;
+                        }
+                    }
+
+                    // --- 2. TẠO QUESTION ---
+                    String content = columns.get(1).trim();
+                    String explanation = (columns.size() > 2) ? columns.get(2).trim() : "";
+
+                    Question question = Question.builder()
+                            .quiz(quiz)
+                            .content(content)
+                            .explanation(explanation)
+                            .orderIndex(orderIndex)
+                            .build(); // Lúc này chưa có options
+
+                    // --- 3. XỬ LÝ OPTIONS (LINH HOẠT) ---
+                    List<QuestionOption> options = new ArrayList<>();
+                    
+                    // Chỉ chạy logic tìm options nếu dòng CSV có đủ dữ liệu cột option
+                    if (columns.size() >= 4) { 
+                        // Cột chứa đáp án đúng (A, B, C, D) nằm ở vị trí index 7 (nếu file đủ cột)
+                        String correctAnswer = "";
+                        if (columns.size() >= 8) {
+                            correctAnswer = columns.get(7).trim().toUpperCase();
+                        }
+
+                        // Duyệt 4 cột option tiềm năng (index 3, 4, 5, 6)
+                        for (int i = 0; i < 4; i++) {
+                             if (3 + i >= columns.size()) break; // Hết cột thì dừng
+                             
+                             String optContent = columns.get(3 + i).trim();
+                             if (optContent.isEmpty()) continue; // Ô trống thì bỏ qua
+
+                             boolean isCorrect = false;
+                             if (i == 0 && "A".equals(correctAnswer)) isCorrect = true;
+                             else if (i == 1 && "B".equals(correctAnswer)) isCorrect = true;
+                             else if (i == 2 && "C".equals(correctAnswer)) isCorrect = true;
+                             else if (i == 3 && "D".equals(correctAnswer)) isCorrect = true;
+
+                             options.add(QuestionOption.builder()
+                                     .question(question)
+                                     .content(optContent)
+                                     .correct(isCorrect)
+                                     .orderIndex(i + 1)
+                                     .build());
+                        }
+                    }
+                    
+                    // Gán options vào question (nếu có), nếu không thì danh sách rỗng
+                    if (!options.isEmpty()) {
+                        question.setOptions(new LinkedHashSet<>(options));
+                    }
+
+                    // --- 4. LƯU QUESTION (QUAN TRỌNG: Lưu bất kể có option hay không) ---
+                    questionRepository.save(question);
+
+                } catch (Exception e) {
+                    System.err.println("Lỗi dòng CSV: " + line + " - " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    // Hàm hỗ trợ parse CSV xử lý dấu phẩy trong ngoặc kép
+    private List<String> parseCsvLine(String line) {
+        List<String> result = new ArrayList<>();
+        StringBuilder curVal = new StringBuilder();
+        boolean inQuotes = false;
+        
+        for (char ch : line.toCharArray()) {
+            if (inQuotes) {
+                if (ch == '"') {
+                    inQuotes = false;
+                } else {
+                    curVal.append(ch);
+                }
+            } else {
+                if (ch == '"') {
+                    inQuotes = true;
+                } else if (ch == ',') {
+                    result.add(curVal.toString());
+                    curVal.setLength(0);
+                } else {
+                    curVal.append(ch);
+                }
+            }
+        }
+        result.add(curVal.toString());
+        return result;
     }
 }
