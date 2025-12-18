@@ -52,9 +52,6 @@ public class Quiz {
     @Column(name = "context_text", columnDefinition = "TEXT")
     private String contextText;
 
-    @Column(name = "question_text", columnDefinition = "TEXT")
-    private String questionText;
-
     @Column(name = "explanation", columnDefinition = "TEXT")
     private String explanation;
 

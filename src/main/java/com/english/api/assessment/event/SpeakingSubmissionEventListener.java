@@ -76,9 +76,6 @@ public class SpeakingSubmissionEventListener {
         if (quiz.getContextText() != null) {
             context.put("quizContextText", quiz.getContextText());
         }
-        if (quiz.getQuestionText() != null) {
-            context.put("questionText", quiz.getQuestionText());
-        }
         context.put("questionContent", question.getContent());
 
         return context;

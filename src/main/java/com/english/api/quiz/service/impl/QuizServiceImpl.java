@@ -60,7 +60,6 @@ public class QuizServiceImpl implements QuizService {
         quiz.setStatus(request.status() == null ? QuizStatus.DRAFT : request.status());
         quiz.setQuizType(type);
         quiz.setContextText(request.contextText());
-        quiz.setQuestionText(request.questionText());
         quiz.setExplanation(request.explanation());
 
         if (request.quizSectionId() != null) {
@@ -97,9 +96,6 @@ public class QuizServiceImpl implements QuizService {
         }
         if (request.contextText() != null) {
             quiz.setContextText(request.contextText());
-        }
-        if (request.questionText() != null) {
-            quiz.setQuestionText(request.questionText());
         }
         if (request.explanation() != null) {
             quiz.setExplanation(request.explanation());
