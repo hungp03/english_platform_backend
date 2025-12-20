@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Repository
@@ -22,5 +23,22 @@ public interface StudyPlanScheduleRepository extends JpaRepository<StudyPlanSche
         @Param("scheduleId") UUID scheduleId,
         @Param("planId") UUID planId,
         @Param("userId") UUID userId
+    );
+
+    @Query(value = """
+        SELECT EXISTS (
+            SELECT 1 FROM study_plan_schedule s
+            JOIN study_plans p ON s.plan_id = p.id
+            WHERE p.user_id = :userId
+            AND s.start_time < :endTime
+            AND (s.start_time + (s.duration_min * interval '1 minute')) > :startTime
+            AND (:excludeScheduleId IS NULL OR s.id != :excludeScheduleId)
+        )
+        """, nativeQuery = true)
+    boolean existsOverlap(
+        @Param("userId") UUID userId,
+        @Param("startTime") OffsetDateTime startTime,
+        @Param("endTime") OffsetDateTime endTime,
+        @Param("excludeScheduleId") UUID excludeScheduleId
     );
 }

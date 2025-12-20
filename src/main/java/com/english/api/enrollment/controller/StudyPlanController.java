@@ -1,5 +1,6 @@
 package com.english.api.enrollment.controller;
 
+import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.enrollment.dto.request.AIStudyPlanRequest;
 import com.english.api.enrollment.dto.request.CreateStudyPlanRequest;
@@ -9,16 +10,19 @@ import com.english.api.enrollment.dto.request.UpdateStudyPlanScheduleRequest;
 import com.english.api.enrollment.dto.response.StudyPlanDetailResponse;
 import com.english.api.enrollment.dto.response.StudyPlanResponse;
 import com.english.api.enrollment.dto.response.StudyPlanScheduleResponse;
+import com.english.api.enrollment.repository.StudyPlanScheduleRepository;
 import com.english.api.enrollment.service.StudyPlanService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @RestController
@@ -26,6 +30,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class StudyPlanController {
     private final StudyPlanService studyPlanService;
+    private final StudyPlanScheduleRepository scheduleRepository;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -109,5 +114,25 @@ public class StudyPlanController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Object> generateAIPlan(@Valid @RequestBody AIStudyPlanRequest request) {
         return ResponseEntity.ok(studyPlanService.generateAIPlan(request));
+    }
+
+    @GetMapping("/schedules/check-overlap")
+    public ResponseEntity<Boolean> checkOverlap(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startTime,
+            @RequestParam Integer durationMin,
+            @RequestParam(required = false) UUID excludeScheduleId
+    ) {
+        UUID currentUserId = SecurityUtil.getCurrentUserId();
+        // Tính thời gian kết thúc của lịch mới
+        OffsetDateTime endTime = startTime.plusMinutes(durationMin);
+
+        boolean isOverlap = scheduleRepository.existsOverlap(
+            currentUserId, 
+            startTime, 
+            endTime, 
+            excludeScheduleId
+        );
+
+        return ResponseEntity.ok(isOverlap);
     }
 }
