@@ -1,6 +1,7 @@
 package com.english.api.quiz.service.impl;
 
 import com.english.api.common.dto.PaginationResponse;
+import com.english.api.common.exception.ResourceAlreadyExistsException;
 import com.english.api.common.exception.ResourceNotFoundException;
 import com.english.api.quiz.dto.request.QuizCreateRequest;
 import com.english.api.quiz.dto.request.QuizUpdateRequest;
@@ -53,6 +54,14 @@ public class QuizServiceImpl implements QuizService {
     public QuizResponse create(QuizCreateRequest request) {
         QuizType type = quizTypeRepo.findById(request.quizTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
+        
+        if (request.quizSectionId() != null) {
+            if (quizRepository.existsByTitleIgnoreCaseAndQuizSection_Id(request.title().trim(), request.quizSectionId())) {
+                throw new ResourceAlreadyExistsException(
+                    "Quiz title '" + request.title() + "' already exists in this Section"
+                );
+            }
+        }
 
         Quiz quiz = new Quiz();
         quiz.setTitle(request.title());
@@ -75,6 +84,26 @@ public class QuizServiceImpl implements QuizService {
 
     public QuizResponse update(UUID id, QuizUpdateRequest request) {
         Quiz quiz = findById(id);
+
+        // THÊM: Logic kiểm tra khi update title
+        if (request.title() != null && !request.title().trim().equalsIgnoreCase(quiz.getTitle())) {
+            // Xác định section ID đích (Mới hoặc Cũ)
+            UUID targetSectionId = null;
+            if (request.quizSectionId() != null) {
+                targetSectionId = request.quizSectionId();
+            } else if (quiz.getQuizSection() != null) {
+                targetSectionId = quiz.getQuizSection().getId();
+            }
+
+            // Chỉ check nếu section tồn tại
+            if (targetSectionId != null) {
+                if (quizRepository.existsByTitleIgnoreCaseAndQuizSection_Id(request.title().trim(), targetSectionId)) {
+                    throw new ResourceAlreadyExistsException(
+                        "Quiz title '" + request.title() + "' already exists in this Section"
+                    );
+                }
+            }
+        }
 
         if (request.title() != null) {
             quiz.setTitle(request.title());
