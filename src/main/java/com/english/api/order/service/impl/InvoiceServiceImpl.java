@@ -25,6 +25,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.ByteArrayOutputStream;
 import java.text.NumberFormat;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Locale;
@@ -48,8 +49,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Value("${cloud.bucket}")
     private String bucket;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(VIETNAM_ZONE);
+    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").withZone(VIETNAM_ZONE);
     private static final NumberFormat VND_FORMAT = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
 
     @Async
@@ -111,8 +113,8 @@ public class InvoiceServiceImpl implements InvoiceService {
         // Prepare context with data
         Context context = new Context();
         context.setVariable("invoiceNumber", invoiceNumber);
-        context.setVariable("createdDate", order.getCreatedAt().format(DATE_FORMATTER));
-        context.setVariable("paidDate", order.getPaidAt() != null ? order.getPaidAt().format(DATE_FORMATTER) : "");
+        context.setVariable("createdDate", formatDate(order.getCreatedAt()));
+        context.setVariable("paidDate", formatDate(order.getPaidAt()));
         
         // Customer info
         context.setVariable("customerName", order.getUser().getFullName());
@@ -126,8 +128,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         // Payment info
         context.setVariable("paymentMethod", payment.getProvider().name());
         context.setVariable("paymentTxn", payment.getProviderTxn());
-        context.setVariable("paymentTime", payment.getConfirmedAt() != null ? 
-                payment.getConfirmedAt().format(DATETIME_FORMATTER) : "");
+        context.setVariable("paymentTime", formatDateTime(payment.getConfirmedAt()));
         
         // Amount formatting
         Long subtotalCents = order.getTotalCents() + (order.getDiscountCents() != null ? order.getDiscountCents() : 0L);
@@ -182,6 +183,16 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private String formatCurrency(Long cents) {
         return VND_FORMAT.format(cents) + "đ";
+    }
+
+    private String formatDate(java.time.OffsetDateTime dateTime) {
+        if (dateTime == null) return "";
+        return dateTime.atZoneSameInstant(VIETNAM_ZONE).format(DATE_FORMATTER);
+    }
+
+    private String formatDateTime(java.time.OffsetDateTime dateTime) {
+        if (dateTime == null) return "";
+        return dateTime.atZoneSameInstant(VIETNAM_ZONE).format(DATETIME_FORMATTER);
     }
 
     @Override
