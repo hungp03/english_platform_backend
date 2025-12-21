@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -108,6 +109,17 @@ public class InstructorVoucherController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<VoucherApplyResponse> validateVoucher(@RequestParam String code) {
         VoucherApplyResponse response = voucherService.validateVoucher(code);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get valid vouchers for a specific course (Public endpoint)
+     */
+    @GetMapping("/courses/{courseId}/vouchers")
+    public ResponseEntity<PaginationResponse> getValidVouchersForCourse(
+            @PathVariable UUID courseId,
+            @PageableDefault(size = 5, sort = "discountValue", direction = Sort.Direction.DESC) Pageable pageable) {
+        PaginationResponse response = voucherService.getValidVouchersForCourse(courseId, pageable);
         return ResponseEntity.ok(response);
     }
 }

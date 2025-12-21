@@ -69,4 +69,21 @@ public interface InstructorVoucherRepository extends JpaRepository<InstructorVou
         AND v.endDate < :now
         """)
     List<InstructorVoucher> findExpiredVouchers(@Param("now") OffsetDateTime now);
+
+    @Query("""
+        SELECT v FROM InstructorVoucher v
+        LEFT JOIN FETCH v.applicableCourses ac
+        WHERE v.instructor.id = :instructorId
+        AND v.status = 'ACTIVE'
+        AND v.startDate <= :now
+        AND v.endDate > :now
+        AND (v.usageLimit IS NULL OR v.usedCount < v.usageLimit)
+        AND (v.scope = 'ALL_INSTRUCTOR_COURSES' OR ac.id = :courseId)
+        ORDER BY v.discountValue DESC
+        """)
+    Page<InstructorVoucher> findValidVouchersForCourse(
+            @Param("courseId") UUID courseId,
+            @Param("instructorId") UUID instructorId,
+            @Param("now") OffsetDateTime now,
+            Pageable pageable);
 }

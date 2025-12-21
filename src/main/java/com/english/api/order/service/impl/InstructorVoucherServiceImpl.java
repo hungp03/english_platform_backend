@@ -531,4 +531,20 @@ public class InstructorVoucherServiceImpl implements InstructorVoucherService {
                 "Áp dụng voucher thành công"
         );
     }
+
+    @Override
+    public PaginationResponse getValidVouchersForCourse(UUID courseId, Pageable pageable) {
+        // Verify course exists
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+
+        // Get valid vouchers for this course
+        OffsetDateTime now = OffsetDateTime.now();
+        Page<InstructorVoucher> voucherPage = voucherRepository.findValidVouchersForCourse(
+                courseId, course.getCreatedBy().getId(), now, pageable);
+
+        Page<VoucherResponse> responsePage = voucherPage.map(voucherMapper::toResponse);
+
+        return PaginationResponse.from(responsePage, pageable);
+    }
 }

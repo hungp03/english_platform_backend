@@ -130,7 +130,12 @@ public class InvoiceServiceImpl implements InvoiceService {
                 payment.getConfirmedAt().format(DATETIME_FORMATTER) : "");
         
         // Amount formatting
+        Long subtotalCents = order.getTotalCents() + (order.getDiscountCents() != null ? order.getDiscountCents() : 0L);
         context.setVariable("currency", order.getCurrency().name());
+        context.setVariable("subtotalAmount", formatCurrency(subtotalCents));
+        context.setVariable("discountAmount", order.getDiscountCents() != null && order.getDiscountCents() > 0 ? 
+                formatCurrency(order.getDiscountCents()) : null);
+        context.setVariable("voucherCode", order.getVoucherCode());
         context.setVariable("totalAmount", formatCurrency(order.getTotalCents()));
         context.setVariable("totalAmountCents", order.getTotalCents());
         

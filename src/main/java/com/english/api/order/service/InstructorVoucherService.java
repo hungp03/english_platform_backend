@@ -59,4 +59,9 @@ public interface InstructorVoucherService {
      * Validate voucher code (public endpoint for checking)
      */
     VoucherApplyResponse validateVoucher(String code);
+
+    /**
+     * Get valid vouchers for a specific course (public endpoint)
+     */
+    PaginationResponse getValidVouchersForCourse(UUID courseId, Pageable pageable);
 }

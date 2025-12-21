@@ -193,6 +193,14 @@
         
         <div class="total-section">
             <table>
+                <tr>
+                    <td class="total-label">Tạm tính:</td>
+                    <td class="total-value" th:text="${subtotalAmount}"></td>
+                </tr>
+                <tr th:if="${discountAmount != null}">
+                    <td class="total-label">Giảm giá <span th:if="${voucherCode}" th:text="'(' + ${voucherCode} + ')'"></span>:</td>
+                    <td class="total-value" th:text="'-' + ${discountAmount}"></td>
+                </tr>
                 <tr class="grand-total">
                     <td class="total-label">Tổng cộng (<span th:text="${currency}"></span>):</td>
                     <td class="total-value" th:text="${totalAmount}"></td>
