@@ -1,5 +1,6 @@
 package com.english.api.quiz.service.impl;
 
+import com.english.api.common.exception.CannotDeleteException;
 import com.english.api.common.exception.ResourceAlreadyExistsException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
@@ -7,6 +8,8 @@ import com.english.api.quiz.dto.request.QuizTypeCreateRequest;
 import com.english.api.quiz.dto.request.QuizTypeUpdateRequest;
 import com.english.api.quiz.dto.response.QuizTypeResponse;
 import com.english.api.quiz.model.QuizType;
+import com.english.api.quiz.repository.QuizRepository;
+import com.english.api.quiz.repository.QuizSectionRepository;
 import com.english.api.quiz.repository.QuizTypeRepository;
 import com.english.api.quiz.service.QuizTypeService;
 
@@ -21,6 +24,8 @@ import java.util.UUID;
 public class QuizTypeServiceImpl implements QuizTypeService {
 
     private final QuizTypeRepository quizTypeRepository;
+    private final QuizRepository quizRepository;
+    private final QuizSectionRepository quizSectionRepository;
 
     @Transactional
     public QuizTypeResponse create(QuizTypeCreateRequest request) {
@@ -56,6 +61,15 @@ public class QuizTypeServiceImpl implements QuizTypeService {
     public void delete(UUID id) {
         QuizType quizType = quizTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("QuizType not found"));
+
+        if (quizRepository.existsByQuizType_Id(id)) {
+            throw new CannotDeleteException("Cannot delete quiz type because there are quizzes using it");
+        }
+
+        if (quizSectionRepository.existsByQuizType_Id(id)) {
+            throw new CannotDeleteException("Cannot delete quiz type because there are quiz sections using it");
+        }
+
         quizTypeRepository.delete(quizType);
     }
 

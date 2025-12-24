@@ -25,6 +25,8 @@ import java.util.UUID;
  */
 @Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
+
+    boolean existsByCourse_Id(UUID courseId);
     
     /**
      * Check if enrollment exists for a user and course combination

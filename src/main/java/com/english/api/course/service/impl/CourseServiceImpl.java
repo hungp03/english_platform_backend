@@ -3,6 +3,7 @@ package com.english.api.course.service.impl;
 import com.english.api.auth.util.SecurityUtil;
 import com.english.api.common.dto.PaginationResponse;
 import com.english.api.common.exception.AccessDeniedException;
+import com.english.api.common.exception.CannotDeleteException;
 import com.english.api.common.exception.ResourceAlreadyOwnedException;
 import com.english.api.common.exception.ResourceInvalidException;
 import com.english.api.common.exception.ResourceNotFoundException;
@@ -22,6 +23,7 @@ import com.english.api.course.model.enums.CourseStatus;
 import com.english.api.course.repository.CourseRepository;
 import com.english.api.course.repository.SkillRepository;
 import com.english.api.course.service.CourseService;
+import com.english.api.enrollment.repository.EnrollmentRepository;
 import com.english.api.order.repository.OrderRepository;
 import com.english.api.user.model.User;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +57,7 @@ public class CourseServiceImpl implements CourseService {
     private final CourseMapper mapper;
     private final MediaService mediaService;
     private final OrderRepository orderRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Override
     public Optional<Course> findPublishedById(UUID id) {
@@ -74,6 +77,15 @@ public class CourseServiceImpl implements CourseService {
     @CachePut(value = "courses", key = "#result.id()")
     public CourseDetailResponse getPublishedBySlug(String slug) {
         List<Object[]> result = courseRepository.findDetailBySlugNative(slug);
+        if (result == null || result.isEmpty()) {
+            throw new ResourceNotFoundException("Course not found");
+        }
+        return mapToDetailResponse(result.get(0));
+    }
+
+    @Override
+    public CourseDetailResponse getBySlugForAdmin(String slug) {
+        List<Object[]> result = courseRepository.findDetailBySlugForAdminNative(slug);
         if (result == null || result.isEmpty()) {
             throw new ResourceNotFoundException("Course not found");
         }
@@ -212,6 +224,10 @@ public class CourseServiceImpl implements CourseService {
 
         if (!ownerId.equals(currentUserId)) {
             throw new AccessDeniedException("You are not allowed to delete this course.");
+        }
+
+        if (enrollmentRepository.existsByCourse_Id(id)) {
+            throw new CannotDeleteException("Cannot delete course with enrolled students");
         }
 
         courseRepository.softDeleteById(id, Instant.now());

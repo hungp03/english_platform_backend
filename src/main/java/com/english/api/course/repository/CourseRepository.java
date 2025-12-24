@@ -78,6 +78,33 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, CourseRep
     """, nativeQuery = true)
     List<Object[]> findDetailBySlugNative(@Param("slug") String slug);
 
+    @Query(value = """
+        SELECT c.id, c.title, c.slug, c.description, c.detailed_description, 
+               c.language, c.thumbnail, 
+               COALESCE(ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), ARRAY[]::text[]) as skills,
+               c.price_cents, c.currency, c.status, 
+               cb.id as instructor_id, cb.full_name as created_by, c.updated_at,
+               COALESCE((SELECT COUNT(*) FROM course_modules m WHERE m.course_id = c.id AND m.published = true), 0) as module_count,
+               COALESCE((SELECT COUNT(*) FROM course_modules m 
+                        INNER JOIN lessons l ON l.module_id = m.id 
+                        WHERE m.course_id = c.id AND l.published = true), 0) as lesson_count,
+               COALESCE((SELECT COUNT(*) FROM enrollments e 
+                        WHERE e.course_id = c.id AND e.status = 'ACTIVE'), 0) as student_count,
+               COALESCE((SELECT AVG(r.rating) FROM course_reviews r 
+                        WHERE r.course_id = c.id AND r.is_published = true), 0.0) as average_rating,
+               COALESCE((SELECT COUNT(*) FROM course_reviews r 
+                        WHERE r.course_id = c.id AND r.is_published = true), 0) as total_reviews
+        FROM courses c
+        LEFT JOIN users cb ON c.created_by = cb.id
+        LEFT JOIN course_skills cs ON c.id = cs.course_id
+        LEFT JOIN skills s ON cs.skill_id = s.id
+        WHERE c.slug = :slug AND c.status != 'DRAFT'
+        GROUP BY c.id, c.title, c.slug, c.description, c.detailed_description, 
+                 c.language, c.thumbnail, c.price_cents, c.currency, c.status, 
+                 cb.id, cb.full_name, c.updated_at
+    """, nativeQuery = true)
+    List<Object[]> findDetailBySlugForAdminNative(@Param("slug") String slug);
+
     
     @Query("SELECT c.createdBy.id FROM Course c WHERE c.id = :id")
     Optional<UUID> findOwnerIdById(@Param("id") UUID id);
