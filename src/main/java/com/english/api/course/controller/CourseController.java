@@ -78,6 +78,13 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getPublishedBySlug(slug));
     }
 
+    // === Get course by slug for admin (exclude DRAFT) ===
+    @GetMapping("/admin/slug/{slug}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CourseDetailResponse> getCourseBySlugForAdmin(@PathVariable String slug) {
+        return ResponseEntity.ok(courseService.getBySlugForAdmin(slug));
+    }
+
     // === Get course info for checkout ===
     @GetMapping("/{id}/checkout")
     @PreAuthorize("isAuthenticated()")

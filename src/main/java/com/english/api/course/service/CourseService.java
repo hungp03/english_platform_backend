@@ -23,6 +23,8 @@ public interface CourseService {
     CourseDetailResponse getById(UUID id);
 
     CourseDetailResponse getPublishedBySlug(String slug);
+    
+    CourseDetailResponse getBySlugForAdmin(String slug);
 
     @Transactional
     CourseResponse create(CourseRequest req);

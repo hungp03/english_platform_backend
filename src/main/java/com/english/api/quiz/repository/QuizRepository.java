@@ -18,6 +18,7 @@ import java.util.UUID;
 public interface QuizRepository extends JpaRepository<Quiz, UUID>, JpaSpecificationExecutor<Quiz> {
     Page<Quiz> findByQuizSectionIdAndStatus(UUID quizSectionId, QuizStatus status, Pageable pageable);
     boolean existsByTitleIgnoreCaseAndQuizSection_Id(String title, UUID sectionId);
+    boolean existsByQuizType_Id(UUID quizTypeId);
 
     @Query("""
             select distinct qz from Quiz qz

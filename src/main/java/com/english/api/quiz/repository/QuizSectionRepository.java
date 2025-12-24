@@ -14,4 +14,6 @@ public interface QuizSectionRepository extends JpaRepository<QuizSection, UUID> 
     Page<QuizSection> findByQuizTypeId(UUID quizTypeId, Pageable pageable);
 
     List<QuizSection> findByQuizTypeId(UUID quizTypeId);
+
+    boolean existsByQuizType_Id(UUID quizTypeId);
 }
