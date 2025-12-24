@@ -40,6 +40,15 @@ public class ForumReportController {
         return ResponseEntity.ok(reportService.create(req));
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/reviews/{id}/reports")
+    public ResponseEntity<ForumReportResponse> reportReview(@PathVariable UUID id,
+                                                            @Valid @RequestBody ForumReportCreateRequest body) {
+        // Ép kiểu về COURSE_REVIEW và lấy ID từ URL
+        ForumReportCreateRequest req = new ForumReportCreateRequest(ReportTargetType.COURSE_REVIEW, id, body.reason());
+        return ResponseEntity.ok(reportService.create(req));
+    }
+
     // Create a generic report
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/reports")

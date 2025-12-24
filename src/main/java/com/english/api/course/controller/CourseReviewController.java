@@ -123,4 +123,11 @@ public class CourseReviewController {
         ReviewResponse review = reviewService.showReview(reviewId);
         return ResponseEntity.ok(review);
     }
+
+    @DeleteMapping("/reviews/{id}/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> adminDeleteReview(@PathVariable UUID id) {
+        reviewService.adminDeleteReview(id);
+        return ResponseEntity.noContent().build();
+    }
 }
