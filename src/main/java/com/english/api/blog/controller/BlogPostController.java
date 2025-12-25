@@ -5,6 +5,8 @@ import com.english.api.blog.dto.request.PostFilterRequest;
 import com.english.api.blog.dto.request.PostUpdateRequest;
 import com.english.api.blog.dto.response.PostResponse;
 import com.english.api.blog.dto.response.PublicPostDetailResponse;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import com.english.api.blog.service.BlogPostService;
 import com.english.api.common.dto.PaginationResponse;
 import jakarta.validation.Valid;
@@ -27,7 +29,7 @@ public class BlogPostController {
 
     @GetMapping
     public ResponseEntity<PaginationResponse> listPublished(@ModelAttribute PostFilterRequest filter,
-                                                            Pageable pageable) {
+        @PageableDefault(sort = "publishedAt", direction = Sort.Direction.DESC, size = 10) Pageable pageable) {
         return ResponseEntity.ok(postService.publicList(filter, pageable));
     }
 
