@@ -15,6 +15,8 @@ import com.english.api.forum.model.ForumThread;
 import com.english.api.forum.model.ReportTargetType;
 import com.english.api.user.model.User;
 import com.english.api.user.repository.UserRepository;
+import com.english.api.course.model.CourseReview;
+import com.english.api.course.repository.CourseReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -39,6 +41,7 @@ public class ForumReportServiceImpl implements ForumReportService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final ForumReportMapper reportMapper;
+    private final CourseReviewRepository courseReviewRepository;
     
     @Override
     @Transactional
@@ -78,18 +81,27 @@ public class ForumReportServiceImpl implements ForumReportService {
                 .map(ForumReport::getTargetId)
                 .distinct()
                 .toList();
-
+        
+        List<UUID> reviewIds = reports.stream()
+                .filter(report -> report.getTargetType() == ReportTargetType.COURSE_REVIEW)
+                .map(ForumReport::getTargetId)
+                .distinct()
+                .toList();
 
         Map<UUID, ForumPost> postMap = postRepository.findAllById(postIds).stream()
                 .collect(Collectors.toMap(ForumPost::getId, post -> post));
 
         Map<UUID, ForumThread> threadMap = threadRepository.findAllById(threadIds).stream()
                 .collect(Collectors.toMap(ForumThread::getId, thread -> thread));
+        
+        Map<UUID, CourseReview> reviewMap = courseReviewRepository.findAllById(reviewIds).stream()
+                .collect(Collectors.toMap(CourseReview::getId, review -> review));
+        // String reviewSlug = new String();         
 
         List<ForumReportResponse> mapped = reports.stream().map(report -> {
             String preview = null;
             Boolean targetPublished = null;
-
+            String reviewSlug = new String();
             if (report.getTargetType() == ReportTargetType.POST) {
                 ForumPost post = postMap.get(report.getTargetId());
                 if (post != null) {
@@ -102,8 +114,16 @@ public class ForumReportServiceImpl implements ForumReportService {
                     preview = thread.getSlug();
                     targetPublished = !thread.isLocked();
                 }
+            } else if (report.getTargetType() == ReportTargetType.COURSE_REVIEW) { 
+                // Xử lý hiển thị cho Course Review
+                CourseReview review = reviewMap.get(report.getTargetId());
+                if (review != null) {
+                    preview = review.getComment(); // Hiển thị nội dung comment
+                    reviewSlug = review.getCourse().getSlug();
+                    targetPublished = review.getIsPublished();
+                }
             }
-
+            
             String reporterName = report.getUser() != null ? report.getUser().getFullName() : "Unknown";
             String reporterEmail = report.getUser() != null ? report.getUser().getEmail() : null;
 
@@ -112,7 +132,7 @@ public class ForumReportServiceImpl implements ForumReportService {
                     report.getId(),
                     report.getTargetType(),
                     report.getTargetId(),
-                    report.getUser().getId(), // Lấy ID từ object User
+                    report.getUser().getId(),
                     reporterName,
                     reporterEmail,
                     report.getReason(),
@@ -120,7 +140,8 @@ public class ForumReportServiceImpl implements ForumReportService {
                     targetPublished,
                     report.getCreatedAt(),
                     report.getResolvedAt(),
-                    report.getResolvedBy() != null ? report.getResolvedBy().getFullName() : null // Lấy ID admin
+                    reviewSlug,
+                    report.getResolvedBy() != null ? report.getResolvedBy().getFullName() : null
             );
         }).toList();
 

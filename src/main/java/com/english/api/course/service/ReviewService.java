@@ -104,4 +104,6 @@ public interface ReviewService {
     ReviewResponse showReview(UUID reviewId);
 
     PaginationResponse getReviewsForInstructor(UUID courseId, Boolean isPublished, Integer rating, Pageable pageable);
+
+    void adminDeleteReview(UUID reviewId);
 }

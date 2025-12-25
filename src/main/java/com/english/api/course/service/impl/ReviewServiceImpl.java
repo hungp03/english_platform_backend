@@ -25,7 +25,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.english.api.forum.repository.ForumReportRepository;
+import com.english.api.notification.service.NotificationService;
 import java.util.UUID;
 
 @Slf4j
@@ -38,6 +39,8 @@ public class ReviewServiceImpl implements ReviewService {
     private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
     private final ReviewMapper reviewMapper;
+    private final ForumReportRepository reportRepository;
+    private final NotificationService notificationService;
     
     @Override
     @Transactional
@@ -268,6 +271,38 @@ public class ReviewServiceImpl implements ReviewService {
         
         log.info("Instructor {} hid review {}", currentUserId, reviewId);
         return reviewMapper.toResponse(updatedReview);
+    }
+
+    @Override
+    @Transactional
+    public void adminDeleteReview(UUID reviewId) {
+        // 1. Tìm review
+        CourseReview review = reviewRepository.findById(reviewId)
+            .orElseThrow(() -> new ResourceNotFoundException("Review not found with ID: " + reviewId));
+        
+        UUID adminId = SecurityUtil.getCurrentUserId();
+        User adminUser = userRepository.findById(adminId).orElse(null);
+        String adminName = adminUser != null ? adminUser.getFullName() : "Quản trị viên";
+        
+        UUID reviewAuthorId = review.getUser().getId();
+        String courseTitle = review.getCourse().getTitle();
+
+        // 2. XÓA TẤT CẢ REPORT LIÊN QUAN (Resolved hay chưa đều xóa hết)
+        // Logic này giống performDelete trong ForumPostServiceImpl
+        reportRepository.deleteByTargetId(reviewId);
+        
+        // 3. Xóa Review
+        reviewRepository.delete(review);
+        
+        log.info("Admin {} deleted review {} and cleaned up reports", adminId, reviewId);
+
+        // 4. Gửi thông báo cho chủ sở hữu review (nếu không phải là chính admin xóa của mình)
+        if (!reviewAuthorId.equals(adminId)) {
+            String title = "Đánh giá của bạn đã bị xóa";
+            String body = adminName + " đã xóa đánh giá khóa học của bạn tại khóa: \"" + courseTitle + "\".";
+            
+            notificationService.sendNotification(reviewAuthorId, title, body);
+        }
     }
 
 }

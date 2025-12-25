@@ -17,6 +17,7 @@ public record ForumReportResponse(
         Boolean targetPublished,
         Instant createdAt,
         Instant resolvedAt,
+        String reviewSlug,
         // UUID resolvedBy
         String resolvedBy
 ) {
