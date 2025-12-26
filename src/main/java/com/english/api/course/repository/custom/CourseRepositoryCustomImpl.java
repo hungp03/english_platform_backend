@@ -84,7 +84,8 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             FROM courses c
             LEFT JOIN course_skills cs ON c.id = cs.course_id
             LEFT JOIN skills s ON cs.skill_id = s.id
-            WHERE (CAST(:keyword AS text) IS NULL OR
+            WHERE c.is_deleted = false
+              AND (CAST(:keyword AS text) IS NULL OR
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
               AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
@@ -107,7 +108,8 @@ public class CourseRepositoryCustomImpl implements CourseRepositoryCustom {
             FROM courses c
             LEFT JOIN course_skills cs ON c.id = cs.course_id
             LEFT JOIN skills s ON cs.skill_id = s.id
-            WHERE (CAST(:keyword AS text) IS NULL OR
+            WHERE c.is_deleted = false
+              AND (CAST(:keyword AS text) IS NULL OR
                    LOWER(c.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%'))
                    OR LOWER(c.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS text), '%')))
               AND (CAST(:status AS text) IS NULL OR c.status = CAST(:status AS text))
